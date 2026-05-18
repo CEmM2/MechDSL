@@ -1,0 +1,88 @@
+{
+    "task_id": "P2-T1",
+    "title": "Implement extract_einsum_specs()",
+    "phase": "2",
+    "objective": "Implement extract_einsum_specs(element_ir) in einsum_extract.py — the canonical public API for extracting einsum specifications from ElementIR. Move logic from fe_localise._extract_hex8_tl_einsums().",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "77",
+        "89"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "extract_einsum_specs function signature",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 80,
+            "Plan_file_end_line": 83
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [
+        "P2-T2"
+    ],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/lowering/einsum_extract.py"
+    ],
+    "implementation_steps": [
+        "Read the existing _extract_hex8_tl_einsums() in fe_localise.py (lines ~102-201)",
+        "Read the EinsumSpec dataclass definition in fe_localise.py (lines 20-38)",
+        "Implement extract_einsum_specs(element_ir: ElementIR) -> dict[str, EinsumSpec] in einsum_extract.py",
+        "Accept ElementIR, read n_qp/n_nodes/dim from it instead of taking them as params",
+        "Validate element_type == 'hex8', raise LocalisationError for unsupported",
+        "Return dict keyed by operation name: strain_displacement, internal_force, tangent_matvec",
+        "Import EinsumSpec from fe_localise.py (keep dataclass in its current location)"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/src/mechdsl/lowering/einsum_extract.py — full implementation (~120 lines)"
+    ],
+    "acceptance_criteria": [
+        "extract_einsum_specs is importable from mechdsl.lowering.einsum_extract",
+        "Returns dict with exactly 3 keys: strain_displacement, internal_force, tangent_matvec",
+        "Einsum strings match the values from the original _extract_hex8_tl_einsums()",
+        "Rejects non-hex8 element type with LocalisationError",
+        "All 687 pre-existing tests still pass"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_einsum_extract.py::TestExtractEinsumSpecs -v",
+        "uv run pytest packages/mechdsl-core/tests/test_smoke.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Returns 3 specs for Hex8 TL ElementIR (missing)",
+            "Correct einsum string values — 3 separate tests (missing)",
+            "Correct operand shapes (missing)",
+            "LocalisationError for unsupported element type (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_einsum_extract.py",
+        "packages/mechdsl-core/tests/test_localise.py"
+    ],
+    "risks": [
+        "einsum_extract refactoring breaks localise tests. Mitigation: The extraction logic is moved without modification. Run test_localise.py, test_e2e.py, test_einsum.py after P2-T2 to confirm."
+    ],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

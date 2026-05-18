@@ -1,0 +1,108 @@
+{
+  "task_id": "P7-2",
+  "title": "Taylor Johnson-Cook state and postprocessing",
+  "phase": "7",
+  "objective": "Add Johnson-Cook state update integration and Taylor postprocessing for final geometry and equivalent plastic strain.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "278",
+    "315"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E7 Johnson-Cook state output and Taylor postprocessing requirements.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 278,
+      "Plan_file_end_line": 315
+    }
+  ],
+  "blocked_by": [
+    "P7-1"
+  ],
+  "blocks": [
+    "P8-1"
+  ],
+  "scope": [
+    "Use existing JohnsonCookMaterial and Johnson-Cook return mapping.",
+    "Track finite stress, temperature, and equivalent plastic strain in the Taylor runtime.",
+    "Add postprocessing for final length, mushroom radius, and equivalent plastic strain localization."
+  ],
+  "implementation_steps": [
+    "Run GitNexus impact before editing existing Johnson-Cook symbols.",
+    "Integrate Johnson-Cook state update into the internal Taylor runtime.",
+    "Add state extraction for temperature and equivalent plastic strain.",
+    "Implement final geometry postprocessing helpers.",
+    "Add finite-state and postprocessing tests."
+  ],
+  "deliverables": [
+    "Johnson-Cook state integration in Taylor runtime.",
+    "Final geometry postprocessing helpers.",
+    "Equivalent plastic strain extraction tests."
+  ],
+  "acceptance_criteria": [
+    "Johnson-Cook state update produces finite stress, temperature, and equivalent plastic strain.",
+    "Final length and mushroom-radius postprocessing is deterministic.",
+    "Johnson-Cook model behavior is unchanged unless a focused defect is proven."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_taylor_state.py -v",
+    "uv run pytest packages/mechdsl-core/tests/test_johnson_cook.py -v"
+  ],
+  "test_plan": {
+    "tier": "integration",
+    "cases": [
+      "finite Johnson-Cook state update",
+      "equivalent plastic strain extraction",
+      "final length postprocessing",
+      "mushroom radius postprocessing"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_phase10_taylor_state.py",
+    "packages/mechdsl-core/tests/test_johnson_cook.py"
+  ],
+  "risks": [
+    "Johnson-Cook impact on existing tests is medium; mitigate by avoiding semantic edits and adding focused runtime integration tests."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-26",
+  "test_completion": {
+    "passed": 64,
+    "total": 64,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_taylor_state.py -v",
+        "passed": 14,
+        "total": 14
+      },
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_taylor_runtime.py packages/mechdsl-core/tests/test_phase10_taylor_state.py packages/mechdsl-core/tests/test_johnson_cook.py packages/mechdsl-core/tests/test_hourglass_control.py -v",
+        "passed": 64,
+        "total": 64
+      }
+    ]
+  },
+  "review_score": 0,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e7-taylor-runtime",
+  "completion_notes": [
+    "Added init_taylor_runtime_jc, explicit_step_jc, extract_equivalent_plastic_strain, final_length, mushroom_radius to mechdsl.verify.benchmarks._taylor_runtime.",
+    "Per-element JC state (eqplas, temperature, pk2_stress) lives on ExplicitTaylorState.material_state; integrated via existing radial_return primitive — zero upstream JC drift.",
+    "extract_equivalent_plastic_strain returns a true copy (verified by mutate-and-check test).",
+    "final_length and mushroom_radius are bit-for-bit deterministic; mushroom_radius defines the radial center via reference impact-face coordinates so a uniform translation does not change the radius.",
+    "Gate C attempt 1 caught a calibration miss in the user-authored test_finite_johnson_cook_state_update (dt=1e-9 was an order of magnitude smaller than the 1mm-element wave-traversal time of ~200 ns, so no element saw the impact wave within the 10-step horizon). Recalibrated dt to 1e-8 (factor-20 subcritical); assertion preserved.",
+    "Commit dbe3f6b on branch work/phase10-e7-taylor-runtime."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

@@ -1,0 +1,81 @@
+{
+    "task_id": "P1-T5",
+    "title": "Write constitutive ABC tests",
+    "phase": "1",
+    "objective": "Create test_constitutive_abc.py verifying both wrapper classes satisfy the ConstitutiveModel contract and produce numerically identical output to standalone functions.",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "61",
+        "68"
+    ],
+    "plan_assets": [],
+    "blocked_by": [
+        "P1-T2",
+        "P1-T3"
+    ],
+    "blocks": [],
+    "scope": [
+        "packages/mechdsl-core/tests/test_constitutive_abc.py"
+    ],
+    "implementation_steps": [
+        "Create test_constitutive_abc.py",
+        "Test SVKModel produces identical output to standalone pk2_stress, material_tangent_4th, material_tangent_voigt",
+        "Test J2Model produces identical output to radial_return",
+        "Test both satisfy ABC contract (is_dissipative, state_variables)",
+        "Test shape validation errors",
+        "Test ABC direct instantiation raises TypeError"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/tests/test_constitutive_abc.py (new file)"
+    ],
+    "acceptance_criteria": [
+        "All new tests pass",
+        "Tests verify numerical identity between wrapper and standalone functions",
+        "Tests cover both elastic (SVK) and dissipative (J2) models",
+        "All pre-existing tests still pass"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_constitutive_abc.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_localise_model_validation.py -v",
+        "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -x -q"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "SVK wrapper vs standalone numerical identity (missing)",
+            "J2 wrapper vs radial_return numerical identity (missing)",
+            "is_dissipative correctness for both models (missing)",
+            "state_variables correctness for both models (missing)",
+            "ABC cannot be instantiated directly (missing)",
+            "Shape validation errors (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_constitutive_abc.py",
+        "packages/mechdsl-core/tests/test_localise_model_validation.py"
+    ],
+    "risks": [],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

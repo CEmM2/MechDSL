@@ -1,0 +1,82 @@
+{
+    "task_id": "P1.2",
+    "title": "Handwritten TL Hex8 J2 plastic reference kernel",
+    "phase": "1",
+    "objective": "Extend elastic reference with radial return mapping, power-law hardening, history variables, and consistent tangent for J2 plasticity.",
+    "plan_file": "dev/plans/MVP_plan.md",
+    "plan_lines": ["48", "52"],
+    "plan_assets": [
+        {
+            "asset_description": "Physical benchmark suite including Cook's membrane and necking bar",
+            "asset_type": "table",
+            "Plan_file_start_line": 489,
+            "Plan_file_end_line": 495
+        }
+    ],
+    "blocked_by": ["P0.2", "P0.4", "P0.5"],
+    "blocks": ["P1.3", "P9.2"],
+    "scope": [
+        "Plastic reference solver only",
+        "packages/mechdsl-core/tests/ref/ref_hex8_plastic.py"
+    ],
+    "implementation_steps": [
+        "Implement von Mises yield function with power-law hardening sigma_y(alpha) = sigma_y0 + K*alpha^n",
+        "Implement radial return mapping algorithm",
+        "Implement algorithmic consistent tangent (elastic + plastic branches)",
+        "Add history variable storage (equivalent plastic strain, back stress if needed)",
+        "Wire converged-step commit for history variables",
+        "Verify below-yield equality to elastic reference",
+        "Verify yield-surface residual near machine precision"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/tests/ref/ref_hex8_plastic.py",
+        "Passing yield-surface and elastic-equivalence tests"
+    ],
+    "acceptance_criteria": [
+        "Below-yield loading produces results identical to elastic reference (P1.1)",
+        "Yield-surface residual near machine precision (< 1e-12)",
+        "Consistent tangent matches finite-difference tangent"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/ref/ -k plastic -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Below-yield: output equals elastic reference",
+            "At yield: yield function residual < 1e-12",
+            "Hardening curve: sigma_y increases with plastic strain",
+            "Consistent tangent: FD comparison within 1e-6"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/ref/ref_hex8_plastic.py"
+    ],
+    "risks": [
+        "Return mapping convergence for large strain increments — use adaptive substepping if needed",
+        "Consistent tangent derivation error — verify with finite differencing"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

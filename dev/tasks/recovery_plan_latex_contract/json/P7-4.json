@@ -1,0 +1,92 @@
+{
+    "task_id": "P7-4",
+    "title": "Add a short architecture decision or recovery-status note cross-linking this plan and the drift report.",
+    "phase": "7",
+    "objective": "Add a short architecture decision or recovery-status note cross-linking this plan and the drift report.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "361",
+        "361"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P7-4 (R6.4) in Phase 7 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 361,
+            "Plan_file_end_line": 361
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [],
+    "scope": [
+        "Add a short architecture decision or recovery-status note cross-linking this plan and the drift report.",
+        "Touched surfaces (per recovery plan): `dev/reviews/`, `dev/plans/`, optional ADR"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 7 (Verification, governance, and closure (R6)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Add a short architecture decision or recovery-status note cross-linking this plan and the drift report.",
+        "Touch only the listed surfaces: `dev/reviews/`, `dev/plans/`, optional ADR.",
+        "Verify: Readers can trace why recovery work exists and what it is correcting.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `dev/reviews/`",
+        "Changes to `dev/plans/`",
+        "Changes to optional ADR"
+    ],
+    "acceptance_criteria": [
+        "Readers can trace why recovery work exists and what it is correcting.",
+        "All deliverables for P7-4 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_4.py -v"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "P7-4-c1: Readers can trace why recovery work exists and what it is correcting.",
+            "P7-4-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_4.py"
+    ],
+    "risks": [
+        "Tracker/doc cleanup lags behind implementation. Mitigation: Make governance updates part of each recovery phase rather than a final afterthought."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-29",
+    "test_completion": {
+        "passed": 2,
+        "total": 2,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_4.py -v",
+                "passed": 2,
+                "total": 2
+            }
+        ]
+    },
+    "review_score": 9,
+    "review_breakdown": {
+        "minor": 1,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/recovery-phase7",
+    "completion_notes": [
+        "Implementation: dev/reviews/recovery_status_2026_04.md (new, ~65 lines) cross-links recovery plan + drift_20_04.md + frontend_drift_history.md companion; recovery_plan_latex_contract.md gains a Recovery-status pointer back-link.",
+        "Tests: replaced both pytest.skip stubs in test_p7_4.py with content-based assertions (cross-link discovery, surface-location, plan back-reference, brevity ceiling).",
+        "Gate B minor (R1→R6 heading mismatch on status table) fixed in commit 4ec24a8.",
+        "Commits: 0251afb (implementation), 4ec24a8 (heading fix)."
+    ],
+    "github_issue": {
+        "phase_issue": 147,
+        "task_issue": 194,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

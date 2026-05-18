@@ -1,0 +1,80 @@
+{
+    "task_id": "P5-T1",
+    "title": "Rename emit stub + add emit_postprocess()",
+    "phase": "5",
+    "objective": "Rename emit_newton_driver_stub to emit_newton_driver (semantic clarity) and add emit_postprocess() that emits a save_results() function for displacement output.",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "242",
+        "264"
+    ],
+    "plan_assets": [],
+    "blocked_by": [
+        "P4-T2"
+    ],
+    "blocks": [
+        "P5-T2"
+    ],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py"
+    ],
+    "implementation_steps": [
+        "Read taichi_printer.py — locate emit_newton_driver_stub (line 609) and emit() chain (line 772)",
+        "Rename emit_newton_driver_stub → emit_newton_driver at definition and call site",
+        "Add emit_postprocess(ctx, bundle) function (~30 lines) that emits save_results():",
+        "  - Save displacement field as .npz (numpy, no external deps)",
+        "  - Optional meshio VTK export behind try/except ImportError",
+        "Do NOT yet wire emit_postprocess into emit() chain (that's P5-T3)"
+    ],
+    "deliverables": [
+        "taichi_printer.py — renamed function + new emit_postprocess (~30 lines added)"
+    ],
+    "acceptance_criteria": [
+        "emit_newton_driver_stub no longer exists (renamed to emit_newton_driver)",
+        "emit_postprocess(ctx, bundle) defined and callable",
+        "All pre-existing tests still pass (rename is transparent since emit() calls the same function)"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_taichi_printer.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_codegen.py -v",
+        "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -x -q"
+    ],
+    "test_plan": {
+        "tier": "regression",
+        "cases": [
+            "Existing emission tests pass with renamed function (covered — regression)",
+            "emit_postprocess produces save_results function in output (missing)",
+            "emit_newton_driver_stub no longer exists (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_emission_phase5.py",
+        "packages/mechdsl-core/tests/test_taichi_printer.py"
+    ],
+    "risks": [
+        "TaichiPrinter additions break golden files. Mitigation: The rename alone does not change output. emit_postprocess is not yet wired into emit() chain (deferred to P5-T3), so golden files remain unchanged at this step."
+    ],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

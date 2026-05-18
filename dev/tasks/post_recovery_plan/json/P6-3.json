@@ -1,0 +1,88 @@
+{
+    "task_id": "P6-3",
+    "title": "Robustify test_p7_4.py:92 \u2014 iterate notes filtering by plan-referenced filename",
+    "phase": "6",
+    "objective": "Replace the fragile notes[0] indexing in test_p7_4.py with iteration filtering by plan-referenced filename so reordering of notes does not break the test.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": [
+        "287",
+        "290"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Item 4: test_p7_4.py:92 notes[0] indexing \u2014 iterate notes for one referenced by plan",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 47,
+            "Plan_file_end_line": 47
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [],
+    "scope": [
+        "Edit packages/mechdsl-core/tests/test_p7_4.py around line 92",
+        "Replace notes[0] with filter on plan-referenced filename",
+        "Add regression-style fixture demonstrating order-independence"
+    ],
+    "implementation_steps": [
+        "Read test_p7_4.py around line 92",
+        "Replace indexing with next(n for n in notes if n.filename == expected)",
+        "Add fixture variant that reverses notes order to confirm order-independence"
+    ],
+    "deliverables": [
+        "Updated test_p7_4.py",
+        "Passing test under reversed-order fixture"
+    ],
+    "acceptance_criteria": [
+        "Test passes when order of files in notes is reversed",
+        "No notes[0] indexing remains in test_p7_4.py"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p6_3.py -v",
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_4.py -v"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "No notes[0] (missing)",
+            "Filter by plan-referenced filename (missing)",
+            "test_p7_4 still passes (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p6_3.py",
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_4.py"
+    ],
+    "risks": [],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 2,
+        "total": 2,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p6_3.py packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_4.py -v",
+                "passed": 4,
+                "total": 4
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-6",
+    "completion_notes": [
+        "test_p7_4.py replaces notes[0] with filtered list comprehension on plan-referenced filename.",
+        "Selection order-independent."
+    ],
+    "github_issue": {
+        "phase_issue": 205,
+        "task_issue": 236,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

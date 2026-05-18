@@ -1,0 +1,98 @@
+{
+    "task_id": "P7-5",
+    "title": "Archive or annotate superseded sprint/task documents so they are obviously historical.",
+    "phase": "7",
+    "objective": "Archive or annotate superseded sprint/task documents so they are obviously historical.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "362",
+        "362"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P7-5 (R6.5) in Phase 7 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 362,
+            "Plan_file_end_line": 362
+        }
+    ],
+    "blocked_by": [
+        "P5-1"
+    ],
+    "blocks": [],
+    "scope": [
+        "Archive or annotate superseded sprint/task documents so they are obviously historical.",
+        "Touched surfaces (per recovery plan): `dev/plans/`, `dev/tasks/`, `dev/tracking/`"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 7 (Verification, governance, and closure (R6)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Archive or annotate superseded sprint/task documents so they are obviously historical.",
+        "Touch only the listed surfaces: `dev/plans/`, `dev/tasks/`, `dev/tracking/`.",
+        "Verify: No historical plan appears to be the active execution source by accident.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `dev/plans/`",
+        "Changes to `dev/tasks/`",
+        "Changes to `dev/tracking/`"
+    ],
+    "acceptance_criteria": [
+        "No historical plan appears to be the active execution source by accident.",
+        "All deliverables for P7-5 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_5.py -v"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "P7-5-c1: No historical plan appears to be the active execution source by accident.",
+            "P7-5-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_5.py"
+    ],
+    "risks": [
+        "Tracker/doc cleanup lags behind implementation. Mitigation: Make governance updates part of each recovery phase rather than a final afterthought."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-29",
+    "test_completion": {
+        "passed": 2,
+        "total": 2,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_5.py -v",
+                "passed": 2,
+                "total": 2
+            }
+        ]
+    },
+    "review_score": 10,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/recovery-phase7",
+    "completion_notes": [
+        "Banner sweep: 8 dev/plans/*.md banner'd (april19merge, back2latex, mvp_pr3_round3, ph10_preq, sprint2, sprint3, sprint3_0, sprint3_phase1_Fail).",
+        "_SUPERSEDED.md markers: 8 dev/tasks/<plan>/ folders (MVP_plan, MVP_sprint1, PLAN-B, back2latex, mvp_pr3_round3, ph10_preq, sprint2, sprint3).",
+        "Trackers: 8 dev/tracking/tasks-tracker_*.md banner'd (matching plan set).",
+        "Active set untouched: recovery_plan_latex_contract.md + its task folder + tracker; P1-6 banner'd files (MVP_plan, MVP_sprint{1,2,3}) left as-is.",
+        "Allowlisted in test: STATUS_LEGEND.md, verification_matrix.md (vocabulary references, not plan execution sources).",
+        "PLAN-B _SUPERSEDED.md correctly distinguishes 'execution source superseded' from 'work landed in tree' (Phase 6 handoff preservation).",
+        "Banner format mirrors P1-6 convention: top-of-file > ⚠️ **Superseded** blockquote linking recovery plan + STATUS_LEGEND + frontend_drift_history.",
+        "Gate A 0 issues; Gate B score 10/10, 0 issues."
+    ],
+    "github_issue": {
+        "phase_issue": 147,
+        "task_issue": 195,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

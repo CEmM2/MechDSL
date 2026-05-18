@@ -1,0 +1,117 @@
+{
+    "task_id": "P5-5",
+    "title": "Split codegen verification into stable vs experimental suites.",
+    "phase": "5",
+    "objective": "Split codegen verification into stable vs experimental suites.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "280",
+        "280"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P5-5 (R4.5) in Phase 5 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 280,
+            "Plan_file_end_line": 280
+        }
+    ],
+    "blocked_by": [
+        "P5-1"
+    ],
+    "blocks": [],
+    "scope": [
+        "Split codegen verification into stable vs experimental suites.",
+        "Touched surfaces (per recovery plan): `packages/mechdsl-core/tests/test_codegen*.py`"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 5 (Re-anchor Taichi codegen as the stable path (R4)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Split codegen verification into stable vs experimental suites.",
+        "Touch only the listed surfaces: `packages/mechdsl-core/tests/test_codegen*.py`.",
+        "Verify: Stable suite passes independently of experimental backend status.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `packages/mechdsl-core/tests/test_codegen*.py`"
+    ],
+    "acceptance_criteria": [
+        "Stable suite passes independently of experimental backend status.",
+        "All deliverables for P5-5 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_codegen.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_cross_backend.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_mfem_printer.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_moose_printer.py -v",
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p5_5.py -v"
+    ],
+    "test_plan": {
+        "tier": "regression",
+        "cases": [
+            "P5-5-c1: Stable suite passes independently of experimental backend status.",
+            "P5-5-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_codegen.py",
+        "packages/mechdsl-core/tests/test_cross_backend.py",
+        "packages/mechdsl-core/tests/test_mfem_printer.py",
+        "packages/mechdsl-core/tests/test_moose_printer.py",
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p5_5.py"
+    ],
+    "risks": [
+        "Experimental scope keeps leaking back into the stable story. Mitigation: Enforce explicit stable/experimental labeling in docs, examples, and tests."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-28",
+    "test_completion": {
+        "passed": 42,
+        "total": 45,
+        "pass_rate": 0.93,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p5_5.py -v",
+                "passed": 3,
+                "total": 3
+            },
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_codegen.py -v",
+                "passed": 20,
+                "total": 20
+            },
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_mfem_printer.py -v",
+                "passed": 11,
+                "total": 11
+            },
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_moose_printer.py -v",
+                "passed": 8,
+                "total": 8
+            },
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_cross_backend.py -v",
+                "passed": 0,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 8.0,
+    "review_breakdown": {
+        "minor": 2,
+        "medium": 1,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved_with_notes",
+    "implementation_branch": "SOSOVSKI/recovery-phase5",
+    "completion_notes": [
+        "Registered stable_backend and experimental_backend pytest markers in pyproject.toml. Tagged 7 codegen test files via module-level pytestmark: stable_backend on test_codegen.py, test_taichi_printer.py, test_taichi_printer_ul.py, test_emission_phase5.py; experimental_backend on test_cross_backend.py, test_mfem_printer.py, test_moose_printer.py. Test bodies untouched (each diff +2 lines). Selection disjoint: 102 stable / 19 experimental / 0 intersection. test_p5_5.py 3 tests use AST inspection (no import side effects, handles list+singleton pytestmark forms). cross_backend tests skip cleanly when MFEM_DIR/MOOSE absent — confirms stable suite independence by structural marker selection. Gate B identified one medium (count miscount in reviewer summary — implementer cited 102, fresh collect-only confirms 102) and two minor (test_emission_verification.py + test_emit_lame_conversion.py untagged — spec scope test_codegen*.py glob excludes them; Plan-B candidate). Plan-B follow-up: monkey-patch mfem_printer import to raise + assert stable suite passes — hardens independence beyond structural reflection."
+    ],
+    "github_issue": {
+        "phase_issue": 145,
+        "task_issue": 179,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

@@ -1,0 +1,79 @@
+{
+    "task_id": "P1-6",
+    "title": "Formulation switching (directive + codegen dispatch)",
+    "phase": "1",
+    "objective": "Wire the `% mechanics formulation updated_lagrangian` directive from the frontend all the way through to the codegen, so a single LaTeX source (or programmatic `build_context` call) emits either a TL or UL generated solver file by flipping one directive.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["66", "70"],
+    "plan_assets": [
+        {
+            "asset_description": "B1.5 formulation switching description.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 66,
+            "Plan_file_end_line": 70
+        }
+    ],
+    "blocked_by": ["P1-3", "P1-4"],
+    "blocks": ["P1-7"],
+    "scope": [
+        "Remove the 'updated_lagrangian' supported-subset rejection in `mechdsl.frontend.build_context` (replaced with P1-1's ConfigurationIR path).",
+        "Update the P1-1 ConfigurationIR plumbing so ul and tl both flow through the same compile pipeline without branching at the frontend level.",
+        "Add a regression test that parses a LaTeX source with `% mechanics formulation updated_lagrangian` and compiles end-to-end to valid generated Python.",
+        "Update `test_frontend_build_context.py::test_formulation_updated_lagrangian_raises_unsupported_error` — this test is now obsolete and must be replaced with a success case."
+    ],
+    "implementation_steps": [
+        "Touch `mechdsl.frontend.build_context` to accept `'updated_lagrangian'` in the allowed-formulation set.",
+        "Touch `mechdsl.ir.mechanics_ir.ProblemIR.__post_init__` to do the same.",
+        "Update the parser directive tests to reflect the new accepted value.",
+        "Add a compile-to-source round-trip test that emits both TL and UL from matched inputs and asserts the two source bodies differ while both parse as valid Python."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/frontend/__init__.py`",
+        "`packages/mechdsl-core/src/mechdsl/ir/mechanics_ir.py`",
+        "`packages/mechdsl-core/tests/test_frontend_build_context.py` — rewritten UL test",
+        "`packages/mechdsl-core/tests/test_frontend_parser.py` — UL parser smoke test",
+        "`packages/mechdsl-core/tests/test_codegen.py::TestFormulationSwitching` — compile-from-LaTeX round-trip"
+    ],
+    "acceptance_criteria": [
+        "`parse('% mechanics formulation updated_lagrangian\\n...')` returns a valid context dict (no UnsupportedError).",
+        "The generator emits distinct source bodies for TL and UL on the same problem (both syntactically valid Python).",
+        "The frontend-subset-rejection test suite (P2 rejection analogues) still passes for dim/cell/material rejections — only the UL rejection was removed."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_formulation_switching.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_frontend_build_context.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_frontend_parser.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_symbolic_ir_interface.py::TestFormulationGuard -v",
+        "uv run pytest packages/mechdsl-core/tests/test_codegen.py -q"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "UL directive parses without raising",
+            "UL emits different source than TL on the same inputs",
+            "TL rejection behaviour unchanged for other non-MVP values"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_formulation_switching.py",
+        "packages/mechdsl-core/tests/test_frontend_build_context.py",
+        "packages/mechdsl-core/tests/test_frontend_parser.py",
+        "packages/mechdsl-core/tests/test_symbolic_ir_interface.py"
+    ],
+    "risks": [
+        "Removing a rejection that several tests assert against creates a wave of small test updates. Mitigation: update the test file as part of this task and audit that every remaining rejection test still exercises its intended Plan B phase guard."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-16",
+    "test_completion": {"passed": 1027, "total": 1031, "pass_rate": 99.6, "commands": [
+        {"command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -q", "passed": 1027, "total": 1031},
+        {"command": "uv run pytest packages/mechdsl-core/tests/test_formulation_switching.py -v", "passed": 4, "total": 4},
+        {"command": "uv run pytest test_frontend_build_context.py test_frontend_parser.py test_symbolic_ir_interface.py::TestFormulationGuard -v", "passed": 58, "total": 58}
+    ]},
+    "review_score": 10,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "main",
+    "completion_notes": ["ProblemIR.__post_init__ auto-infers Configuration from Formulation when not explicitly provided (None default). Wires the end-to-end LaTeX directive → codegen path for UL. Explicit mismatches still rejected. 4 integration tests prove the round-trip."],
+    "github_issue": {"phase_issue": 56, "task_issue": 71, "repo": "SOSOVSKI/MechDSL"}
+}

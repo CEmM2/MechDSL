@@ -1,0 +1,93 @@
+{
+    "task_id": "P7-1",
+    "title": "Split end-to-end tests into `from_latex` and `from_problem_ir` families.",
+    "phase": "7",
+    "objective": "Split end-to-end tests into `from_latex` and `from_problem_ir` families.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "358",
+        "358"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P7-1 (R6.1) in Phase 7 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 358,
+            "Plan_file_end_line": 358
+        }
+    ],
+    "blocked_by": [
+        "P5-1"
+    ],
+    "blocks": [],
+    "scope": [
+        "Split end-to-end tests into `from_latex` and `from_problem_ir` families.",
+        "Touched surfaces (per recovery plan): `packages/mechdsl-core/tests/**`"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 7 (Verification, governance, and closure (R6)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Split end-to-end tests into `from_latex` and `from_problem_ir` families.",
+        "Touch only the listed surfaces: `packages/mechdsl-core/tests/**`.",
+        "Verify: CI/test selection makes the boundary explicit.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `packages/mechdsl-core/tests/**`"
+    ],
+    "acceptance_criteria": [
+        "CI/test selection makes the boundary explicit.",
+        "All deliverables for P7-1 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_1.py -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "P7-1-c1: CI/test selection makes the boundary explicit.",
+            "P7-1-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_1.py"
+    ],
+    "risks": [
+        "No specific risk attributed in the plan; standard care applies."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-29",
+    "test_completion": {
+        "passed": 2,
+        "total": 2,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_1.py -v",
+                "passed": 2,
+                "total": 2
+            }
+        ]
+    },
+    "review_score": 10,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/recovery-phase7",
+    "completion_notes": [
+        "Registered two pytest markers (from_latex, from_problem_ir) in pyproject.toml [tool.pytest.ini_options].markers.",
+        "Applied pytestmark = pytest.mark.from_problem_ir to 5 top-level e2e modules: test_e2e.py, test_e2e_taichi.py, test_e2e_plastic.py, test_full_pipeline.py, test_compile_pipeline.py. Used list-form for files with prior e2e marker so e2e selection (53 tests) is preserved.",
+        "from_latex family intentionally empty at P7-1 close — first member lands in P7-2 (canonical LaTeX-to-solution acceptance test).",
+        "Tests: replaced both pytest.skip stubs with tomllib marker parser + subprocess pytest --collect-only invocation; verifies non-empty from_problem_ir family and registered from_latex selector.",
+        "Gate A 0 issues; Gate B score 10/10, 0 issues."
+    ],
+    "github_issue": {
+        "phase_issue": 147,
+        "task_issue": 191,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

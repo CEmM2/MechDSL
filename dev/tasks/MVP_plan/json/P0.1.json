@@ -1,0 +1,67 @@
+{
+    "task_id": "P0.1",
+    "title": "Workspace dependency lock alignment",
+    "phase": "0",
+    "objective": "Ensure all required runtime and dev dependencies from PLAN-A are present and pinned coherently in the root workspace metadata.",
+    "plan_file": "dev/plans/MVP_plan.md",
+    "plan_lines": ["9", "12"],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": ["P0.2", "P0.4", "P0.5"],
+    "scope": [
+        "Root pyproject.toml workspace metadata only",
+        "uv.lock coherence"
+    ],
+    "implementation_steps": [
+        "Audit root pyproject.toml against PLAN-A dependency list (sympy>=1.12, numpy>=1.24, opt-einsum>=3.3, taichi>=1.7, pyyaml>=6.0)",
+        "Verify mechdsl-core/pyproject.toml has all required runtime deps",
+        "Verify algo2code/pyproject.toml remains zero-dependency (stdlib only)",
+        "Run uv lock to regenerate lock file if needed",
+        "Run uv sync --frozen to verify clean environment resolution"
+    ],
+    "deliverables": [
+        "Updated pyproject.toml (if changes needed)",
+        "Coherent uv.lock",
+        "Passing uv sync --frozen"
+    ],
+    "acceptance_criteria": [
+        "uv sync --frozen succeeds in a clean environment",
+        "All PLAN-A runtime dependencies are present and version-pinned"
+    ],
+    "verification_commands": [
+        "uv sync --all-packages --all-groups --all-extras --frozen"
+    ],
+    "test_plan": {
+        "tier": "manual",
+        "cases": [
+            "uv sync --frozen succeeds without errors"
+        ]
+    },
+    "test_artifacts": [],
+    "risks": [
+        "Taichi version pinning may conflict with other deps — no plan mitigation provided"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

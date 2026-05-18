@@ -1,0 +1,93 @@
+{
+    "task_id": "P2-5",
+    "title": "Add a minimal frontend contract test suite that begins from LaTeX source.",
+    "phase": "2",
+    "objective": "Add a minimal frontend contract test suite that begins from LaTeX source.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "156",
+        "156"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P2-5 (R1.5) in Phase 2 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 156,
+            "Plan_file_end_line": 156
+        }
+    ],
+    "blocked_by": [
+        "P2-1",
+        "P2-3"
+    ],
+    "blocks": [
+        "P2-6"
+    ],
+    "scope": [
+        "Add a minimal frontend contract test suite that begins from LaTeX source.",
+        "Touched surfaces (per recovery plan): `packages/mechdsl-core/tests/test_frontend*.py`, e2e tests"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 2 (Restore the frontend as the canonical entry point (R1)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Add a minimal frontend contract test suite that begins from LaTeX source.",
+        "Touch only the listed surfaces: `packages/mechdsl-core/tests/test_frontend*.py`, e2e tests.",
+        "Verify: At least one test starts from LaTeX, reaches normalized frontend output, and validates the stable contract.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `packages/mechdsl-core/tests/test_frontend*.py`",
+        "Changes to e2e tests"
+    ],
+    "acceptance_criteria": [
+        "At least one test starts from LaTeX, reaches normalized frontend output, and validates the stable contract.",
+        "All deliverables for P2-5 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p2_5.py -v -m integration"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "P2-5-c1: At least one test starts from LaTeX, reaches normalized frontend output, and validates the stable contract.",
+            "P2-5-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p2_5.py"
+    ],
+    "risks": [
+        "Frontend work balloons into a parser rewrite. Mitigation: Recover a thin stable subset first; keep local adapter path while formalizing the fork boundary."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-27",
+    "test_completion": {
+        "passed": 6,
+        "total": 6,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p2_5.py -v",
+                "passed": 6,
+                "total": 6
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "First test suite that starts from LaTeX source and reaches both the normalized context dict and a complete ArtifactBundle. Covers SVK + J2 power-law via compile_latex; rejection branch covers unsupported dim (UnsupportedError + Plan B pointer) and malformed directive (ParseError). 6/6 pass."
+    ],
+    "github_issue": {
+        "phase_issue": 142,
+        "task_issue": 158,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MechDSL Sprint 1 — Diff Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: #fafbfc; --bg-hero: #f0f3f8;
+      --surface: #ffffff; --surface2: #f4f6f9;
+      --surface-elevated: #ffffff; --surface-recessed: #edf0f5;
+      --border: rgba(0,0,0,0.07); --border-bright: rgba(0,0,0,0.14);
+      --text: #1b2536; --text-dim: #556378; --text-muted: #8694a8;
+      --added: #16a34a; --added-bg: rgba(22,163,74,0.07); --added-border: rgba(22,163,74,0.28);
+      --removed: #dc2626; --removed-bg: rgba(220,38,38,0.06); --removed-border: rgba(220,38,38,0.22);
+      --modified: #ca8a04; --modified-bg: rgba(202,138,4,0.08); --modified-border: rgba(202,138,4,0.28);
+      --info: #2563eb; --info-bg: rgba(37,99,235,0.07); --info-border: rgba(37,99,235,0.22);
+      --accent: #7c3aed; --accent-bg: rgba(124,58,237,0.07); --accent-border: rgba(124,58,237,0.22);
+      --radius: 10px; --radius-sm: 6px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06); --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117; --bg-hero: #111827;
+        --surface: #161b22; --surface2: #1c2333;
+        --surface-elevated: #21283b; --surface-recessed: #0d1117;
+        --border: rgba(255,255,255,0.06); --border-bright: rgba(255,255,255,0.12);
+        --text: #e6edf3; --text-dim: #8b949e; --text-muted: #6e7681;
+        --added: #3fb950; --added-bg: rgba(63,185,80,0.12); --added-border: rgba(63,185,80,0.3);
+        --removed: #f85149; --removed-bg: rgba(248,81,73,0.1); --removed-border: rgba(248,81,73,0.25);
+        --modified: #e3b341; --modified-bg: rgba(227,179,65,0.12); --modified-border: rgba(227,179,65,0.28);
+        --info: #58a6ff; --info-bg: rgba(88,166,255,0.12); --info-border: rgba(88,166,255,0.25);
+        --accent: #bc8cff; --accent-bg: rgba(188,140,255,0.12); --accent-border: rgba(188,140,255,0.25);
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.3); --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+      }
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; font-size: 15px; }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.6; }
+    code, pre { font-family: var(--font-mono); }
+    nav.side-nav { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: var(--surface); border-right: 1px solid var(--border); padding: 24px 0; overflow-y: auto; z-index: 100; font-size: 0.82rem; }
+    nav.side-nav .logo { padding: 0 16px 20px; font-weight: 800; font-size: 0.95rem; color: var(--accent); letter-spacing: -0.02em; }
+    nav.side-nav a { display: block; padding: 6px 16px; color: var(--text-dim); text-decoration: none; transition: all 0.15s; border-left: 3px solid transparent; }
+    nav.side-nav a:hover { color: var(--text); background: var(--surface2); }
+    nav.side-nav a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-bg); font-weight: 600; }
+    main { margin-left: 220px; }
+    section { padding: 48px 48px 56px; border-bottom: 1px solid var(--border); }
+    section:last-child { border-bottom: none; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .hero { background: var(--bg-hero); padding: 64px 48px 56px; }
+    .hero h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .hero .subtitle { font-size: 1.05rem; color: var(--text-dim); margin-bottom: 24px; max-width: 700px; }
+    .hero .insight { font-size: 1.1rem; line-height: 1.7; padding: 20px 24px; background: var(--accent-bg); border-left: 4px solid var(--accent); border-radius: var(--radius-sm); margin-bottom: 20px; }
+    .hero .scope { display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.88rem; color: var(--text-dim); }
+    .hero .scope-item { display: flex; align-items: center; gap: 6px; }
+    .hero .scope-item strong { color: var(--text); font-weight: 700; font-size: 1.15rem; }
+    h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 20px; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 12px; }
+    h2 .sn { color: var(--text-muted); font-weight: 400; margin-right: 6px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px; text-align: center; box-shadow: var(--shadow-sm); }
+    .kpi-card .value { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em; }
+    .kpi-card .label { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi-card.green .value { color: var(--added); }
+    .kpi-card.red .value { color: var(--removed); }
+    .kpi-card.amber .value { color: var(--modified); }
+    .kpi-card.blue .value { color: var(--info); }
+    .kpi-card.purple .value { color: var(--accent); }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; }
+    .badge.green { background: var(--added-bg); color: var(--added); border: 1px solid var(--added-border); }
+    .badge.red { background: var(--removed-bg); color: var(--removed); border: 1px solid var(--removed-border); }
+    .badge.amber { background: var(--modified-bg); color: var(--modified); border: 1px solid var(--modified-border); }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; box-shadow: var(--shadow-sm); min-width: 0; overflow-wrap: break-word; }
+    .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .panel.before { border-left: 4px solid var(--removed); }
+    .panel.after { border-left: 4px solid var(--added); }
+    .panel.before h3 { color: var(--removed); }
+    .panel.after h3 { color: var(--added); }
+    .rc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+    .rc.good { border-left: 4px solid var(--added); }
+    .rc.bad { border-left: 4px solid var(--removed); }
+    .rc.ugly { border-left: 4px solid var(--modified); }
+    .rc.question { border-left: 4px solid var(--info); }
+    .rc .ct { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
+    .rc.good .ct { color: var(--added); }
+    .rc.bad .ct { color: var(--removed); }
+    .rc.ugly .ct { color: var(--modified); }
+    .rc.question .ct { color: var(--info); }
+    .rc p, .rc li { font-size: 0.88rem; color: var(--text-dim); }
+    .rc code { font-size: 0.82rem; background: var(--surface2); padding: 1px 5px; border-radius: 3px; }
+    .dc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+    .dc.high { border-left: 4px solid var(--added); }
+    .dc.medium { border-left: 4px solid var(--info); }
+    .dc .dt { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+    .dc .cb { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+    .dc.high .cb { color: var(--added); }
+    .dc.medium .cb { color: var(--info); }
+    .dc p, .dc li { font-size: 0.86rem; color: var(--text-dim); margin-top: 4px; }
+    .dc strong { color: var(--text); }
+    .ft { font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.9; }
+    .ft .f { padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
+    .ft .f .tag { font-size: 0.68rem; font-weight: 600; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .ft .f .tag.new { background: var(--added-bg); color: var(--added); }
+    .ft .f .tag.mod { background: var(--modified-bg); color: var(--modified); }
+    .ft .f .st { margin-left: auto; color: var(--text-muted); font-size: 0.72rem; }
+    .ft .f .st .plus { color: var(--added); }
+    .ft .f .st .minus { color: var(--removed); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-weight: 600; color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; background: var(--surface2); }
+    .mw { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin: 16px 0; position: relative; overflow: hidden; box-shadow: var(--shadow-sm); }
+    .mc { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 5; }
+    .mc button { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .mc button:hover { background: var(--surface2); color: var(--text); }
+    .mi { overflow: auto; cursor: grab; min-height: 200px; }
+    .mi:active { cursor: grabbing; }
+    .mi svg { transition: transform 0.15s; transform-origin: 0 0; }
+    details { margin-bottom: 12px; }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.92rem; padding: 8px 0; color: var(--text-dim); user-select: none; }
+    details summary:hover { color: var(--text); }
+    details[open] summary { margin-bottom: 8px; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 4px; font-size: 0.88rem; }
+    @media (max-width: 900px) { nav.side-nav { display: none; } main { margin-left: 0; } section { padding: 32px 20px; } .hero { padding: 40px 20px; } .panel-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<nav class="side-nav">
+  <div class="logo">MechDSL Sprint 1</div>
+  <a href="#executive" class="active">Executive Summary</a>
+  <a href="#kpi">KPI Dashboard</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#features">Feature Comparisons</a>
+  <a href="#flow">Pipeline Flow</a>
+  <a href="#filemap">File Map</a>
+  <a href="#tests">Test Coverage</a>
+  <a href="#review">Code Review</a>
+  <a href="#decisions">Decision Log</a>
+  <a href="#reentry">Re-entry Context</a>
+</nav>
+<main>
+
+<section class="hero" id="executive">
+<div class="container">
+  <h1>Sprint 1: Core Runtime Loop</h1>
+  <p class="subtitle">Branch <code>sprint1_phase-6</code> vs <code>main</code> &mdash; 6 phases, 18 tasks, all complete</p>
+  <div class="insight">
+    <strong>The core insight:</strong> MechDSL could parse LaTeX and emit Taichi code, but could never <em>run</em> it. This sprint closes the &ldquo;can it actually run?&rdquo; gap. The pipeline now flows from <code>ProblemIR</code> through <code>compile()</code> to a self-contained <code>.py</code> file whose Taichi kernels produce numerically correct displacement fields matching handwritten reference solvers to &lt; 10<sup>&minus;10</sup>. The six layers (symbolic &rarr; IR &rarr; lowering &rarr; codegen) are no longer isolated components &mdash; they are a working compiler.
+  </div>
+  <div class="scope">
+    <div class="scope-item"><strong>15</strong> files modified</div>
+    <div class="scope-item"><strong>7</strong> new test files</div>
+    <div class="scope-item"><strong>+807</strong> lines added</div>
+    <div class="scope-item"><strong>&minus;118</strong> lines removed</div>
+    <div class="scope-item"><strong>55</strong> new tests</div>
+    <div class="scope-item"><strong>6</strong> phases</div>
+  </div>
+</div>
+</section>
+
+<section id="kpi">
+<div class="container">
+  <h2><span class="sn">02</span> KPI Dashboard</h2>
+  <div class="kpi-grid">
+    <div class="kpi-card green"><div class="value">+807</div><div class="label">Lines Added</div></div>
+    <div class="kpi-card red"><div class="value">&minus;118</div><div class="label">Lines Removed</div></div>
+    <div class="kpi-card purple"><div class="value">15</div><div class="label">Files Changed</div></div>
+    <div class="kpi-card blue"><div class="value">7</div><div class="label">New Test Files</div></div>
+    <div class="kpi-card green"><div class="value">55</div><div class="label">New Tests</div></div>
+    <div class="kpi-card green"><div class="value">740</div><div class="label">Total Passing</div></div>
+    <div class="kpi-card purple"><div class="value">4</div><div class="label">New Modules</div></div>
+    <div class="kpi-card amber"><div class="value">1</div><div class="label">Bug Fixed (JIT)</div></div>
+  </div>
+  <h3>Housekeeping</h3>
+  <table>
+    <tr><th>Check</th><th>Status</th><th>Notes</th></tr>
+    <tr><td>CHANGELOG.md</td><td><span class="badge amber">NEEDS UPDATE</span></td><td>Sprint 1 work not yet documented. Current entry covers PR #3 (prior work).</td></tr>
+    <tr><td>Docs</td><td><span class="badge green">OK</span></td><td>CLAUDE.md is current. Design docs are authoritative (not modified).</td></tr>
+    <tr><td>CI</td><td><span class="badge green">UPDATED</span></td><td>New <code>slow-tests</code> job added with path filtering.</td></tr>
+    <tr><td>Golden Files</td><td><span class="badge green">REGENERATED</span></td><td>Both elastic (353&rarr;414) and plastic (424&rarr;488) golden files updated.</td></tr>
+  </table>
+</div>
+</section>
+
+<section id="architecture">
+<div class="container">
+  <h2><span class="sn">03</span> Module Architecture</h2>
+  <div class="mw" id="arch-diagram">
+    <div class="mc">
+      <button onclick="zm('arch-diagram',1.2)" title="Zoom in">+</button>
+      <button onclick="zm('arch-diagram',0.8)" title="Zoom out">&minus;</button>
+      <button onclick="rz('arch-diagram')" title="Reset">&#x21bb;</button>
+      <button onclick="ot('arch-diagram')" title="Expand">&#x26F6;</button>
+    </div>
+    <div class="mi">
+      <pre class="mermaid">
+graph TD
+  subgraph L2["Layer 2 — Symbolic"]
+    ABC["ConstitutiveModel ABC\n97 lines NEW"]
+    SVK["SVKModel +28"]
+    J2M["J2Model +39"]
+    ABC --> SVK
+    ABC --> J2M
+  end
+  subgraph L4["Layer 4 — Lowering"]
+    LOC["fe_localise.py\n262→166 lines"]
+    EIN["einsum_extract.py\n107 lines NEW"]
+    LOC --> EIN
+  end
+  subgraph L5["Layer 5 — Codegen"]
+    CMP["compile() 42 lines NEW"]
+    TP["TaichiPrinter\n774→878 lines"]
+    CMP --> TP
+  end
+  subgraph SOL["Solver"]
+    NR["newton_solve()\n203 lines NEW"]
+  end
+  subgraph CIS["CI"]
+    CIJ["slow-tests job\n+30 lines NEW"]
+  end
+  SVK --> LOC
+  J2M --> LOC
+  EIN --> CMP
+  NR -.-> TP
+  style ABC fill:#dcfce7,stroke:#16a34a,color:#14532d
+  style EIN fill:#dcfce7,stroke:#16a34a,color:#14532d
+  style CMP fill:#dcfce7,stroke:#16a34a,color:#14532d
+  style NR fill:#dcfce7,stroke:#16a34a,color:#14532d
+  style CIJ fill:#dcfce7,stroke:#16a34a,color:#14532d
+  style LOC fill:#fef3c7,stroke:#ca8a04,color:#78350f
+  style TP fill:#fef3c7,stroke:#ca8a04,color:#78350f
+  style SVK fill:#fef3c7,stroke:#ca8a04,color:#78350f
+  style J2M fill:#fef3c7,stroke:#ca8a04,color:#78350f
+      </pre>
+    </div>
+  </div>
+  <p style="font-size:0.82rem;color:var(--text-muted);margin-top:8px;">
+    <span style="display:inline-block;width:12px;height:12px;background:#dcfce7;border:1px solid #16a34a;border-radius:2px;vertical-align:middle;margin-right:4px;"></span> New
+    <span style="display:inline-block;width:12px;height:12px;background:#fef3c7;border:1px solid #ca8a04;border-radius:2px;vertical-align:middle;margin:0 4px 0 12px;"></span> Modified
+  </p>
+</div>
+</section>
+
+<section id="features">
+<div class="container">
+  <h2><span class="sn">04</span> Major Feature Comparisons</h2>
+  <h3>Constitutive Model Interface</h3>
+  <div class="panel-grid">
+    <div class="panel before"><h3>Before</h3><p>SVK and J2 were standalone modules with no shared interface. <code>fe_localise.py</code> used model-specific string branching.</p><code style="display:block;margin-top:8px;font-size:0.82rem;padding:8px;background:var(--surface2);border-radius:4px;">constitutive.py: 1 line (docstring stub)<br>svk.py: standalone functions<br>j2_power_law.py: standalone functions</code></div>
+    <div class="panel after"><h3>After</h3><p><code>ConstitutiveModel</code> ABC with 5 abstract methods + <code>**state</code> kwargs pattern. Both models now inherit.</p><code style="display:block;margin-top:8px;font-size:0.82rem;padding:8px;background:var(--surface2);border-radius:4px;">ConstitutiveModel ABC (97 lines)<br>SVKModel(ConstitutiveModel) +28 lines<br>J2Model(ConstitutiveModel) +39 lines<br>state_variables: () for SVK, ("alpha",) for J2</code></div>
+  </div>
+  <h3>Einsum String Extraction</h3>
+  <div class="panel-grid">
+    <div class="panel before"><h3>Before</h3><p><code>einsum_extract.py</code> was a 1-line stub. Einsum specs were hardcoded inside <code>fe_localise.py</code> (~100 lines of private helper).</p></div>
+    <div class="panel after"><h3>After</h3><p>Canonical <code>extract_einsum_specs()</code> function (107 lines). Returns dict with keys: <code>strain_displacement</code>, <code>internal_force</code>, <code>tangent_matvec</code>. The 100 lines in <code>fe_localise.py</code> were deleted (&minus;106 lines net).</p></div>
+  </div>
+  <h3>Newton-Raphson Driver</h3>
+  <div class="panel-grid">
+    <div class="panel before"><h3>Before</h3><p><code>newton.py</code> was a 1-line stub. No Newton solver existed in the pipeline.</p></div>
+    <div class="panel after"><h3>After</h3><p>Full callback-based Newton driver (203 lines) with:</p><ul style="margin-top:6px;"><li>Dirichlet BC enforcement (algebraic elimination)</li><li>History field commit/rollback for plasticity</li><li>u snapshot/restore on failure for load stepping retry</li><li><code>NewtonConfig</code> + <code>NewtonResult</code> dataclasses</li></ul></div>
+  </div>
+  <h3>Top-Level compile() + TaichiPrinter</h3>
+  <div class="panel-grid">
+    <div class="panel before"><h3>Before</h3><p><code>codegen/__init__.py</code> was a 1-line stub. <code>TaichiPrinter</code> (774 lines) emitted a newton driver stub. No postprocess or main block.</p></div>
+    <div class="panel after"><h3>After</h3><p><code>compile(problem_ir) &rarr; ArtifactBundle</code> (42 lines). <code>TaichiPrinter</code> (878 lines) emits real newton driver, <code>save_results()</code> with optional VTK, and <code>if __name__</code> block. Fixed <code>&minus;&gt; None</code> on <code>@ti.kernel</code> for Taichi 1.7.4 compat.</p></div>
+  </div>
+</div>
+</section>
+
+<section id="flow">
+<div class="container">
+  <h2><span class="sn">05</span> Pipeline Flow</h2>
+  <div class="mw" id="flow-diagram">
+    <div class="mc">
+      <button onclick="zm('flow-diagram',1.2)">+</button>
+      <button onclick="zm('flow-diagram',0.8)">&minus;</button>
+      <button onclick="rz('flow-diagram')">&#x21bb;</button>
+      <button onclick="ot('flow-diagram')">&#x26F6;</button>
+    </div>
+    <div class="mi">
+      <pre class="mermaid">
+sequenceDiagram
+    participant User
+    participant Compile as compile()
+    participant Localise as fe_localise
+    participant Einsum as einsum_extract
+    participant Optimizer as einsum_optimizer
+    participant Printer as TaichiPrinter
+    participant Taichi as Taichi JIT
+    User->>Compile: ProblemIR (SVK, Hex8, TL)
+    Compile->>Localise: localise_and_optimize()
+    Localise->>Einsum: extract_einsum_specs()
+    Einsum-->>Localise: {strain_disp, int_force, tangent}
+    Localise->>Optimizer: plan_contraction()
+    Optimizer-->>Localise: contraction plans
+    Localise-->>Compile: (loc_result, plans)
+    Compile->>Compile: ArtifactBundle.from_pipeline()
+    Compile->>Printer: emit(bundle)
+    Printer-->>Compile: source code (.py)
+    Compile-->>User: ArtifactBundle
+    Note over User,Taichi: E2E Test Flow (Phase 6)
+    User->>Taichi: importlib.exec_module(gen.py)
+    Taichi->>Taichi: JIT compile @ti.kernel
+    User->>Taichi: compute_internal_force(lam, mu)
+    User->>Taichi: tangent_matvec(v, lam, mu)
+    Taichi-->>User: displacement field
+    User->>User: assert max|u_gen - u_ref| < 1e-10
+      </pre>
+    </div>
+  </div>
+</div>
+</section>
+
+<section id="filemap">
+<div class="container">
+  <h2><span class="sn">06</span> File Map</h2>
+  <details><summary>Source files (15 modified)</summary>
+    <div class="ft">
+      <div class="f"><span class="tag mod">MOD</span> .github/workflows/ci.yml <span class="st"><span class="plus">+30</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/__init__.py <span class="st"><span class="plus">+4</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/codegen/__init__.py <span class="st">1&rarr;42 <span class="plus">+41</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/codegen/taichi_printer.py <span class="st">774&rarr;878 <span class="plus">+114</span> <span class="minus">-10</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/lowering/__init__.py <span class="st"><span class="plus">+2</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/lowering/einsum_extract.py <span class="st">1&rarr;107 <span class="plus">+108</span> <span class="minus">-1</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/lowering/fe_localise.py <span class="st">262&rarr;166 <span class="plus">+10</span> <span class="minus">-106</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/solver/__init__.py <span class="st"><span class="plus">+4</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/solver/newton.py <span class="st">1&rarr;203 <span class="plus">+204</span> <span class="minus">-1</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/symbolic/constitutive.py <span class="st">1&rarr;97 <span class="plus">+98</span> <span class="minus">-1</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/symbolic/models/j2_power_law.py <span class="st"><span class="plus">+39</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> mechdsl/symbolic/models/svk.py <span class="st"><span class="plus">+28</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> tests/generate_golden.py <span class="st"><span class="plus">+4</span> <span class="minus">-4</span></span></div>
+      <div class="f"><span class="tag mod">MOD</span> tests/golden/generated_elastic.py.golden <span class="st">353&rarr;414</span></div>
+      <div class="f"><span class="tag mod">MOD</span> tests/golden/generated_plastic.py.golden <span class="st">424&rarr;488</span></div>
+    </div>
+  </details>
+  <details><summary>New test files (7 untracked &mdash; 1,378 lines, 55 tests)</summary>
+    <div class="ft">
+      <div class="f"><span class="tag new">NEW</span> tests/test_constitutive_abc.py <span class="st">271 lines &bull; 16 tests</span></div>
+      <div class="f"><span class="tag new">NEW</span> tests/test_localise_model_validation.py <span class="st">72 lines &bull; 3 tests</span></div>
+      <div class="f"><span class="tag new">NEW</span> tests/test_einsum_extract.py <span class="st">108 lines &bull; 9 tests</span></div>
+      <div class="f"><span class="tag new">NEW</span> tests/test_newton.py <span class="st">426 lines &bull; 10 tests</span></div>
+      <div class="f"><span class="tag new">NEW</span> tests/test_compile_pipeline.py <span class="st">127 lines &bull; 9 tests</span></div>
+      <div class="f"><span class="tag new">NEW</span> tests/test_emission_phase5.py <span class="st">97 lines &bull; 6 tests</span></div>
+      <div class="f"><span class="tag new">NEW</span> tests/test_e2e_taichi.py <span class="st">277 lines &bull; 2 tests (slow)</span></div>
+    </div>
+  </details>
+</div>
+</section>
+
+<section id="tests">
+<div class="container">
+  <h2><span class="sn">07</span> Test Coverage</h2>
+  <div class="panel-grid">
+    <div class="panel before"><h3>Before (main)</h3><ul><li><strong>33</strong> test files</li><li><strong>687</strong> fast tests passing</li><li>No tests for: newton_solve, einsum extraction, constitutive ABC, compile pipeline, postprocess/main emission</li></ul></div>
+    <div class="panel after"><h3>After (sprint1_phase-6)</h3><ul><li><strong>40</strong> test files (+7)</li><li><strong>740</strong> fast tests passing (+53)</li><li><strong>2</strong> new slow E2E tests (Taichi JIT)</li><li>Full coverage for all new modules</li></ul></div>
+  </div>
+  <table>
+    <tr><th>Test File</th><th>Tests</th><th>Phase</th><th>Covers</th></tr>
+    <tr><td><code>test_constitutive_abc.py</code></td><td>16</td><td>1</td><td>ABC interface, SVK/J2 wrappers, state_variables</td></tr>
+    <tr><td><code>test_localise_model_validation.py</code></td><td>3</td><td>1</td><td>Model string validation in fe_localise</td></tr>
+    <tr><td><code>test_einsum_extract.py</code></td><td>9</td><td>2</td><td>Einsum strings, shapes, unsupported element errors</td></tr>
+    <tr><td><code>test_newton.py</code></td><td>10</td><td>3</td><td>Convergence, BC enforcement, history, load stepping</td></tr>
+    <tr><td><code>test_compile_pipeline.py</code></td><td>9</td><td>4</td><td>compile() function, ArtifactBundle, AST validity</td></tr>
+    <tr><td><code>test_emission_phase5.py</code></td><td>6</td><td>5</td><td>emit_postprocess, emit_main, emit chain wiring</td></tr>
+    <tr><td><code>test_e2e_taichi.py</code></td><td>2</td><td>6</td><td>Full E2E: compile &rarr; JIT &rarr; Newton &rarr; ref match</td></tr>
+  </table>
+</div>
+</section>
+
+<section id="review">
+<div class="container">
+  <h2><span class="sn">08</span> Code Review</h2>
+  <div class="rc good"><div class="ct">GOOD: Clean ABC design with **state kwargs</div><p>The <code>ConstitutiveModel</code> ABC uses <code>**state: float</code> kwargs so elastic models can ignore state and plastic models can pass <code>alpha=...</code>. Elegant and avoids forcing dummy params on elastic models. <em>constitutive.py:34-36</em></p></div>
+  <div class="rc good"><div class="ct">GOOD: Newton u-snapshot for load stepping safety</div><p>Snapshots <code>u</code> at entry and restores on failure, preventing corrupted state when load stepping retries. Caught by Codex review. <em>newton.py:~150-155</em></p></div>
+  <div class="rc good"><div class="ct">GOOD: Extracted einsum specs to own module</div><p>Moving from a private helper in <code>fe_localise.py</code> to <code>einsum_extract.py</code> is a clean separation. &minus;106/+107 net-zero but much better organized.</p></div>
+  <div class="rc good"><div class="ct">GOOD: E2E test validates actual Taichi JIT execution</div><p>Doesn't just check syntax &mdash; actually runs generated Taichi kernels and compares numerical output to &lt;10<sup>&minus;10</sup>. Highest-value regression guard.</p></div>
+  <div class="rc bad"><div class="ct">BAD: Generated newton_solve lacks BC enforcement</div><p>The emitted <code>newton_solve()</code> doesn't enforce Dirichlet BCs. The E2E test works around this by wrapping kernels externally. The generated solver is not truly self-contained. Documented as a known gap for Sprint 2.</p></div>
+  <div class="rc bad"><div class="ct">BAD: emit_main produces lam=0, mu=0 for E/nu materials</div><p>When <code>ProblemIR</code> stores E/nu, the emitted main block sets <code>lam_val = 0</code>, <code>mu_val = 0</code>. Needs E&rarr;lam conversion at emission time.</p></div>
+  <div class="rc ugly"><div class="ct">UGLY: CHANGELOG.md not updated</div><p>Sprint 1 work (+807 lines, 4 new modules, 55 new tests) is not documented in the changelog. Should be updated before the PR.</p></div>
+  <div class="rc ugly"><div class="ct">UGLY: FD tangent precision ceiling (~4e-9)</div><p>Generated tangent uses central FD with h=1e-7. For small problems the achievable residual is ~4e-9, forcing the convergence test to use <code>tol=1e-6</code> instead of spec's 1e-8. Analytical tangent would fix this.</p></div>
+  <div class="rc question"><div class="ct">QUESTION: Are all changes intended for a single commit?</div><p>15 modified + 7 new files span 6 phases with distinct concerns. Consider whether this should be one commit or multiple. Currently all uncommitted working tree changes.</p></div>
+</div>
+</section>
+
+<section id="decisions">
+<div class="container">
+  <h2><span class="sn">09</span> Decision Log</h2>
+  <div class="dc high"><div class="dt">Callback-based Newton driver instead of emitting the loop</div><span class="cb">HIGH CONFIDENCE &mdash; sourced from conversation</span><p><strong>Rationale:</strong> Works at numpy level with callbacks, usable with both reference solvers and generated Taichi kernels. Emitting a full Newton loop with BC enforcement was too complex for MVP.</p><p><strong>Rejected:</strong> Fully emitted Newton loop (would require emitting BC enforcement, history management, CG calls in Taichi).</p></div>
+  <div class="dc high"><div class="dt">**state kwargs pattern for constitutive interface</div><span class="cb">HIGH CONFIDENCE &mdash; sourced from conversation</span><p><strong>Rationale:</strong> Elastic models ignore state; J2 uses <code>state.get("alpha", 0.0)</code>. Avoids forcing a fixed state signature on models with different internal variable counts.</p></div>
+  <div class="dc high"><div class="dt">Hybrid E2E test: generated Taichi kernels + external BC enforcement</div><span class="cb">HIGH CONFIDENCE &mdash; sourced from conversation</span><p><strong>Rationale:</strong> Generated newton_solve lacks BCs. Test wraps Taichi kernels with numpy-level BC enforcement. Still validates JIT compilation and numerical correctness.</p><p><strong>Rejected:</strong> Running emitted __main__ (has lam=0 bug), fixing emitter BCs (scope creep for Phase 6).</p></div>
+  <div class="dc medium"><div class="dt">Removed -&gt; None from @ti.kernel signatures</div><span class="cb">MEDIUM &mdash; inferred from Taichi 1.7.4 error</span><p><strong>Rationale:</strong> Taichi 1.7.4 throws TypeError on kernel return type annotations. Plain Python functions keep the annotation. May be version-specific.</p></div>
+  <div class="dc medium"><div class="dt">Einsum extraction moved from fe_localise to own module</div><span class="cb">MEDIUM &mdash; inferred from code structure</span><p><strong>Rationale:</strong> Makes extraction independently testable. Keeps fe_localise focused on localisation. Net-zero lines, better modularity.</p></div>
+</div>
+</section>
+
+<section id="reentry">
+<div class="container">
+  <h2><span class="sn">10</span> Re-entry Context</h2>
+  <details open><summary>Key Invariants</summary><ul>
+    <li><code>newton_solve()</code> expects <code>tangent_matvec</code> callback to NOT apply BCs &mdash; <code>_bc_matvec</code> wraps it internally.</li>
+    <li>The <code>u</code> array is modified <strong>in place</strong>. On failure, restored from <code>u_snapshot</code>.</li>
+    <li>Golden files must be regenerated after any change to <code>taichi_printer.py</code>.</li>
+    <li><code>generate_golden.py</code> params must match <code>test_codegen.py</code> exactly.</li>
+  </ul></details>
+  <details open><summary>Non-obvious Coupling</summary><ul>
+    <li><code>einsum_extract.py</code> imports <code>EinsumSpec</code> from <code>fe_localise.py</code> &mdash; circular dependency risk.</li>
+    <li>Generated field names (<code>x_ref</code>, <code>u</code>, <code>f_int</code>, <code>f_ext</code>, <code>elem_nodes</code>) are hardcoded in both <code>taichi_printer.py</code> AND <code>test_e2e_taichi.py</code>.</li>
+  </ul></details>
+  <details open><summary>Gotchas</summary><ul>
+    <li><strong>Taichi version:</strong> The <code>&minus;&gt; None</code> fix is specific to 1.7.4. Upgrade may change behavior.</li>
+    <li><strong>E2E re-init:</strong> Each test imports a fresh module calling <code>ti.init()</code>. Could be fragile with GPU backends.</li>
+    <li><strong>FD_EPS = 1e-7</strong> is baked into golden files. Changing step size requires full regeneration.</li>
+  </ul></details>
+  <details open><summary>Don't Forget</summary><ul>
+    <li>Update <code>CHANGELOG.md</code> before merging.</li>
+    <li>7 new test files + <code>dev/tasks/</code> are <strong>untracked</strong> &mdash; need <code>git add</code>.</li>
+    <li>Sprint 2: emit BC enforcement into generated Newton driver.</li>
+    <li>Fix <code>emit_main</code> lam=0/mu=0 bug (add E&rarr;lam conversion).</li>
+  </ul></details>
+</div>
+</section>
+
+</main>
+<script>
+mermaid.initialize({startOnLoad:true,theme:'neutral',themeVariables:{fontFamily:'Inter,system-ui,sans-serif',fontSize:'13px'},flowchart:{useMaxWidth:true,htmlLabels:true,curve:'basis'},sequence:{useMaxWidth:true,actorFontSize:'13px',noteFontSize:'12px'}});
+const zs={};
+function gs(id){if(!zs[id])zs[id]={s:1};return zs[id];}
+function az(id){const s=gs(id);const svg=document.querySelector('#'+id+' .mi svg');if(svg)svg.style.transform='scale('+s.s+')';}
+function zm(id,f){const s=gs(id);s.s=Math.max(0.3,Math.min(3,s.s*f));az(id);}
+function rz(id){zs[id]={s:1};az(id);}
+function ot(id){const svg=document.querySelector('#'+id+' .mi svg');if(!svg)return;const b=new Blob([svg.outerHTML],{type:'image/svg+xml'});window.open(URL.createObjectURL(b),'_blank');}
+document.querySelectorAll('.mi').forEach(el=>{el.addEventListener('wheel',e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();const w=el.closest('.mw');if(w)zm(w.id,e.deltaY<0?1.1:0.9);}},{passive:false});});
+const nl=document.querySelectorAll('nav.side-nav a');const ss=document.querySelectorAll('section[id]');
+const obs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){nl.forEach(l=>l.classList.remove('active'));const link=document.querySelector('nav.side-nav a[href="#'+entry.target.id+'"]');if(link)link.classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+ss.forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

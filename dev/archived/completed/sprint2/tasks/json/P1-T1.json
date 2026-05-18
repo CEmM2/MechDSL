@@ -1,0 +1,59 @@
+{
+    "task_id": "P1-T1",
+    "title": "Fix emit_main E/nu → Lamé conversion",
+    "phase": "1",
+    "objective": "Fix the bug in emit_main() where params.get('lam', 0.0) returns 0.0 when ProblemIR stores E/nu instead of pre-computed Lamé parameters. Add conversion logic: lam = E*nu/((1+nu)*(1-2*nu)), mu = E/(2*(1+nu)) when lam/mu are absent.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["21", "25"],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": ["P1-T5", "P1-T6"],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py"
+    ],
+    "implementation_steps": [
+        "Read taichi_printer.py emit_main() function, locate line 810 where params.get('lam', 0.0) is used",
+        "Add logic: if 'lam' not in params but 'E' and 'nu' are, compute lam and mu from E/nu",
+        "Handle both elastic (SVK) and plastic (J2) parameter sets — J2 stores E/nu plus sigma_y0/K/n",
+        "Verify the fix handles all MaterialSpec configurations used in tests"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py — fixed emit_main() with E/nu → Lamé conversion"
+    ],
+    "acceptance_criteria": [
+        "emit_main() produces correct lam_val and mu_val when ProblemIR has E=200e3, nu=0.3",
+        "emit_main() still works when ProblemIR has pre-computed lam/mu directly",
+        "Generated __main__ block has non-zero lam_val and mu_val for E/nu inputs",
+        "All pre-existing emission tests pass unchanged"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_emit_lame_conversion.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_emission_phase5.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_codegen.py -v",
+        "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -x -q"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Emit with E/nu MaterialSpec → lam_val matches E*nu/((1+nu)*(1-2*nu))",
+            "Emit with E/nu MaterialSpec → mu_val matches E/(2*(1+nu))",
+            "Emit with direct lam/mu params → unchanged behavior"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_emission_phase5.py",
+        "packages/mechdsl-core/tests/test_emit_lame_conversion.py"
+    ],
+    "risks": [
+        "Risk: E/nu may appear under different key names in MaterialSpec.params. Mitigation: check existing ProblemIR fixtures in test files for canonical key names."
+    ],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {"passed": 0, "total": 0, "pass_rate": 0, "commands": []},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "",
+    "implementation_branch": "sprint2_phase-1",
+    "completion_notes": [],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

@@ -1,0 +1,85 @@
+{
+    "task_id": "P5-2",
+    "title": "Create 5 example Python scripts",
+    "phase": "5",
+    "objective": "Create 5 self-contained example scripts in dev/examples/ that construct ProblemIR programmatically and call compile().",
+    "plan_file": "dev/plans/sprint3.md",
+    "plan_lines": ["222", "227"],
+    "plan_assets": [],
+    "blocked_by": ["P2-1", "P3-1"],
+    "blocks": [],
+    "scope": [
+        "Create elastic_cantilever.py, plastic_uniaxial.py, cook_membrane.py, necking_bar.py, patch_test.py",
+        "Each uses build_context() and compile()",
+        "Self-contained and runnable with uv run python dev/examples/X.py"
+    ],
+    "implementation_steps": ["Create each example script using build_context -> ProblemIR -> compile() pattern", "Ensure each prints a compilation summary", "Test each script is runnable"],
+    "deliverables": ["5 new Python scripts in dev/examples/"],
+    "acceptance_criteria": ["All 5 scripts runnable with uv run python", "Each demonstrates the programmatic API"],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_frontend_build_context.py::TestBuildContextBasics -v",
+        "uv run pytest packages/mechdsl-core/tests/test_compile_pipeline.py::TestCompilePipeline -v",
+        "uv run pytest packages/mechdsl-core/tests/test_documentation.py::TestTaskP5T2 -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "elastic_cantilever example script exists",
+            "elastic_cantilever example uses build_context() and compile()",
+            "elastic_cantilever example runs with uv run python",
+            "plastic_uniaxial example script exists",
+            "plastic_uniaxial example uses build_context() and compile()",
+            "plastic_uniaxial example runs with uv run python",
+            "cook_membrane example script exists",
+            "cook_membrane example uses build_context() and compile()",
+            "cook_membrane example runs with uv run python",
+            "necking_bar example script exists",
+            "necking_bar example uses build_context() and compile()",
+            "necking_bar example runs with uv run python",
+            "patch_test example script exists",
+            "patch_test example uses build_context() and compile()",
+            "patch_test example runs with uv run python"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_frontend_build_context.py",
+        "packages/mechdsl-core/tests/test_compile_pipeline.py",
+        "packages/mechdsl-core/tests/test_documentation.py"
+    ],
+    "risks": [
+        "Example scripts can drift from the validated programmatic API if they do not match the current build_context() and compile() patterns.",
+        "Runnable examples may fail due to import-path or packaging assumptions even if the underlying APIs already work in tests."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-12",
+    "test_completion": {
+        "passed": 23,
+        "total": 23,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_frontend_build_context.py::TestBuildContextBasics -v",
+                "passed": 2,
+                "total": 2
+            },
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_compile_pipeline.py::TestCompilePipeline -v",
+                "passed": 6,
+                "total": 6
+            },
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_documentation.py::TestTaskP5T2 -v",
+                "passed": 15,
+                "total": 15
+            }
+        ]
+    },
+    "review_score": 9,
+    "review_breakdown": {"minor": 1, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/sprint3-phase4",
+    "completion_notes": [
+        "Added five self-contained dev/examples scripts that each build a frontend context, adapt it to ProblemIR locally, call compile(), and print compilation metadata."
+    ],
+    "github_issue": {"phase_issue": 19, "task_issue": 39, "repo": "SOSOVSKI/MechDSL"}
+}

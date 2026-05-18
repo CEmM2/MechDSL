@@ -1,0 +1,132 @@
+[project]
+name = "mechdsl-workspace"
+version = "0.1.0"
+description = "MechDSL monorepo — LaTeX-to-FEM compiler + algorithm transpiler"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "markdown>=3.10.2",
+    "numpy>=2.4.2",
+    "python-fasthtml>=0.12.42",
+]
+
+# ---------- uv workspace ----------
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv]
+# Supply-chain safety: ignore any package version uploaded after this date.
+# This blocks compromised releases from the recent pip/npm supply-chain attacks.
+# Bump this date intentionally (and audit the diff in uv.lock) when upgrading deps.
+exclude-newer = "2026-02-20T00:00:00Z"
+
+# Dev dependencies shared across all workspace members
+# (migrated from deprecated [tool.uv] dev-dependencies)
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "mypy>=1.8",
+    "ruff>=0.3",
+    "pre-commit>=3.5",
+]
+verify = ["torch>=2.0"]
+
+# ---------- shared tool config ----------
+
+[tool.pytest.ini_options]
+testpaths = [
+    "packages/mechdsl-core/tests",
+    "packages/algo2code/tests",
+]
+cache_dir = ".pytest_cache"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--tb=short",
+    "--import-mode=importlib",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require a GPU",
+    "e2e: end-to-end pipeline tests",
+    "audit: verification audit tests mapping spec IDs to implementations",
+    "benchmark: FLOP-count / performance regression tests (no wall-clock timing)",
+    "integration: integration tests spanning multiple modules or subsystems",
+    "unit: focused unit tests for a single function or class",
+    "regression: regression tests guarding against semantic changes in refactors",
+    "nightly: Phase 10 benchmark tests — run in nightly CI only, not in the fast tier",
+    "stable_backend: tests guarding the MVP-stable Taichi codegen contract — must pass on every push",
+    "experimental_backend: tests exercising experimental backends (MFEM/MOOSE) — may xfail/skip without blocking the stable contract",
+    "from_latex: tests that exercise the canonical compile_latex(...) entry point starting from a LaTeX source string",
+    "from_problem_ir: tests that construct ProblemIR programmatically (build_context() / direct ProblemIR(...)); secondary contract surface per P2-2",
+    "docs: documentation-anchor / doc-tier tests",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = [
+    "packages/mechdsl-core/src",
+    "packages/algo2code/src",
+]
+exclude = [
+    "packages/algo2code/prototypes",
+    ".claude/worktrees",
+    "mvp_concept_demo",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function call in argument defaults
+    # Physics/mechanics codebase: Greek letters (σ, ρ, μ), ×/−/– in
+    # dimensions and math notation, and uppercase `I` as material index
+    # (per dev/design_docs/07-CONVENTIONS.md) are intentional domain
+    # notation — not typos.
+    "RUF001",  # ambiguous unicode in strings
+    "RUF002",  # ambiguous unicode in docstrings
+    "RUF003",  # ambiguous unicode in comments
+    "E741",    # ambiguous variable name (collides with index convention)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mechdsl", "algo2code"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true
+mypy_path = "packages/mechdsl-core/src:packages/algo2code/src"
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+# Physics numerics: numpy operations propagate as Any through ndarray-typed
+# returns, tripping warn_return_any with no actionable bug. Suppress for the
+# known-pure-numpy modules only; the rest of the tree keeps strict returns.
+[[tool.mypy.overrides]]
+module = [
+    "mechdsl.symbolic.convected",
+    "mechdsl.symbolic.models.neo_hookean",
+    "mechdsl.symbolic.models.mooney_rivlin",
+    "mechdsl.symbolic.models.hgo",
+    "mechdsl.codegen.hourglass",
+    "mechdsl.verify.ad_oracle",
+]
+warn_return_any = false

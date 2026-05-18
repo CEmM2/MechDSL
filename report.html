@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<!doctype html>
+<html>
+  <head>
+    <title>MechDSL Status Report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+            .slide { display: none; height: 100vh; padding: 2rem; }
+            .slide.active { display: block; }
+            .controls { position: fixed; bottom: 20px; right: 20px; }
+            pre code { white-space: pre-wrap; font-size: 0.8rem; }
+            ul { margin-bottom: 1rem; }
+        </style>
+<script>
+            let currentSlide = 0;
+            function showSlide(n) {
+                let slides = document.getElementsByClassName("slide");
+                for (let i = 0; i < slides.length; i++) {
+                    slides[i].classList.remove("active");
+                }
+                if (n >= slides.length) { currentSlide = slides.length - 1; }
+                if (n < 0) { currentSlide = 0; }
+                slides[currentSlide].classList.add("active");
+            }
+            function nextSlide() { currentSlide++; showSlide(currentSlide); }
+            function prevSlide() { currentSlide--; showSlide(currentSlide); }
+            document.addEventListener("keydown", function(e) {
+                if (e.key === "ArrowRight") nextSlide();
+                if (e.key === "ArrowLeft") prevSlide();
+            });
+            window.onload = () => showSlide(0);
+        </script>  </head>
+  <body>
+<main class="container">      <div class="slide active">
+        <h1>MechDSL Status Report</h1>
+        <p>Press Left/Right arrows or use buttons to navigate slides.</p>
+      </div>
+      <div class="slide">
+        <h2>1. Adherence to Design Docs</h2>
+        <div><pre><code class="language-text">| P3 | Two-point tensor F_{iI} → spatial/material indices | — | — | DEFERRED |
+| P4 | Index manifold clash → IndexError | — | — | DEFERRED |
+**Deferred justification (P3, P4):** The LaTeX parser (Layer 1 frontend) is not yet implemented. `build_context()` provides a programmatic API that bypasses the parser entirely. Two-point tensor index resolution and index manifold clash detection require the parser. Deferred until the parser sprint.
+| Category | IDs | Pass | Deferred | Total |
+**Coverage rate:** 45/47 = 95.7% (2 deferred with justification)
+dev/design_docs/03-SYMBOLIC-ENGINE.md:| `Ibar1` | `J^{-2/3} I1` (deviatoric) |
+dev/design_docs/03-SYMBOLIC-ENGINE.md:| `Ibar2` | `J^{-4/3} I2` (deviatoric) |
+dev/design_docs/03-SYMBOLIC-ENGINE.md:where `P_ijkl = I^{dev}_ijkl - (1/3)δ_ij δ_kl` is the deviatoric projection, `n_ij = s^tr_ij / ||s^tr||`, and `Δλ` is the plastic multiplier.
+
+</code></pre></div>
+      </div>
+      <div class="slide">
+        <h2>2. Plans Status</h2>
+        <div><pre><code class="language-text">From may_status.md:
+Active Plan: post_recovery_plan
+- Phases 1-5: fully `done`
+- Phase 6: done in worktree, not yet merged to `main` (Branch post-recovery-plan_phase-6)
+- Phase 7: not started
+
+Tracker Stale:
+1. `test_p2_3.py` — IndentationError (syntax bug)
+2. `test_p2_2.py` — live test failure
+
+Deferred items from older plans / general logic:
+- PLAN-B: never explicitly closed-out in a handoff doc
+- MVP_plan: superseded historical record
+- Codegen for higher-order elements: deferred (Plan B §B5.x)
+- UL + J2 codegen path: deferred
+- Frontend round-trip hardening for SVK/J2: deferred
+
+</code></pre></div>
+      </div>
+      <div class="slide">
+        <h2>3. Technical Debts (TODOs)</h2>
+        <h3>Urgent / Before Release</h3>
+        <p>None found.</p>
+        <h3>Sometime</h3>
+        <p>Total 'sometime' TODOs found: 47. Showing first 5 for brevity:</p>
+        <ul>
+          <li>packages/mechdsl-core/tests/test_phase6_exit.py:127 - # Whitelist a TODO/FIXME hit if any nearby line carries</li>
+          <li>packages/mechdsl-core/tests/test_emission_verification.py:747 - """SVK emission should not have TODO placeholders (J2 does, SVK does not)."""  # intentional-cleanup-site</li>
+          <li>packages/mechdsl-core/tests/test_emission_verification.py:750 - assert "TODO" not in func_src, (</li>
+          <li>packages/mechdsl-core/tests/test_emission_verification.py:751 - "SVK constitutive should not have TODO placeholders"</li>
+          <li>dev/tasks/recovery_plan_latex_contract/json/P6-5.json:90 - "Phase 6 sentinel still green: `test_phase6_exit::test_no_resolved_todos_or_fixmes_remain` passes; phase 6 ends at 0 unresolved TODO markers.",</li>
+        </ul>
+      </div>
+      <div class="slide">
+        <h2>4. Suggested Action Items &amp; Execution Order</h2>
+        <div><h1>Suggested Action Items &amp; Execution Order</h1>
+<p>Based on the analysis of the project plans and tracking documents, here are the suggested action items required to make the project release-ready, along with their priorities and execution order.</p>
+<h2>Phase A: Critical Fixes (Blocking Test Suite &amp; Release)</h2>
+<p><em>These items must be done immediately as they block tests and the deployment of the current active plan.</em></p>
+<ol>
+<li><strong>URGENT:</strong> Fix syntax error in <code>test_p2_3.py</code> (IndentationError on line 67).<ul>
+<li><strong>Why:</strong> Aborts the pytest collection phase, blocking the test suite.</li>
+</ul>
+</li>
+<li><strong>URGENT:</strong> Investigate and fix <code>test_p2_2.py</code> failure on <code>main</code>.<ul>
+<li><strong>Why:</strong> Failing live tests block release.</li>
+</ul>
+</li>
+</ol>
+<h2>Phase B: Complete Active Plan (<code>post_recovery_plan</code>)</h2>
+<p><em>These steps can begin after Phase A. Item 3 blocks Item 4.</em></p>
+<ol>
+<li><strong>URGENT:</strong> Merge branch <code>post-recovery-plan_phase-6</code> into <code>main</code>.<ul>
+<li><strong>Why:</strong> Phase 6 is complete in the worktree but unmerged.</li>
+<li><strong>Dependency:</strong> Wait for Phase A to ensure tests pass on main.</li>
+</ul>
+</li>
+<li><strong>URGENT:</strong> Execute Phase 7 tasks (P7-1 to P7-7) to close out <code>post_recovery_plan</code>.<ul>
+<li><strong>Why:</strong> Finalizes the active plan.</li>
+<li><strong>Dependency:</strong> Wait for Phase 6 merge.</li>
+</ul>
+</li>
+</ol>
+<h2>Phase C: Post-Plan Feature Development (Sometime Priorities)</h2>
+<p><em>Once <code>post_recovery_plan</code> is completed, work can begin on these features in parallel.</em></p>
+<ol>
+<li><strong>SOMETIME:</strong> Implement codegen for higher-order elements (Tet4/Tet10/Hex20).<ul>
+<li><strong>Context:</strong> Deferred from Plan B (§B5.x).</li>
+</ul>
+</li>
+<li><strong>SOMETIME:</strong> Implement UL + J2 codegen path.<ul>
+<li><strong>Context:</strong> Deferred, missing reference kernel.</li>
+</ul>
+</li>
+<li><strong>SOMETIME:</strong> Frontend round-trip hardening for SVK/J2.<ul>
+<li><strong>Context:</strong> Deferred in NRPyLaTeX integration.</li>
+</ul>
+</li>
+<li><strong>SOMETIME:</strong> Fix verification harness gaps (P3, P4).<ul>
+<li><strong>Context:</strong> Requires parser sprint to support two-point tensor and index manifold clash detection.</li>
+</ul>
+</li>
+<li><strong>SOMETIME:</strong> Address remaining 186 'sometime' priority technical debts (TODOs) across the repository.</li>
+</ol></div>
+      </div>
+      <div class="controls">
+<button onclick="prevSlide()" class="secondary">Prev</button><span> </span><button onclick="nextSlide()">Next</button>      </div>
+</main>  </body>
+</html>

@@ -1,0 +1,76 @@
+{
+    "task_id": "P4-4",
+    "title": "HGO anisotropic hyperelastic model (per-element fiber directions)",
+    "phase": "4",
+    "objective": "Add the Holzapfel-Gasser-Ogden anisotropic model with two fiber families and per-element fiber direction data, suitable for modelling biological soft tissues.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["155", "155"],
+    "plan_assets": [
+        {
+            "asset_description": "B4.1 HGO anisotropic description.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 155,
+            "Plan_file_end_line": 155
+        }
+    ],
+    "blocked_by": ["P1-1"],
+    "blocks": ["P4-5", "P10-9"],
+    "scope": [
+        "Add `mechdsl.symbolic.models.hgo` with `HGOMaterial(mu, k1, k2, kappa, fiber_dispersion)`.",
+        "The model takes two unit fiber directions per element (a1, a2) passed as per-element data — NOT as material constants.",
+        "Strain energy combines an isotropic Neo-Hookean part with two fiber-reinforced exponential terms Psi_f = (k1/(2*k2)) (exp(k2 * <E_f>^2) - 1) where E_f = dispersion-weighted fiber stretch.",
+        "Expose as `material_type='hgo'` with a `fiber_data` kwarg on `build_context`."
+    ],
+    "implementation_steps": [
+        "Define the material dataclass and the fiber-data schema (per-element (a1, a2) pair).",
+        "Implement the strain energy, PK2 stress, and material tangent.",
+        "Handle the compressive fiber case: fibers only contribute when the pseudo-invariant I4 > 1 (otherwise set the fiber term to zero).",
+        "Unit-test uniaxial along a1: fiber stiffening vs isotropic Neo-Hookean.",
+        "Unit-test shear perpendicular to a1 vs shear parallel: shear parallel must be stiffer."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/symbolic/models/hgo.py`",
+        "`packages/mechdsl-core/tests/test_hgo.py`"
+    ],
+    "acceptance_criteria": [
+        "Uniaxial along a1 gives higher stress than isotropic Neo-Hookean at the same stretch.",
+        "Shear parallel to a1 vs perpendicular shows the expected anisotropy.",
+        "Compressive I4 < 1 sets the fiber term to zero (no buckling artefact)."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_hgo.py::TestTaskP4_4HGO -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Uniaxial fiber stiffening",
+            "Shear anisotropy (parallel vs perpendicular)",
+            "Compression gating (I4 < 1 zeroes fiber term)",
+            "Fiber direction propagates correctly through ElementIR"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_hgo.py"
+    ],
+    "risks": [
+        "Per-element fiber data is a new data shape the pipeline hasn't seen. Mitigation: scope it to ElementIR only; use a numpy array indexed by element id and wire it in as a new optional kwarg."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-17",
+    "test_completion": {"passed": 9, "total": 9, "pass_rate": 100, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_hgo.py -v", "passed": 9, "total": 9}]},
+    "review_score": 95,
+    "review_breakdown": {"minor": 2, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "pass",
+    "implementation_branch": "plan-b_phase-3",
+    "completion_notes": [
+        "HGOMaterial(mu, k1, k2, kappa, fiber_dispersion) with positivity/range validators.",
+        "pk2_stress / material_tangent_4th / material_tangent_voigt take fiber_dirs: tuple[NDArray, NDArray] as a separate argument; HGOModel wrapper closes over them at construction (one wrapper per element).",
+        "Strain energy: Neo-Hookean isotropic + two gated exponential fiber terms with dispersion-weighted E_fi = kd*(I1_bar-3) + (1-3*kd)*(I4_bar_i-1); MacCauley gate E_fi<=0 -> S_fi=0.",
+        "FD tangent via 6-probe central-difference of analytic PK2 — sidesteps piecewise derivative at gating boundary.",
+        "Frontend: 'hgo' added to _SUPPORTED_MATERIALS; guard requires fiber_data kwarg; ctx['fiber_data'] round-trips.",
+        "Gate A: 4/4 scope items, AC1/AC2/AC3 mapped, 0 violations.",
+        "Gate B: 0 violations, 2 warnings (lowercase ijkl in test einsum + missing dtype on test fiber array — both test-code informational).",
+        "Gate C: 9/9 HGO tests pass; full fast regression 1206 passed / 9 skipped (P4-5 stubs) / 0 unrelated failures."
+    ],
+    "github_issue": {"phase_issue": 59, "task_issue": 87, "repo": "SOSOVSKI/MechDSL"}
+}

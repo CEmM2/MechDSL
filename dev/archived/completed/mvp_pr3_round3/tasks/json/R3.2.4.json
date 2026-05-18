@@ -1,0 +1,62 @@
+{
+    "task_id": "R3.2.4",
+    "title": "Fix einsum FLOPS fallback to sentinel (H5)",
+    "phase": "2",
+    "objective": "Replace silent return 0.0 with warnings.warn and -1.0 sentinel when FLOPS extraction fails",
+    "plan_file": "dev/plans/mvp_pr3_round3.md",
+    "plan_lines": ["181", "193"],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": [],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/codegen/einsum_optimizer.py line 433"
+    ],
+    "implementation_steps": [
+        "Change return 0.0 at line 433 to emit warning and return -1.0",
+        "Add import warnings at module top if not present"
+    ],
+    "deliverables": [
+        "Modified einsum_optimizer.py:433"
+    ],
+    "acceptance_criteria": [
+        "FLOPS extraction failure emits RuntimeWarning",
+        "Returns -1.0 sentinel instead of 0.0"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_phase2_error_handling.py::TestR324FlopsSentinel -v --tb=short",
+        "uv run pytest packages/mechdsl-core/tests/test_einsum_optimizer.py -v --tb=short"
+    ],
+    "test_plan": {
+        "tier": "existing",
+        "cases": [
+            "test_einsum_optimizer.py"
+        ]
+    },
+    "test_artifacts": ["packages/mechdsl-core/tests/test_phase2_error_handling.py", "packages/mechdsl-core/tests/test_einsum_optimizer.py"],
+    "risks": [
+        "Any code comparing FLOPS >= 0 will need updating to handle -1.0 sentinel"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

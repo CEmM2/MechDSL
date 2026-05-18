@@ -1,0 +1,96 @@
+{
+    "task_id": "P1-4",
+    "title": "Insert Code reality anchor blocks per phase",
+    "phase": "1",
+    "objective": "Pin each phase of recovery_plan_latex_contract.md to current code state with a small 'Code reality anchor (2026-04-26)' subsection so Plan-2-Tasks does not author tasks against a stale mental model of the surfaces being touched.",
+    "plan_file": "dev/plans/back2latex.md",
+    "plan_lines": [
+        "109",
+        "131"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Code reality anchor template (3-bullet structure: current state / partial satisfaction / corrective mismatch)",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 115,
+            "Plan_file_end_line": 121
+        },
+        {
+            "asset_description": "Concrete per-phase anchor content with file:line citations from the live code audit",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 123,
+            "Plan_file_end_line": 131
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [
+        "P2-1"
+    ],
+    "scope": [
+        "Edit each phase section in dev/plans/recovery_plan_latex_contract.md",
+        "Insert the anchor between the '**Why ...**' line and the '### Action items' heading"
+    ],
+    "implementation_steps": [
+        "For each phase 1..7 (R0..R6), locate the boundary between the 'Why' rationale and the 'Action items' heading",
+        "Insert a '### Code reality anchor (2026-04-26)' subsection",
+        "Populate with the three concrete bullets specified for that phase in back2latex.md amendment 4",
+        "Cross-check file:line citations are still valid (no off-by-one against current code)"
+    ],
+    "deliverables": [
+        "Seven Code reality anchor subsections, one per phase",
+        "Citations verified against current packages/mechdsl-core/src/ at HEAD"
+    ],
+    "acceptance_criteria": [
+        "grep -c '### Code reality anchor (2026-04-26)' dev/plans/recovery_plan_latex_contract.md returns 7",
+        "Each anchor has at least three bullet points",
+        "All file:line citations point to existing files in the repo"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p1_4.py -v -m audit"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "Seven anchor sections exist, one per phase",
+            "Each anchor follows the three-bullet template (current state / partial satisfaction / mismatch)",
+            "Spot-check one citation per phase to ensure the file/line still exists"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/test_p1_4.py"
+    ],
+    "risks": [
+        "File:line citations from amendment 4 may already be stale by the time the edit lands \u2014 mitigated by spot-checking the most volatile ones (Phase 5 and Phase 7) against current HEAD before commit"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-26",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p1_4.py -v -m audit",
+                "passed": 3,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Inserted Code reality anchor blocks (3 bullets each) for all 7 phases; live test_p1_4 passes 3/3 with citation resolver across packages/."
+    ],
+    "github_issue": {
+        "phase_issue": 125,
+        "task_issue": 128,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

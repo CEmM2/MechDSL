@@ -1,0 +1,90 @@
+{
+    "task_id": "P3-5",
+    "title": "Add targeted IR validation for semantics that were previously implicit.",
+    "phase": "3",
+    "objective": "Add targeted IR validation for semantics that were previously implicit.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "198",
+        "198"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P3-5 (R2.5) in Phase 3 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 198,
+            "Plan_file_end_line": 198
+        }
+    ],
+    "blocked_by": [
+        "P3-1",
+        "P3-2"
+    ],
+    "blocks": [],
+    "scope": [
+        "Add targeted IR validation for semantics that were previously implicit.",
+        "Touched surfaces (per recovery plan): `packages/mechdsl-core/tests/test_mechanics_ir.py`"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 3 (Enrich `ProblemIR` into the semantic center again (R2)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Add targeted IR validation for semantics that were previously implicit.",
+        "Touch only the listed surfaces: `packages/mechdsl-core/tests/test_mechanics_ir.py`.",
+        "Verify: Invalid configurations fail at IR construction rather than much later in codegen/runtime.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `packages/mechdsl-core/tests/test_mechanics_ir.py`"
+    ],
+    "acceptance_criteria": [
+        "Invalid configurations fail at IR construction rather than much later in codegen/runtime.",
+        "All deliverables for P3-5 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p3_5.py -v -m integration"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "P3-5-c1: Invalid configurations fail at IR construction rather than much later in codegen/runtime.",
+            "P3-5-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p3_5.py"
+    ],
+    "risks": [
+        "No specific risk attributed in the plan; standard care applies."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-27",
+    "test_completion": {
+        "passed": 22,
+        "total": 22,
+        "pass_rate": 1.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p3_5.py -v -m integration",
+                "passed": 22,
+                "total": 22
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Added six targeted construction-time validations to ProblemIR.__post_init__: (a) duplicate boundary names; (b) BC components in [0, dim); (c) coordinate-name uniqueness; (d) duplicate FieldSpec names; (e) BC field_name consistency with declared fields. The required-material-params check (P3-5f) lives on ProblemIR.assert_mvp_stable() rather than __post_init__ so in-tree research code that builds minimal IRs for shape-only testing keeps working; compile_latex now calls assert_mvp_stable() so the canonical compile path enforces the contract at the user-visible boundary. Two pre-existing tests with wrong J2 param names (sigma_y vs sigma_y0) and incomplete params were corrected — the new validation surfaces silent acceptance bugs that had been sitting in the suite. 22/22 P3-5 tests pass; full mechdsl-core suite stays at 1499 pass / 0 fail (82 skipped, 110 deselected: slow/gpu/e2e markers)."
+    ],
+    "github_issue": {
+        "phase_issue": 143,
+        "task_issue": 164,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

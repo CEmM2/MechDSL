@@ -1,0 +1,33 @@
+{
+    "task_id": "P1-T5",
+    "title": "Regenerate golden files after emit_main fix",
+    "phase": "1",
+    "objective": "Regenerate golden files using generate_golden.py after the emit_main Lamé conversion fix. Verify diff is limited to __main__ block (lam/mu values).",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["45", "47"],
+    "plan_assets": [],
+    "blocked_by": ["P1-T1"],
+    "blocks": ["P4-T7"],
+    "scope": ["packages/mechdsl-core/tests/golden/generated_elastic.py.golden", "packages/mechdsl-core/tests/golden/generated_plastic.py.golden", "packages/mechdsl-core/tests/generate_golden.py"],
+    "implementation_steps": [
+        "Run uv run python packages/mechdsl-core/tests/generate_golden.py",
+        "Diff the golden files against previous versions",
+        "Verify changes are confined to __main__ block lam/mu emission",
+        "Run golden file regression tests to confirm pass"
+    ],
+    "deliverables": ["Updated golden files"],
+    "acceptance_criteria": ["Golden files regenerated", "Diff limited to __main__ block", "All golden regression tests pass"],
+    "verification_commands": ["uv run pytest packages/mechdsl-core/tests/test_codegen.py -v -k golden"],
+    "test_plan": {"tier": "regression", "cases": ["Golden file diff is additive only in __main__ block"]},
+    "test_artifacts": ["packages/mechdsl-core/tests/golden/generated_elastic.py.golden", "packages/mechdsl-core/tests/golden/generated_plastic.py.golden"],
+    "risks": ["Risk: golden file changes may cascade to golden regression tests. Mitigation: verify diff before committing."],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {"passed": 0, "total": 0, "pass_rate": 0, "commands": []},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "",
+    "implementation_branch": "sprint2_phase-1",
+    "completion_notes": [],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

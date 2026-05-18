@@ -1,0 +1,57 @@
+{
+    "task_id": "P5-3",
+    "title": "Add docstrings to public API functions",
+    "phase": "5",
+    "objective": "Add numpy-style docstrings to all public API functions: compile(), build_context(), ProblemIR, ElementIR, emit(), newton_solve().",
+    "plan_file": "dev/plans/sprint3.md",
+    "plan_lines": ["223"],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": [],
+    "scope": ["Add docstrings to compile(), build_context(), ProblemIR, ElementIR, emit(), newton_solve(), localise(), localise_and_optimize()"],
+    "implementation_steps": ["Review each public API function", "Add numpy-style docstrings with params, returns, raises", "Verify existing docstrings are complete"],
+    "deliverables": ["Docstrings on all public API functions"],
+    "acceptance_criteria": ["Every public API function has parameter descriptions, return type, and exceptions documented"],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_documentation.py::TestTaskP5T3 -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "compile() has a complete numpy-style public API docstring",
+            "build_context() has a complete numpy-style public API docstring",
+            "ProblemIR and ElementIR public types have clear API docstrings",
+            "emit() has a complete numpy-style public API docstring",
+            "newton_solve() has a complete numpy-style public API docstring"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_documentation.py"
+    ],
+    "risks": [
+        "Docstrings can accidentally promise unsupported behavior if they are written without matching the current MVP constraints.",
+        "Cross-file documentation consistency is easy to lose because this task spans multiple public API entry points."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-12",
+    "test_completion": {
+        "passed": 5,
+        "total": 5,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_documentation.py::TestTaskP5T3 -v",
+                "passed": 5,
+                "total": 5
+            }
+        ]
+    },
+    "review_score": 9,
+    "review_breakdown": {"minor": 1, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/sprint3-phase4",
+    "completion_notes": [
+        "Public API docstrings now use numpy-style sections and document MVP constraints plus propagated error behavior for compile(), emit(), and newton_solve()."
+    ],
+    "github_issue": {"phase_issue": 19, "task_issue": 40, "repo": "SOSOVSKI/MechDSL"}
+}

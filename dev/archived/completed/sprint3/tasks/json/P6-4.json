@@ -1,0 +1,24 @@
+{
+    "task_id": "P6-4", "title": "JIT budget compliance check", "phase": "6",
+    "objective": "Verify all contraction plans are within JIT budget limits (512/2000/5000).",
+    "plan_file": "dev/plans/sprint3.md", "plan_lines": ["250"],
+    "plan_assets": [], "blocked_by": [], "blocks": ["P6-6"],
+    "scope": ["Run uv run pytest packages/mechdsl-core/tests/test_einsum.py -k budget -v"],
+    "implementation_steps": ["Run budget tests", "Verify all pass"],
+    "deliverables": ["Budget tests pass"],
+    "acceptance_criteria": ["All contraction plans within budget"],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_einsum.py -k budget -v"
+    ], "test_plan": {"tier": "regression", "cases": ["Budget regression tests"]},
+    "test_artifacts": ["packages/mechdsl-core/tests/test_einsum.py"], "risks": [
+        "Budget regressions can appear without visible solver failures, so the failing contraction still needs manual localization if the optimizer heuristics changed late in the sprint.",
+        "The JIT budget thresholds are intentionally strict; seemingly harmless emitter or optimizer expansions can push a contraction over a limit without changing numerical outputs."
+    ],
+    "status": "done", "completion_date": "2026-04-12",
+    "test_completion": {"passed": 9, "total": 9, "pass_rate": 100, "commands": [
+        {"command": "uv run pytest packages/mechdsl-core/tests/test_einsum.py -k budget -v", "passed": 9, "total": 9}
+    ]},
+    "review_score": 10, "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0}, "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/phase6-exec", "completion_notes": ["Verified that the MVP contraction plans stay within the documented per-function, per-kernel, and absolute JIT budgets."],
+    "github_issue": {"phase_issue": 20, "task_issue": 47, "repo": "SOSOVSKI/MechDSL"}
+}

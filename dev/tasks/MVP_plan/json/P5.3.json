@@ -1,0 +1,71 @@
+{
+    "task_id": "P5.3",
+    "title": "CI budget regression fixture",
+    "phase": "5",
+    "objective": "Add CI test that fails when MVP contractions exceed JIT budget limits.",
+    "plan_file": "dev/plans/MVP_plan.md",
+    "plan_lines": ["172", "176"],
+    "plan_assets": [],
+    "blocked_by": ["P5.1", "P0.3"],
+    "blocks": [],
+    "scope": [
+        "Tests and CI wiring only",
+        "packages/mechdsl-core/tests/test_einsum.py",
+        ".github/workflows/ci.yml"
+    ],
+    "implementation_steps": [
+        "Add test_budget_regression fixture in test_einsum.py",
+        "Test that all MVP contractions pass budget (512/2000/5000 limits)",
+        "Add intentional over-budget fixture that must cause red test",
+        "Wire test into CI workflow budget-regression stage",
+        "Verify CI stage triggers on PR"
+    ],
+    "deliverables": [
+        "Updated test_einsum.py with budget regression tests",
+        "Updated ci.yml with budget-regression stage"
+    ],
+    "acceptance_criteria": [
+        "MVP contractions pass budget checks in CI",
+        "Intentional over-budget fixture causes red test",
+        "CI budget-regression stage runs on every PR"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_einsum.py -k budget -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "MVP contractions within budget",
+            "Over-budget fixture fails as expected"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_einsum.py"
+    ],
+    "risks": [
+        "Budget thresholds may need tuning as more contractions are added"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

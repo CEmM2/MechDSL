@@ -1,0 +1,60 @@
+name: Nightly
+
+# Phase 9 P9-2: nightly tier for Phase 10 benchmarks + perf-regression gate.
+#
+# This workflow is *only* the nightly schedule (and manual dispatch). It does
+# not run on push or pull_request — fast/PR coverage stays in ci.yml.
+#
+# Two jobs:
+#   1. nightly-tests       — collects every @nightly / @regression test
+#                            (P10-1..P10-9 benchmark tests + the perf
+#                            regression suite) and runs them.
+#   2. perf-regression     — runs the smoke benchmark registry, compares
+#                            against the committed baseline at the default
+#                            10% tolerance, uploads the ComparisonReport
+#                            JSON as an artifact, and fails the build on
+#                            >10% regression.
+#
+# Both jobs run on ubuntu-latest — no GPU is required (smoke profiles use
+# Python/NumPy reference solvers and tiny meshes; Taichi JIT only fires on
+# the P10-8 notched-bar smoke and stays well within ubuntu-latest CPU
+# budgets).
+
+on:
+  # schedule:
+  #   - cron: "0 6 * * *"   # 06:00 UTC daily
+  workflow_dispatch: {}
+
+jobs:
+  nightly-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+      - name: Run nightly + regression tests (mechdsl-core)
+        run: uv run pytest packages/mechdsl-core/tests/ -m "nightly or regression" --tb=short -q
+
+  perf-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+      - name: Run smoke registry + compare to baseline
+        run: uv run python -m mechdsl.verify.perf.run_compare --output perf_report.json
+      - name: Upload ComparisonReport artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-comparison-report
+          path: perf_report.json
+          if-no-files-found: warn

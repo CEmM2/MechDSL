@@ -1,0 +1,99 @@
+{
+    "task_id": "P3-1",
+    "title": "Add optional semantic fields to `ProblemIR`: `fields`, `domain`, `mesh_contract`, `residual_contract`.",
+    "phase": "3",
+    "objective": "Add optional semantic fields to `ProblemIR`: `fields`, `domain`, `mesh_contract`, `residual_contract`.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "194",
+        "194"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P3-1 (R2.1) in Phase 3 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 194,
+            "Plan_file_end_line": 194
+        }
+    ],
+    "blocked_by": [
+        "P2-1"
+    ],
+    "blocks": [
+        "P3-2",
+        "P3-3",
+        "P3-4",
+        "P3-5",
+        "P4-1",
+        "P4-3",
+        "P5-4",
+        "P7-6"
+    ],
+    "scope": [
+        "Add optional semantic fields to `ProblemIR`: `fields`, `domain`, `mesh_contract`, `residual_contract`.",
+        "Touched surfaces (per recovery plan): `packages/mechdsl-core/src/mechdsl/ir/mechanics_ir.py`"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 3 (Enrich `ProblemIR` into the semantic center again (R2)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Add optional semantic fields to ProblemIR: fields, domain, mesh_contract, residual_contract.",
+        "Add ProblemIR.to_dict() and ProblemIR.from_dict() (the existing serialisation lives only on BoundaryCondition and MaterialSpec \u2014 see Phase-3 Code reality anchor).",
+        "Touch only the listed surfaces: packages/mechdsl-core/src/mechdsl/ir/mechanics_ir.py.",
+        "Verify: round-trip ProblemIR through to_dict/from_dict on both old and new forms.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `packages/mechdsl-core/src/mechdsl/ir/mechanics_ir.py`"
+    ],
+    "acceptance_criteria": [
+        "ProblemIR.to_dict() and ProblemIR.from_dict() round-trip both legacy and enriched ProblemIR instances byte-identical (modulo field order).",
+        "New optional fields fields, domain, mesh_contract, residual_contract default to None on legacy constructors so existing tests keep passing.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p3_1.py -v -m integration"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "P3-1-c1: Serialization + round-trip tests preserve old and new forms.",
+            "P3-1-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p3_1.py"
+    ],
+    "risks": [
+        "IR enrichment breaks downstream code. Mitigation: Use additive fields and compatibility constructors; land with focused regression tests."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-27",
+    "test_completion": {
+        "passed": 10,
+        "total": 10,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p3_1.py -v",
+                "passed": 10,
+                "total": 10
+            }
+        ]
+    },
+    "review_score": 95,
+    "review_breakdown": {
+        "minor": 2,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Added FieldSpec / DomainSpec / MeshContract / ResidualContract frozen dataclasses with to_dict/from_dict; ProblemIR carries them as 4 new optional fields with safe defaults (empty tuple / None). to_dict always emits the new keys for forward consumers; from_dict accepts both legacy and enriched dicts. Backward compat verified: 325/325 across IR / codegen / e2e / localise / einsum / docs / full_pipeline. Gate A PASS (spec compliance: 4 named fields exactly per recovery R2.1, immutable, no leakage). Gate B PASS with 2 minor advisory findings (mutable dict in frozen-dataclass metadata bag is intentional; FieldSpec.kind validation deferred to P3-5)."
+    ],
+    "github_issue": {
+        "phase_issue": 143,
+        "task_issue": 160,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

@@ -1,0 +1,71 @@
+{
+    "task_id": "P4.4",
+    "title": "Artifact bundle model",
+    "phase": "4",
+    "objective": "Store IR, contraction plans, and emitted source in a serializable artifact bundle for golden comparisons.",
+    "plan_file": "dev/plans/MVP_plan.md",
+    "plan_lines": ["150", "154"],
+    "plan_assets": [],
+    "blocked_by": ["P0.2"],
+    "blocks": ["P5.2", "P6.2"],
+    "scope": [
+        "Artifact packaging only",
+        "packages/mechdsl-core/src/mechdsl/codegen/artifact.py"
+    ],
+    "implementation_steps": [
+        "Define ArtifactBundle dataclass with fields: problem_ir, element_ir, contraction_plans, emitted_source, metadata",
+        "Implement serialization (to JSON/dict) for golden file storage",
+        "Implement deserialization with semantic content hash verification",
+        "Write write/read round-trip tests"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/src/mechdsl/codegen/artifact.py",
+        "Tests in test_artifacts.py"
+    ],
+    "acceptance_criteria": [
+        "Artifact write/read preserves semantic content hashes",
+        "Missing or corrupt fields detected on load",
+        "Bundle stores all pipeline stages (IR, plans, source)"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_artifacts.py -k artifact -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Round-trip serialization preserves all fields",
+            "Content hash matches after round-trip",
+            "Corrupt data detected on load",
+            "Empty contraction_plans field is valid (pre-Phase 5)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_artifacts.py"
+    ],
+    "risks": [
+        "Schema evolution if IR changes — version the artifact format"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

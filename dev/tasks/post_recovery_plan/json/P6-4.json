@@ -1,0 +1,99 @@
+{
+    "task_id": "P6-4",
+    "title": "Replace test_phase6_exit.py line-number whitelist with regex/marker; add markers to test_emission_verification.py",
+    "phase": "6",
+    "objective": "Drop the fragile _INTENTIONAL_CLEANUP_MATCHES line-number whitelist and use in-source markers instead so cleanup-site tracking survives renumbering.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": [
+        "290",
+        "294"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Item 11: test_phase6_exit.py line-number whitelist \u2014 replace with regex/marker",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 56,
+            "Plan_file_end_line": 56
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [],
+    "scope": [
+        "Edit packages/mechdsl-core/tests/test_phase6_exit.py \u2014 replace whitelist with regex/marker comment matching",
+        "Edit packages/mechdsl-core/tests/test_emission_verification.py \u2014 add # intentional-cleanup-site markers at the lines the whitelist used to track",
+        "Module-level docstring documenting marker meaning"
+    ],
+    "implementation_steps": [
+        "Read _INTENTIONAL_CLEANUP_MATCHES contents to identify tracked sites",
+        "Add # intentional-cleanup-site comments at those lines in test_emission_verification.py",
+        "Rewrite test_phase6_exit.py to scan for the marker comment instead of line numbers",
+        "Insert blank line above markers to confirm renumber-resilience"
+    ],
+    "deliverables": [
+        "Updated test_phase6_exit.py using regex/marker scan",
+        "Updated test_emission_verification.py with markers",
+        "Module docstring noting marker semantics"
+    ],
+    "acceptance_criteria": [
+        "test_phase6_exit.py passes after cleanup-site lines are renumbered",
+        "Marker count = pre-existing whitelist size",
+        "Markers documented in test_emission_verification.py module docstring"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p6_4.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_phase6_exit.py -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "test_phase6_exit no hardcoded line numbers (missing)",
+            "test_emission_verification has markers (missing)",
+            "Marker scan replaces whitelist (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p6_4.py",
+        "packages/mechdsl-core/tests/test_phase6_exit.py",
+        "packages/mechdsl-core/tests/test_emission_verification.py"
+    ],
+    "risks": [
+        "Marker noise \u2014 mitigation per plan line 311-313: keep markers terse, document in module docstring"
+    ],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p6_4.py packages/mechdsl-core/tests/test_phase6_exit.py -v",
+                "passed": 8,
+                "total": 8
+            },
+            {
+                "command": "uv run pytest -m \"not slow and not gpu\" --tb=line -q",
+                "passed": 1846,
+                "total": 1846
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-6",
+    "completion_notes": [
+        "_INTENTIONAL_CLEANUP_MATCHES set replaced by _INTENTIONAL_CLEANUP_MARKER='intentional-cleanup-site' string + \u00b13-line window scan.",
+        "test_emission_verification.py and test_phase6_exit.py both carry the marker next to legitimate placeholder mentions."
+    ],
+    "github_issue": {
+        "phase_issue": 205,
+        "task_issue": 237,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

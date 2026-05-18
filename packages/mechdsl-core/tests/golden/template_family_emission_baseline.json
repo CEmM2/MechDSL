@@ -1,0 +1,88 @@
+{
+  "generated_at": "2026-04-18",
+  "ratio_tolerance": 1.2,
+  "trials": 5,
+  "note": "Median family-ON emission time divided by median family-OFF (legacy / tier-only). Target <= 1.2. Regenerate by running: uv run python packages/mechdsl-core/tests/tools/regen_p9_3_baseline.py",
+  "triples": {
+    "hex8-total_lagrangian-svk-taichi": {
+      "tier_only_median_s": 0.000150,
+      "family_median_s": 0.000135,
+      "ratio": 0.9009
+    },
+    "hex8-total_lagrangian-svk-mfem": {
+      "tier_only_median_s": 0.000030,
+      "family_median_s": 0.000028,
+      "ratio": 0.9471
+    },
+    "hex8-total_lagrangian-svk-moose": {
+      "tier_only_median_s": 0.000013,
+      "family_median_s": 0.000012,
+      "ratio": 0.9044
+    },
+    "hex8-total_lagrangian-j2_power_law-taichi": {
+      "tier_only_median_s": 0.000150,
+      "family_median_s": 0.000140,
+      "ratio": 0.9371
+    },
+    "hex8-total_lagrangian-j2_power_law-moose": {
+      "tier_only_median_s": 0.000012,
+      "family_median_s": 0.000012,
+      "ratio": 1.0180
+    },
+    "hex8-total_lagrangian-perzyna-moose": {
+      "tier_only_median_s": 0.000011,
+      "family_median_s": 0.000012,
+      "ratio": 1.0410
+    },
+    "hex8-total_lagrangian-lemaitre-taichi": {
+      "tier_only_median_s": 0.000161,
+      "family_median_s": 0.000153,
+      "ratio": 0.9499
+    },
+    "hex8-total_lagrangian-lemaitre-moose": {
+      "tier_only_median_s": 0.000012,
+      "family_median_s": 0.000012,
+      "ratio": 1.0276
+    },
+    "hex8-updated_lagrangian-svk-taichi": {
+      "tier_only_median_s": 0.000138,
+      "family_median_s": 0.000136,
+      "ratio": 0.9912
+    },
+    "hex8-updated_lagrangian-svk-mfem": {
+      "tier_only_median_s": 0.000029,
+      "family_median_s": 0.000029,
+      "ratio": 0.9774
+    },
+    "hex8-updated_lagrangian-svk-moose": {
+      "tier_only_median_s": 0.000012,
+      "family_median_s": 0.000012,
+      "ratio": 1.0101
+    },
+    "hex8-updated_lagrangian-j2_power_law-taichi": {
+      "tier_only_median_s": 0.000152,
+      "family_median_s": 0.000148,
+      "ratio": 0.9728
+    },
+    "hex8-updated_lagrangian-j2_power_law-moose": {
+      "tier_only_median_s": 0.000013,
+      "family_median_s": 0.000013,
+      "ratio": 1.0066
+    },
+    "hex8-updated_lagrangian-perzyna-moose": {
+      "tier_only_median_s": 0.000013,
+      "family_median_s": 0.000013,
+      "ratio": 1.0033
+    },
+    "hex8-updated_lagrangian-lemaitre-taichi": {
+      "tier_only_median_s": 0.000161,
+      "family_median_s": 0.000167,
+      "ratio": 1.0378
+    },
+    "hex8-updated_lagrangian-lemaitre-moose": {
+      "tier_only_median_s": 0.000012,
+      "family_median_s": 0.000012,
+      "ratio": 1.0761
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+    "task_id": "P4-3",
+    "title": "Ogden hyperelastic model (with 3x3 symmetric eigendecomposition)",
+    "phase": "4",
+    "objective": "Add an Ogden constitutive model Psi = sum_p (mu_p/alpha_p) (lambda_1^alpha_p + lambda_2^alpha_p + lambda_3^alpha_p - 3) + (kappa/2)(J-1)^2 where lambda_i are the principal stretches.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["154", "154"],
+    "plan_assets": [
+        {
+            "asset_description": "B4.1 Ogden model description — requires symmetric eigendecomposition.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 154,
+            "Plan_file_end_line": 154
+        }
+    ],
+    "blocked_by": ["P1-1"],
+    "blocks": ["P4-5"],
+    "scope": [
+        "Add `mechdsl.symbolic.models.ogden` with `OgdenMaterial(N, mus, alphas, kappa)` where mus and alphas are N-length arrays.",
+        "Implement the spectral decomposition of the right Cauchy-Green C via `numpy.linalg.eigh` (symmetric eigendecomposition).",
+        "Reassemble the PK2 stress from the spectral form: S = 2 sum_p (dPsi/dlambda_p^2) M_p where M_p are the eigenprojections.",
+        "Handle repeated eigenvalues robustly (use the limit formula when two principal stretches are within 1e-6 of each other).",
+        "Expose as `material_type='ogden'`."
+    ],
+    "implementation_steps": [
+        "Implement `eigh_sym_3x3` wrapper with repeated-eigenvalue handling (perturb and take the limit).",
+        "Implement the spectral PK2 stress.",
+        "Implement the consistent material tangent from the spectral form.",
+        "Unit-test on uniaxial with N = 3 Ogden parameters matching a rubber benchmark.",
+        "Unit-test that the N = 1, alpha = 2 case matches neo-Hookean."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/symbolic/models/ogden.py`",
+        "`packages/mechdsl-core/tests/test_ogden.py`"
+    ],
+    "acceptance_criteria": [
+        "Uniaxial rubber benchmark with N = 3 matches literature stretch-stress curve within 1e-4.",
+        "N = 1, alpha = 2 limit reduces to neo-Hookean.",
+        "Repeated-eigenvalue test passes (F = lambda I for any lambda)."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_ogden.py::TestTaskP4_3Ogden -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Uniaxial rubber benchmark N=3",
+            "Neo-Hookean reduction (N=1, alpha=2)",
+            "Repeated eigenvalues (F = lambda I)",
+            "Near-degenerate eigenvalues (lambda_2 - lambda_1 = 1e-8)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_ogden.py"
+    ],
+    "risks": [
+        "Repeated eigenvalues give 0/0 in the spectral tangent. Mitigation: detect within 1e-6 and apply L'Hopital-style limit formulas from Holzapfel §6.5."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-17",
+    "test_completion": {
+        "passed": 9,
+        "total": 9,
+        "pass_rate": 100,
+        "commands": [
+            {"command": "uv run pytest packages/mechdsl-core/tests/test_ogden.py::TestTaskP4_3Ogden -v", "passed": 9, "total": 9}
+        ]
+    },
+    "review_score": 95,
+    "review_breakdown": {"minor": 2, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "plan-b_phase-4",
+    "completion_notes": [
+        "OgdenMaterial(mus, alphas, kappa) with N as a computed property; spectral PK2 via numpy.linalg.eigh(C_sym)",
+        "Material tangent via central-difference FD of the analytic spectral stress — sidesteps Holzapfel L'Hopital branch at repeated eigenvalues (stress form has no 1/(e_a - e_b) denominator)",
+        "N=1/alpha=2 reduces exactly to Neo-Hookean(mu=mu_1); verified at atol=1e-10 stress, 1e-4 tangent over 5 random states",
+        "Repeated + near-degenerate eigenvalues (ε=1e-4/1e-6/1e-8) verified finite and continuous",
+        "Registered 'ogden' in _SUPPORTED_MATERIALS; swapped 'ogden' → 'hgo' as not-yet-supported sentinel in 4 pre-existing rejection tests",
+        "Gate A/B/C all passed first attempt; 9/9 task tests + 1136-test regression green"
+    ],
+    "github_issue": {"phase_issue": 59, "task_issue": 86, "repo": "SOSOVSKI/MechDSL"}
+}

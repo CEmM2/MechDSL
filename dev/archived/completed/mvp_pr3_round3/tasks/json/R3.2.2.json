@@ -1,0 +1,70 @@
+{
+    "task_id": "R3.2.2",
+    "title": "Fix J2 radial_return stall guard (H3)",
+    "phase": "2",
+    "objective": "Fix the Newton stall guard in radial_return to check convergence before breaking, preventing silent return of unconverged result",
+    "plan_file": "dev/plans/mvp_pr3_round3.md",
+    "plan_lines": ["142", "156"],
+    "plan_assets": [
+        {
+            "asset_description": "Code snippet: stall guard fix",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 147,
+            "Plan_file_end_line": 155
+        }
+    ],
+    "blocked_by": [],
+    "blocks": ["R3.5.1", "R3.5.2"],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/symbolic/models/j2_power_law.py lines 253-254"
+    ],
+    "implementation_steps": [
+        "Change the if abs(df) < 1e-30: break to check if abs(f) > tol first",
+        "If stalled with large residual, raise RuntimeError",
+        "If stalled but converged, break normally",
+        "Remove # pragma: no cover"
+    ],
+    "deliverables": [
+        "Modified j2_power_law.py:253-254"
+    ],
+    "acceptance_criteria": [
+        "Stalled Newton with large residual raises RuntimeError",
+        "Stalled Newton with small residual breaks normally",
+        "No pragma: no cover on the path"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_phase2_error_handling.py::TestR322RadialReturnStallGuard -v --tb=short",
+        "uv run pytest packages/mechdsl-core/tests/test_j2.py -v --tb=short"
+    ],
+    "test_plan": {
+        "tier": "new",
+        "cases": [
+            "T2 tests in Phase 5 will cover this path"
+        ]
+    },
+    "test_artifacts": ["packages/mechdsl-core/tests/test_phase2_error_handling.py", "packages/mechdsl-core/tests/test_j2.py"],
+    "risks": [],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

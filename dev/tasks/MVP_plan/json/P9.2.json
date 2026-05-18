@@ -1,0 +1,70 @@
+{
+    "task_id": "P9.2",
+    "title": "Generated vs handwritten equivalence tests",
+    "phase": "9",
+    "objective": "Compare field outputs from generated and handwritten reference solvers.",
+    "plan_file": "dev/plans/MVP_plan.md",
+    "plan_lines": ["278", "280"],
+    "plan_assets": [],
+    "blocked_by": ["P1.3", "P6.3", "P6.4"],
+    "blocks": ["P9.4"],
+    "scope": [
+        "Cross-implementation comparison only",
+        "packages/mechdsl-core/tests/test_codegen.py"
+    ],
+    "implementation_steps": [
+        "Run generated elastic solver on same mesh/BCs as handwritten reference",
+        "Run generated plastic solver on same mesh/BCs as handwritten reference",
+        "Compare displacement fields element-by-element",
+        "Compare stress fields element-by-element",
+        "Assert max norm difference below threshold"
+    ],
+    "deliverables": [
+        "Equivalence tests in test_codegen.py"
+    ],
+    "acceptance_criteria": [
+        "Max norm difference between generated and handwritten outputs below defined threshold",
+        "Both elastic and plastic paths compared"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_codegen.py -k equivalence -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Elastic: generated vs handwritten displacement comparison",
+            "Elastic: generated vs handwritten stress comparison",
+            "Plastic: generated vs handwritten displacement comparison",
+            "Plastic: generated vs handwritten stress comparison"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_codegen.py"
+    ],
+    "risks": [
+        "Small numerical differences from CSE/ordering — use tolerance-based comparison"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

@@ -1,0 +1,71 @@
+{
+    "task_id": "P7-2",
+    "title": "Critical time step computation",
+    "phase": "7",
+    "objective": "Compute the critical time step for the central-difference integrator via the Courant condition: dt_crit = L_min / c_d where L_min is the minimum element characteristic length and c_d is the dilatational wave speed.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["211", "211"],
+    "plan_assets": [
+        {
+            "asset_description": "B7.1 critical time step computation.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 211,
+            "Plan_file_end_line": 211
+        }
+    ],
+    "blocked_by": ["P7-1"],
+    "blocks": ["P7-3"],
+    "scope": [
+        "Add `mechdsl.solver.critical_timestep(coords, conn, lam, mu, rho, safety=0.9)` returning the Courant-limited stable time step.",
+        "Characteristic length = element volume^(1/3) for Hex8; element-shortest-edge for tets.",
+        "Dilatational wave speed: c_d = sqrt((lam + 2 mu) / rho).",
+        "Per-element dt is min over all quadrature points; global dt is min over all elements; apply safety factor.",
+        "Expose in the generated explicit driver: `dt_crit = critical_timestep(...)` as a helper function."
+    ],
+    "implementation_steps": [
+        "Compute per-element L_min via numpy.",
+        "Compute c_d from material parameters.",
+        "Add a Python helper `critical_timestep()`.",
+        "Inline the helper in the emitted explicit driver.",
+        "Unit-test on a regular unit-cube Hex8 mesh with known wave speed."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/solver/critical_timestep.py`",
+        "`packages/mechdsl-core/tests/test_critical_timestep.py`"
+    ],
+    "acceptance_criteria": [
+        "Regular unit-cube mesh: computed dt matches L/c_d within 1e-8.",
+        "Irregular mesh: dt is below the min-element limit (safety check).",
+        "Safety factor applied correctly (default 0.9)."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_critical_timestep.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Unit-cube Hex8 dt matches L/c_d",
+            "Irregular mesh dt below per-element min",
+            "Safety factor sanity"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_critical_timestep.py"
+    ],
+    "risks": [
+        "Nonlinear wave speed (strain-stiffening materials) makes dt state-dependent. Mitigation: recompute dt periodically in the explicit driver (e.g. every 100 steps) rather than once."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-17",
+    "test_completion": {"passed": 3, "total": 3, "pass_rate": 100, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_critical_timestep.py -v", "passed": 3, "total": 3}]},
+    "review_score": 90,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "passed",
+    "implementation_branch": "plan-b_phase-7",
+    "completion_notes": [
+        "Char length convention: Hex8 = V^(1/3) via 2x2x2 Gauss (reuses lumped_mass.py Jacobian machinery); Tet4/Tet10 = shortest corner edge",
+        "Hex20 stubbed with NotImplementedError as Plan B post-B7 follow-up",
+        "Pure numpy helper — zero blast radius on IR / codegen / frontend"
+    ],
+    "github_issue": {"phase_issue": 62, "task_issue": 100, "repo": "SOSOVSKI/MechDSL"}
+}

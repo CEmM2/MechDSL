@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Open Issues Report</title>
+<style>
+  body { font-family: sans-serif; margin: 0; overflow: hidden; background: #f0f0f0; }
+  .slide { display: none; height: 100vh; width: 100vw; padding: 40px; box-sizing: border-box; background: white; overflow-y: auto; }
+  .active { display: block; }
+  .nav { position: fixed; bottom: 20px; right: 20px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  button { padding: 10px 20px; font-size: 16px; margin-left: 10px; cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 3px; }
+  button:hover { background: #eee; }
+  h1 { font-size: 2.5em; border-bottom: 2px solid #333; padding-bottom: 10px; }
+  h2 { color: #0056b3; }
+  .verdict { font-weight: bold; font-size: 1.2em; padding: 5px 10px; border-radius: 5px; display: inline-block; margin-bottom: 20px; }
+  .verdict.pending { background: #ffeeba; color: #856404; }
+  .verdict.wip { background: #b8daff; color: #004085; }
+  .verdict.close { background: #c3e6cb; color: #155724; }
+  pre { background: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #e9ecef; overflow-x: auto; }
+  code { font-family: monospace; }
+  .evidence { margin-top: 20px; }
+  ul { font-size: 1.2em; line-height: 1.6; }
+</style>
+<script>
+  let currentSlide = 0;
+  function showSlide(index) {
+    const slides = document.querySelectorAll('.slide');
+    if (index >= slides.length) currentSlide = 0;
+    else if (index < 0) currentSlide = slides.length - 1;
+    else currentSlide = index;
+
+    slides.forEach((slide, i) => {
+      slide.classList.toggle('active', i === currentSlide);
+    });
+  }
+  function nextSlide() { showSlide(currentSlide + 1); }
+  function prevSlide() { showSlide(currentSlide - 1); }
+
+  document.addEventListener('DOMContentLoaded', () => showSlide(0));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') nextSlide();
+    if (e.key === 'ArrowLeft') prevSlide();
+  });
+</script>
+</head>
+<body>
+
+<div class="slide active">
+  <h1>MechDSL Open Issues Report</h1>
+  <p style="font-size: 1.5em; text-align: center; margin-top: 20vh;">
+    Review of remaining tasks and verification of open issues.<br>
+    Use ←/→ arrow keys or buttons to navigate.
+  </p>
+</div>
+
+<div class="slide">
+  <h1>Issue 1: Phase 6 test hardening needs merge</h1>
+  <div class="verdict close">Verdict: CLOSE</div>
+
+  <h2>Open Tasks:</h2>
+  <ul>
+    <li>Merge branch <code>post-recovery-plan_phase-6</code> to <code>main</code></li>
+    <li>Flip tasks P6-1..P6-4 to "done" in tracker</li>
+  </ul>
+
+  <h2>Evidence:</h2>
+  <div class="evidence">
+    <p>The branch was already merged to main via PR #238. Git log of main branch confirms:</p>
+<pre><code>$ git log --oneline main | head -n 1
+e3a2af9 Merge pull request #238 from SOSOVSKI/post-recovery-plan_phase-6
+</code></pre>
+    <p>The tracker file <code>dev/tracking/may_status.md</code> is stale and needs to be updated or ignored, as the work is already in main.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <h1>Issue 2: test_p2_3.py IndentationError</h1>
+  <div class="verdict close">Verdict: CLOSE</div>
+
+  <h2>Open Tasks:</h2>
+  <ul>
+    <li>Fix indentation error in <code>packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p2_3.py</code> at line 67-68</li>
+  </ul>
+
+  <h2>Evidence:</h2>
+  <div class="evidence">
+    <p>The syntax error has already been fixed on main. Running the test file passes successfully:</p>
+<pre><code>$ uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p2_3.py
+...
+collected 2 items
+packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p2_3.py . [ 50%]
+.                                                                        [100%]
+============================== 2 passed in 0.10s ===============================
+</code></pre>
+  </div>
+</div>
+
+<div class="slide">
+  <h1>Issue 3: test_p2_2.py failure (Taichi Segfault)</h1>
+  <div class="verdict pending">Verdict: PENDING</div>
+
+  <h2>Open Tasks:</h2>
+  <ul>
+    <li>Investigate why <code>test_docs_marker_selects_only_p7_doc_tier_tests</code> fails during collection.</li>
+    <li>Fix the segmentation fault in Taichi initialization.</li>
+  </ul>
+
+  <h2>Evidence:</h2>
+  <div class="evidence">
+    <p>The test is actively failing on main. The failure is caused by a segmentation fault during pytest collection, specifically when Taichi initializes via the algo2code path. Setting <code>TI_ARCH=x64</code> resolves the crash, indicating an environment/arch-selection issue that needs to be addressed either in CI config, the test setup, or algo2code transpilation.</p>
+<pre><code>$ uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p2_2.py -v
+...
+packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p2_2.py::TestTaskP2_2::test_docs_marker_selects_only_p7_doc_tier_tests FAILED [100%]
+
+AssertionError: pytest -m docs collection failed (rc=-11):
+Fatal Python error: Segmentation fault
+Thread 0x... (most recent call first):
+  File ".../site-packages/taichi/_version_check.py"
+...
+  File "&lt;algo2code:radial_return_j2&gt;"
+</code></pre>
+  </div>
+</div>
+
+<div class="slide">
+  <h1>Issue 4: Phase 7 Execution</h1>
+  <div class="verdict pending">Verdict: PENDING</div>
+
+  <h2>Open Tasks:</h2>
+  <ul>
+    <li>P7-1: Restore `## Inventory` anchor in `dev/examples/README.md`</li>
+    <li>P7-2: Robustify `test_p7_3.py` ordering + path matching</li>
+    <li>P7-3: Rename `_import_generated_module` constant; clear comment</li>
+    <li>P7-4: Trim `test_p7_6.py` to 100–250 lines</li>
+    <li>P7-5: Clarify `_SUPERSEDED.md` runtime-active vs archived</li>
+    <li>P7-6: Refresh GitNexus index</li>
+    <li>P7-7: Add CI baseline-stability smoke job</li>
+  </ul>
+
+  <h2>Evidence:</h2>
+  <div class="evidence">
+    <p>According to <code>dev/tracking/may_status.md</code>, Phase 7 tasks are "not started". The issues exist in the <code>dev/tasks/post_recovery_plan/json/P7-*.json</code> files and need to be implemented.</p>
+<pre><code>### Phase 7: not started
+
+Seven low-complexity polish/governance tasks. No blocking dependencies.
+</code></pre>
+  </div>
+</div>
+
+<div class="slide">
+  <h1>Issue 5: Design Doc Coverage Gaps</h1>
+  <div class="verdict pending">Verdict: PENDING</div>
+
+  <h2>Open Tasks:</h2>
+  <ul>
+    <li>P3: Two-point tensor <code>F_{iI}</code> → spatial/material indices via parser</li>
+    <li>P4: Index manifold clash → <code>IndexError</code> via parser</li>
+  </ul>
+
+  <h2>Evidence:</h2>
+  <div class="evidence">
+    <p>These verification gaps remain deferred. The required LaTeX parser path has been partially implemented via NRPyLaTeX (Phase 4 of post_recovery_plan), but the round-trip tests for these specific cases remain open as documented in <code>verification_matrix.md</code> and <code>may_status.md</code>.</p>
+  </div>
+</div>
+
+<div class="nav">
+  <button onclick="prevSlide()">Prev</button>
+  <button onclick="nextSlide()">Next</button>
+</div>
+
+</body>
+</html>

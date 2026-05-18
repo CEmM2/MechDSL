@@ -1,0 +1,55 @@
+{
+    "task_id": "P5-1",
+    "title": "Update README with installation, quickstart, architecture",
+    "phase": "5",
+    "objective": "Update README.md with installation instructions, quickstart guide, and architecture overview linking to design docs.",
+    "plan_file": "dev/plans/sprint3.md",
+    "plan_lines": ["221"],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": [],
+    "scope": ["Add installation section", "Add quickstart section", "Add architecture diagram", "Add link to design docs"],
+    "implementation_steps": ["Read existing README.md", "Add installation (git clone, uv sync)", "Add quickstart showing ProblemIR construction and compile()", "Add text-based architecture diagram of 6-layer pipeline", "Add CI status badge"],
+    "deliverables": ["Updated README.md"],
+    "acceptance_criteria": ["README has installation, quickstart, architecture sections"],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_documentation.py::TestTaskP5T1 -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "README documents the uv-based installation workflow",
+            "README includes a quickstart using build_context() and compile()",
+            "README includes an architecture overview and links to design docs"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_documentation.py"
+    ],
+    "risks": [
+        "README guidance can drift from the validated public workflow if installation and quickstart examples do not match the current uv-based setup.",
+        "Architecture documentation can become stale if it diverges from the six-layer pipeline validated in Phase 4."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-12",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_documentation.py::TestTaskP5T1 -v",
+                "passed": 3,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 9,
+    "review_breakdown": {"minor": 1, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/sprint3-phase4",
+    "completion_notes": [
+        "README now documents uv-based installation, a build_context() -> ProblemIR -> compile() quickstart, the six-layer architecture, and the current CI tier split."
+    ],
+    "github_issue": {"phase_issue": 19, "task_issue": 38, "repo": "SOSOVSKI/MechDSL"}
+}

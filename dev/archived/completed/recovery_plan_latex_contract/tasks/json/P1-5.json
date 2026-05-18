@@ -1,0 +1,89 @@
+{
+    "task_id": "P1-5",
+    "title": "Record the frontend deferral explicitly as historical execution drift, not missing design intent.",
+    "phase": "1",
+    "objective": "Record the frontend deferral explicitly as historical execution drift, not missing design intent.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "120",
+        "120"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P1-5 (R0.5) in Phase 1 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 120,
+            "Plan_file_end_line": 120
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [],
+    "scope": [
+        "Record the frontend deferral explicitly as historical execution drift, not missing design intent.",
+        "Touched surfaces (per recovery plan): `dev/reviews/`, tracker notes, optional ADR-style note"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 1 (Freeze the contract surface (R0)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Record the frontend deferral explicitly as historical execution drift, not missing design intent.",
+        "Touch only the listed surfaces: `dev/reviews/`, tracker notes, optional ADR-style note.",
+        "Verify: Recovery artifacts clearly distinguish \u201cplanned but deferred\u201d from \u201cnever planned\u201d.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `dev/reviews/`",
+        "Changes to tracker notes",
+        "Changes to optional ADR-style note"
+    ],
+    "acceptance_criteria": [
+        "Recovery artifacts clearly distinguish \u201cplanned but deferred\u201d from \u201cnever planned\u201d.",
+        "All deliverables for P1-5 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p1_5.py -v -m audit"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "P1-5-c1: Recovery artifacts clearly distinguish \u201cplanned but deferred\u201d from \u201cnever planned\u201d.",
+            "P1-5-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p1_5.py"
+    ],
+    "risks": [
+        "No specific risk attributed in the plan; standard care applies."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-26",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p1_5.py -v -m audit",
+                "passed": 3,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Created dev/reviews/frontend_drift_history.md classifying the deferral against three patterns (planned-but-deferred / never-planned / implemented-via-substitute), cross-linked to drift_20_04.md and the recovery plan. test_p1_5 passes 3/3."
+    ],
+    "github_issue": {
+        "phase_issue": 141,
+        "task_issue": 152,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

@@ -1,0 +1,101 @@
+{
+  "task_id": "P3-1",
+  "title": "Cook membrane original matrix closure",
+  "phase": "3",
+  "objective": "Widen the Cook membrane benchmark from the approved Hex8 TL slice to the original TL/UL x J2 x Hex8/Tet10 matrix.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "208",
+    "240"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E5 Cook and necking original-scope closure scope and acceptance criteria.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 208,
+      "Plan_file_end_line": 240
+    }
+  ],
+  "blocked_by": [
+    "P1-2",
+    "P2-2"
+  ],
+  "blocks": [
+    "P9-1"
+  ],
+  "scope": [
+    "Widen Cook benchmark parameters to represent TL/UL and Hex8/Tet10 cells.",
+    "Use Phase 1 mesh utilities and Phase 2 J2 solver support.",
+    "Preserve current TL Hex8 defaults and compatibility."
+  ],
+  "implementation_steps": [
+    "Run GitNexus impact on existing Cook benchmark symbols before editing them.",
+    "Add matrix-capable Cook parameters while preserving old defaults.",
+    "Wire TL/UL and Hex8/Tet10 paths through the benchmark-local solver layer.",
+    "Replace Cook test coverage with active original-scope matrix cases.",
+    "Run Cook-specific and existing benchmark tests."
+  ],
+  "deliverables": [
+    "Matrix-capable Cook benchmark runner.",
+    "Active Cook matrix tests.",
+    "Updated local task/gate artifacts after execution."
+  ],
+  "acceptance_criteria": [
+    "Cook tests cover TL/UL x J2 x Hex8/Tet10.",
+    "Existing TL Hex8 Cook behavior remains compatible.",
+    "No changes to BenchmarkResult are required."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py packages/mechdsl-core/tests/test_benchmarks_necking_bar_matrix.py -v",
+    "uv run ruff check packages/mechdsl-core/src/mechdsl/verify/benchmarks/cook_membrane.py packages/mechdsl-core/src/mechdsl/verify/benchmarks/necking_bar.py packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py packages/mechdsl-core/tests/test_benchmarks_necking_bar_matrix.py",
+    "uv run mypy packages/mechdsl-core/src/mechdsl/verify/benchmarks/cook_membrane.py packages/mechdsl-core/src/mechdsl/verify/benchmarks/necking_bar.py"
+  ],
+  "test_plan": {
+    "tier": "regression",
+    "cases": [
+      "TL J2 Hex8 Cook",
+      "UL J2 Hex8 Cook",
+      "TL J2 Tet10 Cook",
+      "UL J2 Tet10 Cook"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py"
+  ],
+  "risks": [
+    "Tet10 Cook tolerances may expose mesh or history-state ordering issues; mitigate by validating mesh Jacobians and state updates before benchmark comparison."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-25",
+  "test_completion": {
+    "passed": 10,
+    "total": 10,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py packages/mechdsl-core/tests/test_benchmarks_necking_bar_matrix.py -v",
+        "passed": 10,
+        "total": 10
+      }
+    ]
+  },
+  "review_score": 0,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e5-cook-necking",
+  "completion_notes": [
+    "CookMembraneParameters now carries formulation and element_type axes.",
+    "The existing TL Hex8 reference solve remains compatible through the injected solve_plastic path.",
+    "UL and Tet10 cells are active through benchmark-local prescribed-displacement J2 assembly smoke coverage without changing BenchmarkResult."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

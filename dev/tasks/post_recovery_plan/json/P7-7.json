@@ -1,0 +1,88 @@
+{
+    "task_id": "P7-7",
+    "title": "Add CI baseline-stability smoke job confirming algo2code workspace install yields 0 import failures (item 17)",
+    "phase": "7",
+    "objective": "Lock in the post-P7-1 baseline of zero algo2code-import failures by adding a CI job that validates a clean workspace install on each main-branch run.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": [
+        "340",
+        "343"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Item 17: pre-existing 9 failures discrepancy \u2014 algo2code-import failures pre-existing on baseline; post-P7-1 smoke shows 0; confirm CI stability",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 70,
+            "Plan_file_end_line": 72
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [],
+    "scope": [
+        "Edit .github/workflows/ci.yml (or equivalent)",
+        "Add baseline-stability job: uv sync --all-packages --all-groups --all-extras then collect-only smoke check",
+        "Job runs on push to main and on PRs targeting main"
+    ],
+    "implementation_steps": [
+        "Locate primary CI workflow file",
+        "Add job: name baseline-stability; install via uv sync; run uv run pytest --collect-only -q",
+        "Assert no algo2code import failures in collection output",
+        "Validate workflow syntax via gh workflow view or local act dry-run"
+    ],
+    "deliverables": [
+        "Updated CI workflow with baseline-stability job"
+    ],
+    "acceptance_criteria": [
+        "CI baseline-stability job passes on a clean checkout from main",
+        "Job fails fast if algo2code import failures appear"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p7_7.py -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Baseline-stability job present in CI workflow (missing)",
+            "Workflow YAML parses (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p7_7.py",
+        ".github/workflows/ci.yml"
+    ],
+    "risks": [
+        "Workflow change requires PR-level run to validate \u2014 mitigation: review job logs after merge"
+    ],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 2,
+        "total": 2,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p7_7.py -v",
+                "passed": 2,
+                "total": 2
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-7",
+    "completion_notes": [
+        "Added `baseline-stability` job to .github/workflows/ci.yml: smoke-imports algo2code + collect-only on full test tree.",
+        "Cross-task: P2-2 docs-collection allowlist generalised to admit all post_recovery_plan/ test files (4th occurrence of integration_break pattern)."
+    ],
+    "github_issue": {
+        "phase_issue": 206,
+        "task_issue": 245,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

@@ -1,0 +1,26 @@
+# ======================================================================
+# Neumann f_ext kernel for BC 'load' (surface 'z1')
+# Emitted by post_recovery_plan P1-4 (Taichi printer Neumann emitter)
+# ======================================================================
+
+@ti.kernel
+def init_f_ext_from_neumann_load(surface_nodes: ti.types.ndarray(dtype=ti.i32, ndim=1)):
+    """Initialise f_ext from Neumann BC 'load'.
+
+    Surface tag: 'z1'.
+    Per-node force (pre-distributed: traction * face_area / n_face_nodes): (0, 0, -1000).
+
+    Mesh indices (i, k) are runtime; spatial component (d) is ti.static.
+    """
+    for i in range(n_nodes):
+        for d in ti.static(range(3)):
+            f_ext[i][d] = 0.0
+
+    n_surface = surface_nodes.shape[0]
+    for k in range(n_surface):
+        nid = surface_nodes[k]
+        f_ext[nid][0] = 0
+        f_ext[nid][1] = 0
+        f_ext[nid][2] = -1000
+
+

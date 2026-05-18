@@ -1,0 +1,69 @@
+{
+    "task_id": "P2-1",
+    "title": "Covariant/contravariant bases + metric tensors (curvilinear reference)",
+    "phase": "2",
+    "objective": "Extend `mechdsl.symbolic.convected` to support curvilinear reference configurations with non-trivial G_{IJ}. Implement g_I = F G_I, g_IJ, g^IJ (inverse metric), and contravariant bases g^I = g^{IJ} g_J.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["82", "94"],
+    "plan_assets": [
+        {
+            "asset_description": "B2.1 convected bases definition: g_I = dx/dtheta^I = F G_I with full metric tensor machinery.",
+            "asset_type": "equation",
+            "Plan_file_start_line": 82,
+            "Plan_file_end_line": 94
+        }
+    ],
+    "blocked_by": ["P1-1"],
+    "blocks": ["P2-2", "P2-4"],
+    "scope": [
+        "Extend the existing (Cartesian-reference) `mechdsl.symbolic.convected` module to accept a user-supplied `G_IJ(theta)` metric tensor expression.",
+        "Compute `g_IJ = F^T G F` (convected pushforward) for a given deformation gradient.",
+        "Invert g_IJ symbolically or numerically to get g^{IJ}.",
+        "Produce covariant and contravariant base vectors at an arbitrary material point.",
+        "Preserve the MVP Cartesian-reference fast path: when G_{IJ} = delta_{IJ}, the new code must match the existing one byte-for-byte."
+    ],
+    "implementation_steps": [
+        "Audit the existing `mechdsl.symbolic.convected` module to identify the Cartesian assumptions (G = I).",
+        "Add a `MetricField` abstraction that can be either Cartesian (fast path) or a user-supplied SymPy expression.",
+        "Add symbolic helpers for g_IJ pushforward and g^{IJ} inversion.",
+        "Add unit tests verifying Cartesian-reference unchanged and a cylindrical-coordinate example with a known G_IJ."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/symbolic/convected.py` — extended",
+        "`packages/mechdsl-core/tests/test_convected_curvilinear.py`"
+    ],
+    "acceptance_criteria": [
+        "Cartesian reference (`G = I3`) path produces identical output to the current MVP.",
+        "Cylindrical coordinates example computes g_IJ analytically and numerically and they agree.",
+        "Metric inversion returns `g^{IJ}` such that g^{IK} g_{KJ} = delta^I_J to 1e-12."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_convected_curvilinear.py::TestTaskP2_1MetricTensors -v",
+        "uv run pytest packages/mechdsl-core/tests/test_convected.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Cartesian reference unchanged",
+            "Cylindrical G_IJ construction",
+            "Metric inversion round-trip",
+            "Contravariant bases from metric"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_convected_curvilinear.py",
+        "packages/mechdsl-core/tests/test_convected.py"
+    ],
+    "risks": [
+        "Symbolic metric inversion is expensive for generic G. Mitigation: allow numerical inversion as a fallback when `simplify(det(G)) != 0` is not tractable."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-16",
+    "test_completion": {"passed": 14, "total": 14, "pass_rate": 100, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_convected_curvilinear.py::TestTaskP2_1MetricTensors -v", "passed": 6, "total": 6}, {"command": "uv run pytest packages/mechdsl-core/tests/test_convected.py -v", "passed": 8, "total": 8}]},
+    "review_score": 9,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "plan-b_phase-2",
+    "completion_notes": ["Gate A: failed attempt 1 (test_gap — covariant_bases curvilinear branch untested), passed attempt 2 after adding test_covariant_bases_curvilinear", "Gate B: failed attempt 1 (physics_error — F^T G F formula wrong for Cartesian F with curvilinear G), passed attempt 2 after correcting to G_ref_vecs^T C G_ref_vecs, adding symmetry validation, and cross-consistency test", "Gate C: 1038/1039 passed (1 pre-existing failure unrelated)"],
+    "github_issue": {"phase_issue": 57, "task_issue": 75, "repo": "SOSOVSKI/MechDSL"}
+}

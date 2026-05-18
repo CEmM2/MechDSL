@@ -1,0 +1,38 @@
+{
+    "task_id": "P1-T3",
+    "title": "Write convected coordinate tests",
+    "phase": "1",
+    "objective": "Create tests/test_convected.py verifying all three convected coordinate functions and covering test ID S9 from 08-VERIFICATION.md.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["34", "39"],
+    "plan_assets": [],
+    "blocked_by": ["P1-T2"],
+    "blocks": [],
+    "scope": ["packages/mechdsl-core/tests/test_convected.py"],
+    "implementation_steps": [
+        "Create test_convected.py with tests for all three functions",
+        "Test F=I: g = G = I, E = 0",
+        "Test simple shear F = I + gamma*e1⊗e2: verify g = C = F^T F by hand calc",
+        "Test non-Cartesian raises UnsupportedError with appropriate message",
+        "Verify consistency with kinematics.py output (g from KinematicsResult matches compute_convected_metric)"
+    ],
+    "deliverables": ["packages/mechdsl-core/tests/test_convected.py"],
+    "acceptance_criteria": [
+        "All tests pass",
+        "Covers test ID S9 from 08-VERIFICATION.md",
+        "Tests F=I identity, known shear, error path"
+    ],
+    "verification_commands": ["uv run pytest packages/mechdsl-core/tests/test_convected.py -v"],
+    "test_plan": {"tier": "unit", "cases": ["F=I → zero strain", "Simple shear → correct C", "UnsupportedError for curvilinear", "Consistency with kinematics.py"]},
+    "test_artifacts": ["packages/mechdsl-core/tests/test_convected.py"],
+    "risks": ["Low risk: test-only task, no source code changes outside test file."],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {"passed": 0, "total": 0, "pass_rate": 0, "commands": []},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "",
+    "implementation_branch": "sprint2_phase-1",
+    "completion_notes": [],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

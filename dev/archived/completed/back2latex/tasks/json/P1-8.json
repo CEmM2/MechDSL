@@ -1,0 +1,87 @@
+{
+    "task_id": "P1-8",
+    "title": "Drop or fold the 'Suggested PR slices' section",
+    "phase": "1",
+    "objective": "Remove (or replace with a one-sentence note) the 'Suggested PR slices' section in recovery_plan_latex_contract.md so Plan-2-Tasks does not see a competing decomposition that interleaves task IDs across phase boundaries.",
+    "plan_file": "dev/plans/back2latex.md",
+    "plan_lines": [
+        "176",
+        "178"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Replacement single-sentence note about PR boundaries being downstream of task decomposition",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 178,
+            "Plan_file_end_line": 178
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [
+        "P2-1"
+    ],
+    "scope": [
+        "Edit only the 'Suggested PR slices' section in dev/plans/recovery_plan_latex_contract.md (currently lines 299-335)",
+        "Either delete the section outright or replace its body with the single-sentence note from amendment 8"
+    ],
+    "implementation_steps": [
+        "Locate the '## Suggested PR slices' (or similar) heading in dev/plans/recovery_plan_latex_contract.md",
+        "Choose either deletion or replacement \u2014 preference is replacement with the one-sentence note for traceability",
+        "Replace contents with: 'PR boundaries are tracked per task in dev/tasks/recovery_plan_latex_contract/json/; one task = one PR is the default.'",
+        "If deleting, also remove any references to the deleted section elsewhere in the file"
+    ],
+    "deliverables": [
+        "'Suggested PR slices' section either deleted or reduced to one sentence in dev/plans/recovery_plan_latex_contract.md"
+    ],
+    "acceptance_criteria": [
+        "The legacy interleaved PR slicing (PR-2 = R1.1-R1.3 etc.) no longer appears anywhere in dev/plans/recovery_plan_latex_contract.md",
+        "If the section was kept, it contains only the one-sentence note from amendment 8"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p1_8.py -v -m audit"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "grep returns no occurrences of 'PR-2 = R' or similar interleaved-slice patterns",
+            "If section retained, it consists of a single sentence pointing to dev/tasks/.../json/"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/test_p1_8.py"
+    ],
+    "risks": [
+        "Deleting the section loses prose context useful for human reviewers \u2014 mitigated by preferring the one-sentence replacement"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-26",
+    "test_completion": {
+        "passed": 2,
+        "total": 2,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p1_8.py -v -m audit",
+                "passed": 2,
+                "total": 2
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Replaced PR-slice section with one-sentence pointer to dev/tasks/recovery_plan_latex_contract/json/; legacy interleaved PR-N headings removed; test_p1_8 passes 2/2."
+    ],
+    "github_issue": {
+        "phase_issue": 125,
+        "task_issue": 129,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

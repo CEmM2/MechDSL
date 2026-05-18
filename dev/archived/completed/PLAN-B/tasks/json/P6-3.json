@@ -1,0 +1,72 @@
+{
+    "task_id": "P6-3",
+    "title": "D=0 regression + notched bar verification",
+    "phase": "6",
+    "objective": "Phase 6 acceptance: at D = 0 everywhere, Lemaitre reproduces J2 power-law exactly; on a notched tension bar, damage localises at the notch root as expected from the literature.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["196", "199"],
+    "plan_assets": [
+        {
+            "asset_description": "B6.2 verification criteria.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 196,
+            "Plan_file_end_line": 199
+        }
+    ],
+    "blocked_by": ["P6-2"],
+    "blocks": ["P10-8"],
+    "scope": [
+        "Extend the existing J2 power-law benchmark so it can run with `material='lemaitre'` at parameters that keep D = 0 throughout.",
+        "Assert displacement fields match between the two within 1e-8.",
+        "Build a notched tension bar mesh (a small rectangular bar with a semi-circular notch) and run damage evolution.",
+        "Assert D is highest in the element(s) adjacent to the notch root and drops off away from it."
+    ],
+    "implementation_steps": [
+        "Add a parametrisation for `test_benchmarks.py` covering the Lemaitre-at-zero case.",
+        "Build the notched bar mesh (programmatic, no file I/O).",
+        "Run the simulation with the generated Lemaitre solver.",
+        "Extract per-element D and assert the spatial distribution (e.g. max(D) occurs within 1 element of the notch root)."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/tests/test_lemaitre_acceptance.py`"
+    ],
+    "acceptance_criteria": [
+        "Lemaitre at D=0 matches J2 power-law within 1e-8 on the shared benchmark.",
+        "Notched bar: D localises at the notch root (max within 1 element of the geometric notch)."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_lemaitre_acceptance.py -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Lemaitre-at-zero regression",
+            "Notched bar damage localisation"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_lemaitre_acceptance.py"
+    ],
+    "risks": [
+        "Damage localisation depends on mesh size (classic CDM pathology). Mitigation: use a consistent mesh across test runs and document that results are mesh-dependent; B9 handles the nonlocal-regularisation follow-up."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-17",
+    "test_completion": {"passed": 2, "total": 2, "pass_rate": 100, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_lemaitre_acceptance.py -v", "passed": 2, "total": 2}]},
+    "review_score": 82,
+    "review_breakdown": {"minor": 4, "medium": 2, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "plan-b_phase-6",
+    "completion_notes": [
+        "Test 1 (D=0 regression): 2×1×1 Hex8 with mixed x-tension + z-shear (non-isotropic state, Phase 2 physics_error mitigation). Lemaitre suppressed via eps_D=1e9 AND S_d=1e9 belt-and-braces. max|u_lem − u_j2| = 3.75e-16 (7+ orders below 1e-8 spec).",
+        "Test 2 (notched bar): inline _build_notched_bar_mesh — 6×3×1 cosine-bell notched bar, 18 Hex8 elements, all positive Jacobians verified. Loading: 0.25% strain/step × 8 steps with max_iter=40 Newton (P6-2 Gate B forward-warning).",
+        "Notched bar result: argmax(D) = element 14 (identical to geometrically-nearest notch-root element). D_max ≈ 6.23e-2 at notch root vs 8.23e-3 at far end (7.5× drop-off). Localisation within 1.5·h Euclidean ball of notch-root asserted.",
+        "n_hard=1.0 (linear hardening) used in notched-bar test to avoid `n·α^(n-1)` power-law tangent singularity under sub-linear Newton from undamaged J2 tangent (Option A from P6-2). Documented as V&V follow-up: full power-law + active damage coverage deferred to P10-7 Taylor impact when damage-aware consistent tangent lands.",
+        "All damage parameters (S_d, s_d, eps_D, D_crit) passed explicitly in both tests — no reliance on emit_main silent fallbacks (P6-2 Gate B forward-warning).",
+        "Both tests marked @pytest.mark.slow + @pytest.mark.integration. Runtime 30.29s total.",
+        "P6T5 TODO-cleanup guard: 1 failed → 0 failed (scaffold residue cleared).",
+        "Fast suite: 1215 passed / 1 skipped / 0 failed — Phase 6 exit baseline.",
+        "Follow-ups logged for P10 V&V (mesh-convergence + nonlocal regularisation for CDM localisation pathology) and P10-7 Taylor impact (companion acceptance with n_hard < 1 + active damage)."
+    ],
+    "github_issue": {"phase_issue": 61, "task_issue": 98, "repo": "SOSOVSKI/MechDSL"}
+}

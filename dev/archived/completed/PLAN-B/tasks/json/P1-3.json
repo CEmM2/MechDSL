@@ -1,0 +1,88 @@
+{
+    "task_id": "P1-3",
+    "title": "UL residual emission (Cauchy stress over current configuration)",
+    "phase": "1",
+    "objective": "Extend `emit_internal_force_kernel` to emit an Updated-Lagrangian residual integrand — Cauchy stress over the current configuration, integrated with det(j) — when the IR configuration is CURRENT.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["27", "36"],
+    "plan_assets": [
+        {
+            "asset_description": "B1.1 UL residual equation R_i = integral(sigma_ij dN_a/dx_j dOmega - b_i v_i dOmega).",
+            "asset_type": "equation",
+            "Plan_file_start_line": 29,
+            "Plan_file_end_line": 31
+        }
+    ],
+    "blocked_by": ["P1-2"],
+    "blocks": ["P1-4", "P1-6"],
+    "scope": [
+        "Branch `emit_internal_force_kernel` on `bundle.problem_ir_dict['configuration']`: REFERENCE → current PK1 path (unchanged); CURRENT → Cauchy + spatial gradient path.",
+        "Cauchy stress is derived from the constitutive PK2 via push-forward: sigma = (1/J) F S F^T. Keep the constitutive call unchanged; do the push-forward at the emission site.",
+        "Volume element uses det(j) instead of det(J0).",
+        "Scatter: f_int[a,i] += w_q * det(j) * sigma_{ij} * dN_a/dx_j."
+    ],
+    "implementation_steps": [
+        "Read the current `emit_internal_force_kernel` in `taichi_printer.py` and identify the single quadrature-point block that needs a branch.",
+        "Introduce a helper `emit_ul_force_body` that emits the UL closed form; keep the TL body untouched.",
+        "Dispatch based on the new `configuration` bundle field.",
+        "Add emission-structure tests in `tests/test_taichi_printer_ul.py`: assert the UL source contains `det(j)`, `sigma`, and spatial dN/dx; assert it does NOT contain `det(J0)` or `P = F @ S` in the UL branch.",
+        "Regenerate UL golden file (`generated_ul_svk.py.golden`) and verify it is syntactically valid Python."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py` — UL branch in internal-force kernel",
+        "`packages/mechdsl-core/tests/test_taichi_printer_ul.py` — emission-structure tests",
+        "`packages/mechdsl-core/tests/golden/generated_ul_svk.py.golden` — golden snapshot"
+    ],
+    "acceptance_criteria": [
+        "UL emission produces a syntactically valid Python file.",
+        "UL source contains the push-forward from S to sigma and uses dN/dx, det(j).",
+        "TL emission source is byte-identical to the Plan A baseline (regression guard).",
+        "No regressions on the 998 fast tests."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_taichi_printer_ul.py::TestTaskP1_3InternalForce -v",
+        "uv run pytest packages/mechdsl-core/tests/test_emission_verification.py::TestInternalForceEmission -v",
+        "uv run pytest packages/mechdsl-core/tests/test_codegen.py -q"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "UL internal force source contains push-forward and spatial gradients",
+            "TL emission unchanged (byte-equal to the existing golden)",
+            "UL golden snapshot parses as valid Python"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_taichi_printer_ul.py",
+        "packages/mechdsl-core/tests/test_emission_verification.py",
+        "packages/mechdsl-core/tests/golden/generated_ul_svk.py.golden"
+    ],
+    "risks": [
+        "A bug in the push-forward sigma = F S F^T / J will propagate to the tangent and all benchmarks. Mitigation: keep a tests/ref helper that performs the same push-forward and cross-check against the handwritten UL reference added in P1-7."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-16",
+    "test_completion": {
+        "passed": 1020,
+        "total": 1020,
+        "pass_rate": 100,
+        "commands": [
+            {"command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu'", "passed": 1020, "total": 1020},
+            {"command": "uv run pytest packages/mechdsl-core/tests/test_taichi_printer_ul.py::TestTaskP1_3InternalForce -v", "passed": 4, "total": 4},
+            {"command": "uv run pytest packages/mechdsl-core/tests/test_codegen.py::TestGoldenSnapshot -v", "passed": 3, "total": 3}
+        ]
+    },
+    "review_score": 10,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "claude/modest-johnson_phase-1",
+    "completion_notes": [
+        "Added _emit_ul_force_qp_inner helper to taichi_printer.py that emits the full UL QP body: current Jacobian j, spatial gradients dNdx, reference Jacobian J0 (for F), deformation gradient F, constitutive update (returns PK2 S), push-forward sigma = (1/J) F@S@F.T, scatter with detj.",
+        "Python-time configuration dispatch inside emit_internal_force_kernel: reads bundle.problem_ir_dict['configuration'] (defaults to 'reference'). Generated source is single-path (TL or UL, never both).",
+        "The UL body computes both j (current Jacobian, for dNdx + detj) and J0 (reference Jacobian, for F = I + grad_u via dN/dX). Both are needed because F_{iI} = delta_{iI} + du_i/dX_I uses reference shape gradients.",
+        "TL emission byte-identical to Plan A goldens: both generated_elastic.py.golden and generated_plastic.py.golden pass exact comparison.",
+        "New UL golden generated_ul_svk.py.golden auto-generated on first test run, then byte-compared on subsequent runs. Parses cleanly via ast.parse.",
+        "Gate B score 10/10: zero issues. The push-forward sigma = (1/J) F @ S @ F^T matches PLAN-B B1.1 exactly. The constitutive layer returns PK2 S unchanged from TL; push-forward happens at the emission site per Phase 1 Key Principle."
+    ],
+    "github_issue": {"phase_issue": 56, "task_issue": 69, "repo": "SOSOVSKI/MechDSL"}
+}

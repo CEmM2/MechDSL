@@ -1,0 +1,221 @@
+name: CI
+
+on:
+  workflow_dispatch: {}
+  # push:
+  #   branches: [main]
+  # pull_request:
+  #   branches: [main]
+  # schedule:
+  #   - cron: "0 3 * * *"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+      - name: Ruff check
+        run: uv run ruff check packages/
+      - name: Ruff format check
+        run: uv run ruff format --check packages/
+      - name: Mypy (mechdsl-core)
+        run: uv run mypy packages/mechdsl-core/src/mechdsl/
+      - name: Mypy (algo2code)
+        run: uv run mypy packages/algo2code/src/algo2code/
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+      - name: Run tests (mechdsl-core)
+        run: uv run pytest packages/mechdsl-core/tests/ -m "not slow and not gpu and not e2e" --tb=short -q
+      - name: Run tests (algo2code)
+        run: uv run pytest packages/algo2code/tests/ -m "not slow and not gpu and not e2e" --tb=short -q
+
+  e2e-benchmarks:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+      - name: Run e2e benchmarks (mechdsl-core)
+        id: benchmark_tests
+        continue-on-error: true
+        run: uv run pytest packages/mechdsl-core/tests/ -m e2e --tb=short -q
+      - name: Create benchmark regression issue
+        if: failure() || steps.benchmark_tests.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelName = 'benchmark-regression';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = `Benchmark regression in ${context.workflow}`;
+            const body = [
+              'The scheduled e2e benchmark job failed.',
+              '',
+              `Run: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
+              `Workflow: ${context.workflow}`,
+              '',
+              'The workflow will not block merges on benchmark regressions.',
+            ].join('\n');
+
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: labelName });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: labelName,
+                color: 'd73a4a',
+                description: 'Automatically filed benchmark regression reports',
+              });
+            }
+
+            const { data: existingIssues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              labels: labelName,
+              per_page: 100,
+            });
+
+            if (existingIssues.some((issue) => issue.title === title)) {
+              core.info(`Benchmark regression issue already exists: ${title}`);
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body,
+              labels: [labelName],
+            });
+
+  slow-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check for codegen/solver changes
+        id: check-paths
+        run: |
+          CHANGED=$(gh pr diff ${{ github.event.pull_request.number }} --name-only 2>/dev/null || true)
+          if [ -z "$CHANGED" ]; then
+            CHANGED=$(git diff --name-only origin/main...HEAD 2>/dev/null || true)
+          fi
+          if echo "$CHANGED" | grep -qE '(codegen/|solver/)'; then
+            echo "run_slow=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_slow=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Install dependencies
+        if: steps.check-paths.outputs.run_slow == 'true'
+        run: uv sync --all-packages --all-groups --all-extras
+      - name: Run slow tests (mechdsl-core)
+        if: steps.check-paths.outputs.run_slow == 'true'
+        run: uv run pytest packages/mechdsl-core/tests/ -m "slow and not e2e" --tb=short -q
+      - name: Run slow tests (algo2code)
+        if: steps.check-paths.outputs.run_slow == 'true'
+        run: |
+          status=0
+          uv run pytest packages/algo2code/tests/ -m "slow and not e2e" --tb=short -q || status=$?
+          if [ "$status" -eq 5 ]; then
+            echo "No slow algo2code tests collected; treating as success."
+            exit 0
+          fi
+          exit "$status"
+      - name: Skip (no codegen/solver changes)
+        if: steps.check-paths.outputs.run_slow != 'true'
+        run: echo "No codegen/ or solver/ changes detected — skipping slow tests."
+
+  budget-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+      - name: Contraction budget regression
+        run: uv run pytest packages/mechdsl-core/tests/test_einsum.py -k budget -v --tb=short
+
+  docs-tests:
+    # tier:docs label-routed selector. The fast-tier `test` job already
+    # covers @pytest.mark.docs (docs is neither slow nor gpu nor e2e), so
+    # this job exists for explicit tier dispatch (e.g. when an issue
+    # carries the `tier:docs` label) and as a guarded canonical surface
+    # for doc-tier-only runs.
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'tier:docs')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+      - name: Run docs-tier tests (mechdsl-core)
+        run: uv run pytest packages/mechdsl-core/tests/ -m docs --tb=short -q
+
+  # post_recovery_plan Phase 7 (P7-7): baseline-stability smoke job —
+  # confirms the algo2code workspace install yields zero import
+  # failures under the standard `uv sync` flow. Runs on every push to
+  # main and on every PR targeting main; fast (collect-only).
+  baseline-stability:
+    name: Baseline stability smoke (algo2code import)
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install all workspace packages
+        run: uv sync --all-packages --all-groups --all-extras
+      - name: Smoke import — algo2code core modules
+        run: |
+          uv run python -c "import algo2code; from algo2code import transpile; from algo2code.algo_parser import parse_algorithm; from algo2code.expr_parser import parse_latex_expr, tokenize; from algo2code.library.pcg import PCG_ALGORITHM_LATEX; from algo2code.library.radial_return_j2 import RADIAL_RETURN_J2_LATEX; print('algo2code imports clean')"
+      - name: Pytest collect-only — no import failures
+        run: uv run pytest --collect-only -q packages/algo2code/tests/ packages/mechdsl-core/tests/

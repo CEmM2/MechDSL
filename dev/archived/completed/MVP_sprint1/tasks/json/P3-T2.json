@@ -1,0 +1,79 @@
+{
+    "task_id": "P3-T2",
+    "title": "Newton driver unit tests",
+    "phase": "3",
+    "objective": "Write unit tests for newton_solve(): 1-element convergence in 1 iteration, divergence detection, Dirichlet DOF enforcement, history commit/rollback.",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "188",
+        "191"
+    ],
+    "plan_assets": [],
+    "blocked_by": [
+        "P3-T1"
+    ],
+    "blocks": [
+        "P6-T1"
+    ],
+    "scope": [
+        "packages/mechdsl-core/tests/test_newton.py"
+    ],
+    "implementation_steps": [
+        "Create test_newton.py",
+        "Test (a): 1-element linear elastic converges in 1 iteration — use ref_hex8_elastic assembly functions as callbacks",
+        "Test (b): divergence detection — mock a divergent system, verify converged=False returned",
+        "Test (c): Dirichlet DOFs remain zero — verify u[bc_mask] == 0.0 after solve",
+        "Test (e): history commit/rollback — verify commit called on success, rollback on failure"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/tests/test_newton.py (new file, unit test portion)"
+    ],
+    "acceptance_criteria": [
+        "Linear elastic system converges in exactly 1 Newton iteration",
+        "Divergent system returns NewtonResult(converged=False)",
+        "Constrained DOFs are exactly zero after solve",
+        "History commit called on convergence",
+        "History rollback called on non-convergence"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_newton.py -v -k 'not integration'",
+        "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -x -q"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "1-element linear elastic converges in 1 iteration (missing)",
+            "Divergence detection returns converged=False (missing)",
+            "Dirichlet DOFs remain zero throughout solve (missing)",
+            "History commit on convergence (missing)",
+            "History rollback on failure (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_newton.py"
+    ],
+    "risks": [],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

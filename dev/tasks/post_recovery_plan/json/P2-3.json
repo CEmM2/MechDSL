@@ -1,0 +1,80 @@
+{
+    "task_id": "P2-3",
+    "title": "Audit and update CI workflow tier:docs selector",
+    "phase": "2",
+    "objective": "Confirm GitHub Actions workflows route the tier:docs label / pytest -m docs selector to the right job; correct or add jobs as needed.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": ["135", "138"],
+    "plan_assets": [
+        {
+            "asset_description": "Risk: existing GitHub Actions selector may rely on integration marker — audit before deleting marker references",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 147,
+            "Plan_file_end_line": 150
+        }
+    ],
+    "blocked_by": ["P2-1"],
+    "blocks": [],
+    "scope": [
+        "Audit .github/workflows/*.yml for marker selectors",
+        "Ensure tier:docs label / -m docs selector hits the correct job",
+        "No changes outside CI workflow files"
+    ],
+    "implementation_steps": [
+        "Grep .github/workflows for pytest -m or tier:docs",
+        "Update or add a job running pytest -m docs",
+        "Validate via gh workflow run or local act dry-run"
+    ],
+    "deliverables": [
+        "CI workflow updated to invoke pytest -m docs",
+        "tier:docs label maps to selector"
+    ],
+    "acceptance_criteria": [
+        "CI workflow runs pytest -m docs on the doc-tier label or label-routed selector",
+        "No remaining references to integration-marker fallback for these tests"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p2_3.py -v",
+        "grep -nE '\\-m\\s+\"?docs' .github/workflows/*.yml"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Workflow yaml contains pytest -m docs (missing)",
+            "tier:docs label triggers selector (missing)",
+            "No integration-marker fallback referencing test_p7_3..6 in workflows (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p2_3.py",
+        ".github/workflows/ci.yml",
+        ".github/workflows/ci-backends.yml",
+        ".github/workflows/nightly.yml"
+    ],
+    "risks": [
+        "CI yaml change requires PR-level CI run to fully validate — mitigation: review job logs after merge",
+        "Existing fast-tier selector `-m \"not slow and not gpu and not e2e\"` already includes docs tests; adding a separate `-m docs` job may double-run them — mitigation: prefer keeping fast tier coverage and only add a labelled job if dispatch matrix requires it"
+    ],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 2,
+        "total": 2,
+        "pass_rate": 100,
+        "commands": [
+            {"command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p2_3.py -v", "passed": 2, "total": 2},
+            {"command": "uv run pytest -m \"not slow and not gpu\" --tb=line -q", "passed": 1769, "total": 1769}
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-2",
+    "completion_notes": [
+        "Added `docs-tests` job to .github/workflows/ci.yml that runs `uv run pytest packages/mechdsl-core/tests/ -m docs --tb=short -q`. Triggered by workflow_dispatch, pull_request, or any PR carrying the `tier:docs` label.",
+        "Audit confirmed no workflow used `-m integration` to specifically target test_p7_3..6 (the integration-marker fallback was decorator-level only, in the test files, already cleared by P2-2).",
+        "Pre-existing fast-tier `test` job continues to cover docs-tier tests implicitly (`-m \"not slow and not gpu and not e2e\"`); the new dedicated job exists for explicit tier:docs label-routed dispatch.",
+        "PR-level CI run after merge will validate end-to-end (acknowledged risk in task JSON)."
+    ],
+    "github_issue": {"phase_issue": 201, "task_issue": 217, "repo": "SOSOVSKI/MechDSL"}
+}

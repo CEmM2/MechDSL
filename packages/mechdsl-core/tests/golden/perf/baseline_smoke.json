@@ -1,0 +1,59 @@
+{
+  "commit": "a41181ce8d308b3916729295ed53fb289f9f1b13",
+  "generated_on": "2026-04-26",
+  "tasks": {
+    "P10-1": {
+      "h1_rate_hex8_svk_elastic_regime_interpolation": 1.1196144519266922,
+      "l2_rate_hex8_svk_elastic_regime_interpolation": 1.838070674473962,
+      "wallclock_s": 7.457805875001213
+    },
+    "P10-2": {
+      "newton_iters": 0.0,
+      "relative_error": 0.0,
+      "tip_displacement": 0.002,
+      "wallclock_s": 0.0006638330014538951
+    },
+    "P10-3": {
+      "newton_iters": 0.0,
+      "tip_uy": 0.02,
+      "wallclock_s": 0.012648916999751236
+    },
+    "P10-4": {
+      "max_sigma_tt_rel_err": 0.13356407342641857,
+      "max_u_r_rel_err": 0.02013924967964334,
+      "newton_iters": 3.0,
+      "wallclock_s": 0.3448294999998325
+    },
+    "P10-5": {
+      "k_t": 2.112557546933881,
+      "newton_iters": 2.0,
+      "relative_error": 0.2958141510220396,
+      "wallclock_s": 1.0877341250015888
+    },
+    "P10-6": {
+      "force_norm": 3105.4252525600996,
+      "max_alpha": 0.038161532556958325,
+      "newton_iters": 0.0,
+      "wallclock_s": 0.09052037500077859
+    },
+    "P10-7": {
+      "final_length": 0.025362,
+      "mushroom_radius": 0.00538915851207249,
+      "peak_peeq": 0.018310496108176207,
+      "wallclock_s": 0.03768416700040689
+    },
+    "P10-8": {
+      "max_damage": 0.0008705804658491847,
+      "newton_iters": 2.0,
+      "peak_load": 397.95631585005503,
+      "wallclock_s": 2.46005920800053
+    },
+    "P10-9": {
+      "P_axial_analytical": 90.222421575048,
+      "P_axial_fem": 90.22242061057693,
+      "rel_err": 1.0689926664374509e-08,
+      "wallclock_s": 0.03402599999935774
+    }
+  },
+  "tolerance_pct_default": 10.0
+}

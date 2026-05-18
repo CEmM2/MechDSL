@@ -1,0 +1,104 @@
+{
+    "task_id": "P2-4",
+    "title": "Run /Aut_Faciam scaffold 1 on recovery plan and stop",
+    "phase": "2",
+    "objective": "Validate the full Plan-2-Tasks \u2192 ScaffoldPhase loop closes by scaffolding only Phase 1 of the recovery plan and stopping there. Do not run /Aut_Faciam exec 1 in this engagement.",
+    "plan_file": "dev/plans/back2latex.md",
+    "plan_lines": [
+        "237",
+        "243"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Expected outputs after Phase 1 scaffold of the recovery plan",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 240,
+            "Plan_file_end_line": 243
+        },
+        {
+            "asset_description": "Hard stop: no /Aut_Faciam exec 1 invocation",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 243,
+            "Plan_file_end_line": 243
+        }
+    ],
+    "blocked_by": [
+        "P2-3"
+    ],
+    "blocks": [],
+    "scope": [
+        "Invoke /Aut_Faciam scaffold 1 dev/plans/recovery_plan_latex_contract.md",
+        "Verify scaffold artifacts and label transitions",
+        "Stop immediately after scaffold; do NOT proceed to /Aut_Faciam exec"
+    ],
+    "implementation_steps": [
+        "Invoke /Aut_Faciam scaffold 1 dev/plans/recovery_plan_latex_contract.md",
+        "Wait for completion",
+        "Confirm dev/tasks/recovery_plan_latex_contract/gates/phase_1_gates.md exists",
+        "Confirm phase-1 GitHub issue body is populated (no longer 'not yet scaffolded')",
+        "Confirm task issues for P1-1..P1-6 are created with labels task-issue, phase-1, not-scaffolded \u2192 scaffolded transition",
+        "Stop. Do not invoke /Aut_Faciam exec 1 in the same engagement"
+    ],
+    "deliverables": [
+        "phase_1_gates.md scaffold entry",
+        "Populated phase-1 GitHub issue body",
+        "Six task-level GitHub issues (one per P1-1..P1-6) with appropriate labels"
+    ],
+    "acceptance_criteria": [
+        "Scaffold completes without error",
+        "phase_1_gates.md exists and contains a scaffold entry",
+        "GitHub: phase-1 issue body shows the populated task list",
+        "GitHub: six task issues exist with task-issue + phase-1 labels",
+        "No exec invocation occurred"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p2_4.py -v -m integration"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Scaffold runs to completion",
+            "Phase 1 gates file present",
+            "Phase 1 issue body populated",
+            "Six task issues exist on GitHub",
+            "No exec command was issued"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/test_p2_4.py"
+    ],
+    "risks": [
+        "Auto-execution drift: scaffold could trigger downstream automation if the user has cron/loop enabled \u2014 mitigated by explicit stop instruction in this task"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-26",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p2_4.py -v -m integration",
+                "passed": 3,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Recursive ScaffoldPhase 1 on recovery plan: 6 stubs at packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/, 6 task issues #148-#153, phase issue #141 populated, gates/phase_1_gates.md created. Hard-stop invariant verified \u2014 no /Aut_Faciam exec invocation; all P1-* statuses still pending. test_p2_4 passes 3/3."
+    ],
+    "github_issue": {
+        "phase_issue": 126,
+        "task_issue": 139,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

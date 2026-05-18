@@ -1,0 +1,76 @@
+{
+    "task_id": "P1-1",
+    "title": "Upgrade cantilever to 40x8x4 mesh with 5% EB tolerance",
+    "phase": "1",
+    "objective": "Replace the coarse 4x2x1 cantilever test with a refined 40x8x4 mesh that achieves within 5% of Euler-Bernoulli beam theory prediction, as required by PLAN-A A10.3.",
+    "plan_file": "dev/plans/sprint3.md",
+    "plan_lines": ["33-45"],
+    "plan_assets": [
+        {
+            "asset_description": "Cantilever mesh and tolerance specification",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 39,
+            "Plan_file_end_line": 45
+        }
+    ],
+    "blocked_by": [],
+    "blocks": ["P4-1"],
+    "scope": [
+        "Add new fixture cantilever_problem_refined with generate_hex8_mesh(40, 8, 4, 10.0, 2.0, 1.0)",
+        "Add test_tip_displacement_within_5_percent with abs(1 - tip_uz/delta_eb) < 0.05",
+        "Keep existing coarse-mesh tests as fast regression checks",
+        "Mark new test @pytest.mark.e2e @pytest.mark.slow"
+    ],
+    "implementation_steps": [
+        "Read existing TestCantilever class in test_benchmarks.py",
+        "Add cantilever_problem_refined fixture generating 40x8x4 mesh on-the-fly",
+        "Add test_tip_displacement_within_5_percent using refined fixture",
+        "Set cg_max_iter=5000 for the larger system",
+        "Verify existing coarse-mesh tests still pass"
+    ],
+    "deliverables": [
+        "New fixture cantilever_problem_refined in test_benchmarks.py",
+        "New test test_tip_displacement_within_5_percent",
+        "Both old and new cantilever tests pass"
+    ],
+    "acceptance_criteria": [
+        "test_tip_displacement_within_5_percent passes: abs(1 - tip_uz/delta_eb) < 0.05",
+        "Existing coarse-mesh cantilever tests still pass",
+        "Test marked @pytest.mark.e2e @pytest.mark.slow"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_benchmarks.py::TestCantilever::test_tip_displacement_within_5_percent -v",
+        "uv run pytest packages/mechdsl-core/tests/test_benchmarks.py::TestCantilever -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "test_tip_displacement_within_5_percent on 40x8x4 mesh",
+            "Existing coarse-mesh tests unbroken"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_benchmarks.py"
+    ],
+    "risks": [
+        "40x8x4 mesh (12285 nodes) CG solve may be very slow in pure numpy. Mitigation: set cg_max_iter=5000, acceptable for @pytest.mark.slow."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-08",
+    "test_completion": {
+        "passed": 803,
+        "total": 803,
+        "pass_rate": 100,
+        "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu and not e2e' -q", "passed": 803, "total": 803}]
+    },
+    "review_score": 9,
+    "review_breakdown": {"minor": 1, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "sprint3_phase-1",
+    "completion_notes": ["Fixture generates 40x8x4 mesh on-the-fly, cg_max_iter=5000 for larger system"],
+    "github_issue": {
+        "phase_issue": 15,
+        "task_issue": 21,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

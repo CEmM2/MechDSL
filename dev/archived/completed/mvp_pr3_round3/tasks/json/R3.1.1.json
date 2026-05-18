@@ -1,0 +1,70 @@
+{
+    "task_id": "R3.1.1",
+    "title": "Fix J2 Newton ti.static \u2192 runtime (C1)",
+    "phase": "1",
+    "objective": "Change emitted J2 Newton iteration from ti.static(range(20)) to range(20) to enable runtime break semantics",
+    "plan_file": "dev/plans/mvp_pr3_round3.md",
+    "plan_lines": ["15", "20"],
+    "plan_assets": [
+        {
+            "asset_description": "Code snippet: line 344 change",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 16,
+            "Plan_file_end_line": 18
+        }
+    ],
+    "blocked_by": [],
+    "blocks": ["R3.6.1"],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py line 344"
+    ],
+    "implementation_steps": [
+        "Read taichi_printer.py line 344",
+        "Change ti.static(range(20)) to range(20) in the emitted string",
+        "Verify break semantics work with runtime range in Taichi",
+        "Run test_taichi_printer.py to check emission patterns"
+    ],
+    "deliverables": [
+        "Modified taichi_printer.py:344"
+    ],
+    "acceptance_criteria": [
+        "Emitted J2 Newton loop uses range(20) not ti.static(range(20))",
+        "test_taichi_printer.py passes"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_plastic_emission.py::TestPlasticConstitutiveEmission::test_newton_iteration_loop -v --tb=short"
+    ],
+    "test_plan": {
+        "tier": "existing",
+        "cases": [
+            "test_taichi_printer.py golden snapshot will change"
+        ]
+    },
+    "test_artifacts": ["packages/mechdsl-core/tests/test_plastic_emission.py"],
+    "risks": [
+        "Golden files will need regeneration (Phase 6)"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

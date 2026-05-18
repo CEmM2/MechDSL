@@ -1,0 +1,80 @@
+{
+    "task_id": "P3.2",
+    "title": "SVK constitutive model",
+    "phase": "3",
+    "objective": "Implement symbolic PK2 stress and material tangent for isotropic St. Venant-Kirchhoff elasticity.",
+    "plan_file": "dev/plans/MVP_plan.md",
+    "plan_lines": ["104", "108"],
+    "plan_assets": [
+        {
+            "asset_description": "StVenantKirchhoff class with pk2_stress and material_tangent methods",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 256,
+            "Plan_file_end_line": 265
+        }
+    ],
+    "blocked_by": ["P0.2"],
+    "blocks": ["P3.5", "P6.3"],
+    "scope": [
+        "Elastic constitutive model only",
+        "packages/mechdsl-core/src/mechdsl/symbolic/models/svk.py"
+    ],
+    "implementation_steps": [
+        "Implement StVenantKirchhoff(ConstitutiveModel) class",
+        "Implement pk2_stress(kin) -> S = lambda*tr(E)*I + 2*mu*E",
+        "Implement material_tangent(kin) -> C_IJKL = lambda*delta_IJ*delta_KL + mu*(delta_IK*delta_JL + delta_IL*delta_JK)",
+        "Use tension-positive sign convention per 07-CONVENTIONS.md",
+        "Write verification tests for known strain states"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/src/mechdsl/symbolic/models/svk.py",
+        "Tests in test_symbolic.py"
+    ],
+    "acceptance_criteria": [
+        "PK2 stress matches closed-form for uniaxial tension",
+        "Material tangent has major and minor symmetries",
+        "Tangent matches S differentiated w.r.t. E"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_symbolic.py -k svk -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Uniaxial tension: S_11 = (lambda + 2*mu)*E_11",
+            "Zero strain: S = 0",
+            "Tangent major symmetry: C_IJKL = C_KLIJ",
+            "Tangent minor symmetry: C_IJKL = C_JIKL",
+            "Tangent = dS/dE verified symbolically"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_symbolic.py"
+    ],
+    "risks": [
+        "Sign convention error (tension vs compression positive) — verify against 07-CONVENTIONS.md"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

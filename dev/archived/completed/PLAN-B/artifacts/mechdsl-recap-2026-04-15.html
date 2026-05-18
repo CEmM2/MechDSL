@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MechDSL — Project Recap · April 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ── Palette & tokens ─────────────────────────────────────────────── */
+    :root {
+      --font-body:    'Spectral', Georgia, 'Times New Roman', serif;
+      --font-sans:    'DM Sans', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+      --bg:           #f4efe6;
+      --surface:      #fdf9f3;
+      --surface-elevated: #ffffff;
+      --border:       rgba(80, 60, 30, 0.13);
+      --border-bright: rgba(80, 60, 30, 0.22);
+
+      --text:         #2a2318;
+      --text-dim:     #7a6e5f;
+      --text-bright:  #1a1408;
+
+      /* Teal-sage accent (not violet) */
+      --accent:       #3d7c78;
+      --accent-dim:   rgba(61, 124, 120, 0.10);
+      --accent-light: #eaf4f3;
+
+      /* Node palette */
+      --node-a:       #3d7c78;
+      --node-a-dim:   rgba(61, 124, 120, 0.10);
+      --node-b:       #5c8f5a;
+      --node-b-dim:   rgba(92, 143, 90, 0.10);
+      --node-c:       #b07d2e;
+      --node-c-dim:   rgba(176, 125, 46, 0.12);
+
+      /* Status colours */
+      --green:        #3e8c49;
+      --green-dim:    rgba(62, 140, 73, 0.10);
+      --amber:        #b07d2e;
+      --amber-dim:    rgba(176, 125, 46, 0.10);
+      --red:          #a63232;
+      --red-dim:      rgba(166, 50, 50, 0.10);
+      --blue:         #3060a0;
+      --blue-dim:     rgba(48, 96, 160, 0.10);
+    }
+
+    /* ── Reset + base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle, rgba(80,60,30,0.07) 1px, transparent 1px),
+        radial-gradient(at 15% 10%, var(--node-a-dim) 0%, transparent 55%),
+        radial-gradient(at 85% 75%, var(--node-b-dim) 0%, transparent 50%);
+      background-size: 28px 28px, 100% 100%, 100% 100%;
+      color: var(--text);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--node-b); }
+
+    p { margin-bottom: 1em; }
+    p:last-child { margin-bottom: 0; }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.82em;
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    /* ── Layout shell ─────────────────────────────────────────────────── */
+    .page-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      grid-template-rows: auto 1fr;
+      max-width: 1280px;
+      margin: 0 auto;
+      gap: 0;
+    }
+
+    /* ── Sticky side nav ──────────────────────────────────────────────── */
+    .side-nav {
+      grid-column: 1;
+      grid-row: 2;
+      position: sticky;
+      top: 20px;
+      height: fit-content;
+      padding: 24px 16px 24px 24px;
+      font-family: var(--font-sans);
+    }
+
+    .side-nav__label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .side-nav__list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .side-nav__list li { position: relative; }
+
+    .side-nav__list a {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      transition: background 0.15s ease, color 0.15s ease;
+      line-height: 1.4;
+    }
+
+    .side-nav__list a:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .side-nav__list a.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── Header (spans full width) ────────────────────────────────────── */
+    .page-header {
+      grid-column: 1 / -1;
+      padding: 40px 40px 32px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .page-header__eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .page-header__title {
+      font-family: var(--font-sans);
+      font-size: clamp(28px, 3vw, 42px);
+      font-weight: 700;
+      color: var(--text-bright);
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+
+    .page-header__subtitle {
+      font-family: var(--font-body);
+      font-size: 17px;
+      font-style: italic;
+      color: var(--text-dim);
+      max-width: 640px;
+    }
+
+    .page-header__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 18px;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-weight: 500;
+    }
+
+    .meta-chip--green { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .meta-chip--teal  { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+    /* ── Main content area ────────────────────────────────────────────── */
+    .page-main {
+      grid-column: 2;
+      grid-row: 2;
+      padding: 32px 40px 60px 32px;
+      min-width: 0;
+    }
+
+    /* ── Sections ─────────────────────────────────────────────────────── */
+    .section {
+      margin-bottom: 56px;
+    }
+
+    .section__heading {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section__heading::before {
+      content: '';
+      width: 3px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .section__title {
+      font-family: var(--font-sans);
+      font-size: clamp(18px, 1.8vw, 22px);
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 6px;
+      letter-spacing: -0.2px;
+    }
+
+    /* ── Cards ────────────────────────────────────────────────────────── */
+    .ve-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 22px;
+      position: relative;
+      min-width: 0;
+    }
+
+    .ve-card--elevated {
+      background: var(--surface-elevated);
+      box-shadow: 0 2px 10px rgba(40,30,10,0.07), 0 1px 2px rgba(40,30,10,0.04);
+    }
+
+    .ve-card--hero {
+      background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%);
+      box-shadow: 0 4px 24px rgba(40,30,10,0.08), 0 1px 4px rgba(40,30,10,0.05);
+      border-color: color-mix(in srgb, var(--border) 50%, var(--accent) 50%);
+      padding: 28px 32px;
+    }
+
+    .ve-card__label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    /* ── Identity card ────────────────────────────────────────────────── */
+    .identity-grid {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 20px;
+    }
+
+    .identity-grid > * { min-width: 0; overflow-wrap: break-word; }
+
+    .elevator-pitch {
+      font-size: 16.5px;
+      line-height: 1.7;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    .elevator-pitch strong {
+      color: var(--text-bright);
+      font-weight: 600;
+    }
+
+    .pkg-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pkg-list li {
+      position: relative;
+      padding-left: 0;
+    }
+
+    .pkg-item {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .pkg-item--b { border-left-color: var(--node-b); }
+
+    .pkg-item__name {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+
+    .pkg-item--b .pkg-item__name { color: var(--node-b); }
+
+    .pkg-item__desc {
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    /* ── Mermaid / Diagram ────────────────────────────────────────────── */
+    .diagram-shell {
+      position: relative;
+    }
+
+    .diagram-shell__hint {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      opacity: 0.75;
+    }
+
+    .mermaid-wrap {
+      position: relative;
+      background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%);
+      border: 1px solid color-mix(in srgb, var(--border) 60%, var(--accent) 40%);
+      border-radius: 14px;
+      padding: 40px 28px 28px 28px;
+      overflow: hidden;
+      cursor: grab;
+      box-shadow: 0 4px 24px rgba(40,30,10,0.08), 0 1px 3px rgba(40,30,10,0.04);
+    }
+
+    .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
+
+    .zoom-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 2px;
+      z-index: 20;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 2px;
+      box-shadow: 0 1px 4px rgba(40,30,10,0.10);
+    }
+
+    .zoom-controls button {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+
+    .zoom-controls button:hover {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .zoom-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      padding: 0 7px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .mermaid-viewport {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      min-height: 420px;
+    }
+
+    .mermaid-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+    }
+
+    /* ── KPI Row ──────────────────────────────────────────────────────── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+    }
+
+    .kpi-row > * { min-width: 0; }
+
+    .kpi-card {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 18px 14px 18px;
+      box-shadow: 0 2px 8px rgba(40,30,10,0.05);
+    }
+
+    .kpi-card__value {
+      font-family: var(--font-sans);
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-card__label {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-dim);
+      margin-top: 7px;
+    }
+
+    .kpi-card__trend {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .kpi--green .kpi-card__value { color: var(--green); }
+    .kpi--amber .kpi-card__value { color: var(--amber); }
+    .kpi--red   .kpi-card__value { color: var(--red); }
+    .kpi--blue  .kpi-card__value { color: var(--blue); }
+    .kpi--teal  .kpi-card__value { color: var(--accent); }
+
+    .trend-up   { color: var(--green); }
+    .trend-warn { color: var(--amber); }
+    .trend-flat { color: var(--text-dim); }
+
+    /* ── Status grid ──────────────────────────────────────────────────── */
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .status-grid > * { min-width: 0; overflow-wrap: break-word; }
+
+    .status-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .status-card__header {
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .status-card--working .status-card__header  { background: var(--green-dim);  color: var(--green); }
+    .status-card--progress .status-card__header { background: var(--blue-dim);   color: var(--blue);  }
+    .status-card--broken .status-card__header   { background: var(--green-dim);  color: var(--green); }
+    .status-card--blocked .status-card__header  { background: var(--amber-dim);  color: var(--amber); }
+
+    .status-card__body {
+      padding: 12px 16px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .status-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .status-list li {
+      position: relative;
+      padding-left: 16px;
+    }
+
+    .status-list li::before {
+      content: '·';
+      position: absolute;
+      left: 4px;
+      top: 0;
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+
+    /* ── Timeline ─────────────────────────────────────────────────────── */
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 12px;
+      bottom: 12px;
+      width: 2px;
+      background: var(--border-bright);
+      border-radius: 1px;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-bottom: 22px;
+    }
+
+    .timeline-item:last-child { padding-bottom: 0; }
+
+    .timeline-item__dot {
+      position: absolute;
+      left: -24px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      z-index: 2;
+    }
+
+    .timeline-item__dot--green  { border-color: var(--green); }
+    .timeline-item__dot--amber  { border-color: var(--amber); }
+    .timeline-item__dot--filled { background: var(--accent); }
+
+    .timeline-item__date {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .timeline-item__title {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+    }
+
+    .timeline-item__body {
+      font-size: 13.5px;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+
+    .theme-tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 1px 8px;
+      border-radius: 10px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .tag--feature   { background: var(--accent-dim);  color: var(--accent); }
+    .tag--infra     { background: var(--blue-dim);     color: var(--blue); }
+    .tag--bench     { background: var(--node-b-dim);   color: var(--node-b); }
+    .tag--perf      { background: var(--amber-dim);    color: var(--amber); }
+    .tag--docs      { background: rgba(80,60,30,0.08); color: var(--text-dim); }
+    .tag--cleanup   { background: var(--green-dim);    color: var(--green); }
+
+    /* ── Decision log ─────────────────────────────────────────────────── */
+    .decision-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .decision-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .decision-item__header {
+      background: var(--surface-elevated);
+      padding: 11px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .decision-item__num {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 2px 7px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .decision-item__what {
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-bright);
+      min-width: 0;
+      overflow-wrap: break-word;
+    }
+
+    .decision-item__body {
+      padding: 12px 18px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-dim);
+    }
+
+    .decision-item__body strong { color: var(--text); font-weight: 600; }
+
+    /* ── Mental model ─────────────────────────────────────────────────── */
+    .essentials-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .essentials-grid > * { min-width: 0; overflow-wrap: break-word; }
+
+    .essential-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 14px 16px;
+      position: relative;
+      padding-left: 44px;
+    }
+
+    .essential-item__num {
+      position: absolute;
+      left: 12px;
+      top: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      width: 22px;
+      text-align: right;
+    }
+
+    .essential-item__title {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .essential-item__body {
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /* ── Cognitive debt ───────────────────────────────────────────────── */
+    .debt-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .debt-item {
+      background: color-mix(in srgb, var(--surface) 85%, var(--amber) 15%);
+      border: 1px solid rgba(176,125,46,0.25);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .debt-item--high   { border-left: 4px solid var(--red);   }
+    .debt-item--medium { border-left: 4px solid var(--amber);  }
+    .debt-item--low    { border-left: 4px solid var(--blue);   }
+
+    .debt-item__header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 16px;
+      border-bottom: 1px solid rgba(176,125,46,0.15);
+    }
+
+    .debt-badge {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+
+    .debt-badge--high   { background: var(--red-dim);   color: var(--red);   }
+    .debt-badge--medium { background: var(--amber-dim); color: var(--amber); }
+    .debt-badge--low    { background: var(--blue-dim);  color: var(--blue);  }
+
+    .debt-item__file {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-bright);
+      min-width: 0;
+      overflow-wrap: break-word;
+    }
+
+    .debt-item__body {
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-dim);
+    }
+
+    .debt-item__suggestion {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 6px;
+      border-left: 2px solid var(--amber);
+      font-size: 12.5px;
+      font-style: italic;
+      color: var(--text);
+    }
+
+    .debt-item--high .debt-item__suggestion   { border-left-color: var(--red);  }
+    .debt-item--low  .debt-item__suggestion   { border-left-color: var(--blue); }
+
+    /* ── Next steps ───────────────────────────────────────────────────── */
+    .next-steps-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .next-steps-grid > * { min-width: 0; overflow-wrap: break-word; }
+
+    .next-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+
+    .next-item__phase {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .next-item__title {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 7px;
+    }
+
+    .next-item__body {
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+
+    /* ── Overflow protection ──────────────────────────────────────────── */
+    .identity-grid   > *, .essentials-grid > *, .status-grid > *,
+    .next-steps-grid > *, .kpi-row > * {
+      min-width: 0;
+      overflow-wrap: break-word;
+    }
+
+    /* ── Responsive collapse ──────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .page-layout     { grid-template-columns: 1fr; }
+      .side-nav        { display: none; }
+      .page-header     { padding: 28px 20px 22px 20px; }
+      .page-main       { grid-column: 1; padding: 24px 20px 48px 20px; }
+      .identity-grid   { grid-template-columns: 1fr; }
+      .essentials-grid { grid-template-columns: 1fr; }
+      .status-grid     { grid-template-columns: 1fr; }
+      .next-steps-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── Misc utility ─────────────────────────────────────────────────── */
+    .section-rule {
+      height: 1px;
+      background: var(--border);
+      margin: 40px 0;
+    }
+
+    .inline-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 10px;
+      vertical-align: middle;
+    }
+
+    .badge--green { background: var(--green-dim); color: var(--green); }
+    .badge--amber { background: var(--amber-dim); color: var(--amber); }
+    .badge--teal  { background: var(--accent-dim); color: var(--accent); }
+
+  </style>
+</head>
+
+<body>
+
+<div class="page-layout">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════════════ -->
+  <header class="page-header">
+    <div class="page-header__eyebrow">Project Recap · 2-Week Window Ending 2026-04-15</div>
+    <h1 class="page-header__title">MechDSL</h1>
+    <p class="page-header__subtitle">LaTeX-to-FEM compiler — MVP complete, Sprint 3 closed, Plan B on deck.</p>
+    <div class="page-header__meta">
+      <span class="meta-chip meta-chip--green">✓ MVP v0.1.0 shipped 2026-04-12</span>
+      <span class="meta-chip meta-chip--teal">79 commits · 2 weeks</span>
+      <span class="meta-chip">1 015 tests passing</span>
+      <span class="meta-chip">ruff + mypy clean</span>
+      <span class="meta-chip">Python 3.12 · uv workspace</span>
+    </div>
+  </header>
+
+  <!-- ══ SIDE NAV ════════════════════════════════════════════════════════ -->
+  <nav class="side-nav" aria-label="Page sections">
+    <div class="side-nav__label">Contents</div>
+    <ul class="side-nav__list">
+      <li><a href="#identity">01 · Identity</a></li>
+      <li><a href="#architecture">02 · Architecture</a></li>
+      <li><a href="#activity">03 · Recent Activity</a></li>
+      <li><a href="#decisions">04 · Decision Log</a></li>
+      <li><a href="#state">05 · State of Things</a></li>
+      <li><a href="#mental-model">06 · Mental Model</a></li>
+      <li><a href="#debt">07 · Cognitive Debt</a></li>
+      <li><a href="#next">08 · Next Steps</a></li>
+    </ul>
+  </nav>
+
+  <!-- ══ MAIN CONTENT ════════════════════════════════════════════════════ -->
+  <main class="page-main">
+
+    <!-- ── 01 · IDENTITY ──────────────────────────────────────────────── -->
+    <section class="section" id="identity">
+      <div class="section__heading">01 · Project Identity</div>
+
+      <div class="identity-grid">
+        <div class="ve-card ve-card--hero">
+          <div class="ve-card__label">Elevator Pitch</div>
+          <p class="elevator-pitch">
+            <strong>MechDSL is a compiler that bridges physics notation and GPU simulation code.</strong>
+            You describe a solid mechanics problem in LaTeX tensor notation (or programmatically),
+            and the pipeline emits deterministic, ready-to-run Taichi solver kernels — no hand-coding
+            finite elements, no manual index gymnastics.
+          </p>
+          <p class="elevator-pitch" style="font-size:15px; font-style:italic;">
+            The MVP covers 3D Hex8 Total Lagrangian solid mechanics with
+            SVK elasticity and J2 power-law plasticity.
+            A second package, <code>algo2code</code>, transpiles LaTeX algorithm pseudocode
+            (PCG solver) into the same Taichi target.
+          </p>
+          <p style="font-family: var(--font-sans); font-size: 13px; color: var(--text-dim); margin-top: 12px;">
+            <strong>Stage:</strong> MVP complete and tagged v0.1.0. All Sprint 3 exit criteria verified.
+            Post-MVP Plan B work (Updated Lagrangian, hyperelastics, additional elements) is designed
+            but not yet started.
+          </p>
+          <p style="font-family: var(--font-sans); font-size: 13px; color: var(--text-dim);">
+            <strong>Who uses it:</strong> Single researcher/developer (SOSOVSKI) building the
+            system bottom-up, with agent-driven sprint execution. No external users yet.
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
+          <div class="ve-card ve-card--elevated">
+            <div class="ve-card__label">Packages</div>
+            <ul class="pkg-list">
+              <li>
+                <div class="pkg-item">
+                  <div class="pkg-item__name">mechdsl-core</div>
+                  <div class="pkg-item__desc">LaTeX tensor expressions → FEM solver code (Taichi). 6-layer compiler pipeline. SVK + J2 plasticity.</div>
+                </div>
+              </li>
+              <li>
+                <div class="pkg-item pkg-item--b">
+                  <div class="pkg-item__name">algo2code</div>
+                  <div class="pkg-item__desc">LaTeX algpseudocode → executable Taichi. Zero runtime deps. PCG transpilation for Newton driver.</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="ve-card">
+            <div class="ve-card__label">Key Dependencies</div>
+            <div style="font-family: var(--font-sans); font-size: 12.5px; line-height: 1.8; color: var(--text-dim);">
+              <code>taichi</code> · GPU codegen target<br>
+              <code>scipy</code> · CG/PCG linear solver<br>
+              <code>sympy</code> · symbolic MMS body forces<br>
+              <code>numpy</code> · reference kernel verification<br>
+              <code>uv</code> · workspace package manager<br>
+              <code>ruff</code> · lint + format &nbsp;
+              <code>mypy</code> · type checking
+            </div>
+          </div>
+
+          <div class="ve-card">
+            <div class="ve-card__label">Blocked</div>
+            <div style="font-family: var(--font-sans); font-size: 12.5px; color: var(--text-dim);">
+              <span class="inline-badge badge--amber">⚠ deferred</span>&nbsp;
+              LaTeX frontend parsing (Layer 1 from source .tex files) is blocked on
+              <code>NRPyLaTeX</code> fork dependency — programmatic API is the MVP path.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 02 · ARCHITECTURE ──────────────────────────────────────────── -->
+    <section class="section" id="architecture">
+      <div class="section__heading">02 · Architecture Snapshot</div>
+
+      <section class="diagram-shell">
+        <p class="diagram-shell__hint">Ctrl/Cmd + scroll to zoom · drag to pan · double-click to fit · ⛶ to expand</p>
+        <div class="mermaid-wrap">
+          <div class="zoom-controls">
+            <button type="button" data-action="zoom-in"      title="Zoom in">+</button>
+            <button type="button" data-action="zoom-out"     title="Zoom out">&minus;</button>
+            <button type="button" data-action="zoom-fit"     title="Fit to view">&#8634;</button>
+            <button type="button" data-action="zoom-one"     title="1:1 size">1:1</button>
+            <button type="button" data-action="zoom-expand"  title="Open full size">&#x26F6;</button>
+            <span class="zoom-label">Loading…</span>
+          </div>
+          <div class="mermaid-viewport">
+            <div class="mermaid mermaid-canvas"></div>
+          </div>
+        </div>
+        <script type="text/plain" class="diagram-source">
+flowchart TD
+    subgraph INPUT["User Input"]
+        direction TB
+        CTX["build_context()\nProgrammatic API"]
+        LATEX["LaTeX .tex\n⚠ blocked: NRPyLaTeX"]
+    end
+
+    subgraph LAYER1["Layer 1 · Frontend"]
+        FE["mechdsl.frontend\nValidates MVP problem subset\ncoord_system · material · BCs"]
+    end
+
+    subgraph LAYER2["Layer 2 · Symbolic"]
+        SYM["mechdsl.symbolic\nKinematics  F→C→E→J\nConstitutive · SVK · J2 · Voigt"]
+    end
+
+    subgraph LAYER3["Layer 3 · Mechanics IR"]
+        IR["ProblemIR\nImmutable dataclass · validated\nSemantic problem definition"]
+    end
+
+    subgraph LAYER4["Layer 4 · Lowering"]
+        LOW["mechdsl.lowering.fe_localise()\nHex8 element metadata\nEinsum string extraction → ElementIR"]
+    end
+
+    subgraph LAYER4B["Layer 4b · Einsum Optimizer"]
+        EINSUM["mechdsl.codegen.einsum_optimizer\nContraction plans\nJIT budget counter ≤ 512/func"]
+    end
+
+    subgraph LAYER5["Layer 5 · Taichi Codegen"]
+        PRINTER["mechdsl.codegen.taichi_printer\nDeterministic source emission\nNewton kernel + solver driver"]
+    end
+
+    subgraph LAYER6["Layer 6 · Verify"]
+        VER["mechdsl.verify\nReference comparison\nAD oracle · patch · benchmarks"]
+    end
+
+    subgraph ALGO["algo2code"]
+        A2C["algo_parser → type_inference\n→ taichi_codegen\nPCG solver transpilation"]
+    end
+
+    subgraph SUPPORT["Support"]
+        SOLVER["mechdsl.solver\nNewton-Raphson + CG/PCG\nAdaptive load stepping"]
+        LIB["mechdsl.lib\n@ti.func tensor ops\nTier 1 library"]
+    end
+
+    CTX --> FE
+    LATEX -.->|deferred| FE
+    FE --> SYM
+    SYM --> IR
+    IR --> LOW
+    LOW --> EINSUM
+    EINSUM --> PRINTER
+    PRINTER --> VER
+    A2C -->|"emits PCG source"| PRINTER
+    PRINTER --> SOLVER
+    LIB -->|"imported by"| SOLVER
+        </script>
+      </section>
+
+      <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+        <div class="ve-card" style="min-width:0; overflow-wrap:break-word;">
+          <div class="ve-card__label">IR Discipline</div>
+          <div style="font-family:var(--font-sans);font-size:12.5px;color:var(--text-dim);line-height:1.6;">
+            Three explicit IRs: <code>ProblemIR</code> → <code>ElementIR</code> → <code>EinsumIR</code>.
+            Never bypass a layer. Symbolic expressions never emit backend code directly.
+          </div>
+        </div>
+        <div class="ve-card" style="min-width:0; overflow-wrap:break-word;">
+          <div class="ve-card__label">Immutability Contract</div>
+          <div style="font-family:var(--font-sans);font-size:12.5px;color:var(--text-dim);line-height:1.6;">
+            All IRs are frozen dataclasses. Validation runs at <code>__post_init__</code>.
+            Unsupported constructs raise with the Plan B phase that adds support.
+          </div>
+        </div>
+        <div class="ve-card" style="min-width:0; overflow-wrap:break-word;">
+          <div class="ve-card__label">Benchmarks (all passing)</div>
+          <div style="font-family:var(--font-sans);font-size:12.5px;color:var(--text-dim);line-height:1.6;">
+            Patch test · Rigid body · Cantilever (5% EB tol) · Cook's membrane (2%) ·
+            Necking bar (2%) · MMS L2 ≥2.0 H1 ≥1.0
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 03 · RECENT ACTIVITY ───────────────────────────────────────── -->
+    <section class="section" id="activity">
+      <div class="section__heading">03 · Recent Activity</div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+        <div style="min-width: 0;">
+          <div class="timeline">
+
+            <div class="timeline-item">
+              <div class="timeline-item__dot"></div>
+              <div class="timeline-item__date">Apr 06 – 08</div>
+              <div class="timeline-item__title">
+                <span class="theme-tag tag--infra">Infra</span>
+                Sprint 3 scaffolding &amp; tooling
+              </div>
+              <div class="timeline-item__body">
+                Added CLAUDE.md + GitNexus code-intelligence skills, local agent config, GEMINI.md.
+                Sprint 3 Phase 1 benchmarks scaffolded: cantilever 40×8×4 mesh, MMS 4-level convergence, 30° rigid-body rotation test.
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-item__dot timeline-item__dot--green"></div>
+              <div class="timeline-item__date">Apr 09</div>
+              <div class="timeline-item__title">
+                <span class="theme-tag tag--bench">Benchmarks</span>
+                Cook's membrane + necking bar geometry
+              </div>
+              <div class="timeline-item__body">
+                Implemented <code>generate_cook_membrane_mesh()</code> (trapezoidal, parametric density) and
+                <code>generate_necking_bar_mesh()</code> with geometric imperfection.
+                Cook's membrane J2 benchmark and reference comparison added (2% tolerance).
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-item__dot timeline-item__dot--amber"></div>
+              <div class="timeline-item__date">Apr 09</div>
+              <div class="timeline-item__title">
+                <span class="theme-tag tag--perf">Performance</span>
+                60–370× solver speedup
+              </div>
+              <div class="timeline-item__body">
+                Introduced analytical elastic tangent + <code>ScipyCGSolver</code> adapter.
+                Replaced finite-difference tangent for elasticity — 60–370× speedup measured.
+                Three previously-skipped tests un-skipped.
+                <em>(J2 analytical tangent still deferred — see Cognitive Debt.)</em>
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-item__dot timeline-item__dot--green"></div>
+              <div class="timeline-item__date">Apr 10</div>
+              <div class="timeline-item__title">
+                <span class="theme-tag tag--bench">Benchmarks</span>
+                Necking bar golden regression snapshot
+              </div>
+              <div class="timeline-item__body">
+                Self-converged reference data generated for necking bar load-displacement curve.
+                Golden snapshot registered; benchmark runs within 2% tolerance.
+                <code>radial_return</code> tolerance fix included.
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-item__dot timeline-item__dot--filled"></div>
+              <div class="timeline-item__date">Apr 12</div>
+              <div class="timeline-item__title">
+                <span class="theme-tag tag--feature">Pipeline</span>
+                Full 6-layer pipeline test + 3-tier CI
+              </div>
+              <div class="timeline-item__body">
+                <code>test_full_pipeline.py</code> exercises all six compiler layers end-to-end.
+                Nightly e2e CI tier added; benchmark failures downgraded from merge blockers
+                to issue-creation events. Fast push / slow PR / nightly e2e tiers all wired.
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-item__dot"></div>
+              <div class="timeline-item__date">Apr 12</div>
+              <div class="timeline-item__title">
+                <span class="theme-tag tag--docs">Docs</span>
+                Documentation wave (Phase 5)
+              </div>
+              <div class="timeline-item__body">
+                README rewritten with installation, quickstart, and architecture guide.
+                Five runnable example scripts in <code>dev/examples/</code>.
+                Docstrings on all public API symbols. CHANGELOG v0.1.0 written.
+                <code>UnsupportedError</code> messages audit (every rejection names its Plan B phase).
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-item__dot timeline-item__dot--green"></div>
+              <div class="timeline-item__date">Apr 12</div>
+              <div class="timeline-item__title">
+                <span class="theme-tag tag--cleanup">Cleanup</span>
+                Phase 6 exit — MVP declared complete
+              </div>
+              <div class="timeline-item__body">
+                ruff + mypy pass clean. Root-suite pytest conftest collision fixed (algo2code
+                test package flattened, fixture-driven). 1 015 tests passing.
+                All 10/10 Sprint 3 exit criteria verified and evidenced.
+                Sprint 4 / Plan B handoff document written.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+          <div class="ve-card ve-card--elevated">
+            <div class="ve-card__label">Sprint 3 by the numbers</div>
+            <div style="font-family:var(--font-sans);font-size:13px;line-height:2;color:var(--text-dim);">
+              <div><strong style="color:var(--accent);font-size:18px;">79</strong> commits</div>
+              <div><strong style="color:var(--green);font-size:18px;">26 / 26</strong> tasks done</div>
+              <div><strong style="color:var(--text);font-size:18px;">1 015</strong> tests pass</div>
+              <div><strong style="color:var(--text);font-size:18px;">5</strong> benchmarks</div>
+              <div><strong style="color:var(--text);font-size:18px;">3</strong> CI tiers</div>
+              <div><strong style="color:var(--node-b);font-size:18px;">370×</strong> solver speedup</div>
+            </div>
+          </div>
+
+          <div class="ve-card">
+            <div class="ve-card__label">Most-changed areas</div>
+            <div style="font-family:var(--font-mono);font-size:11.5px;line-height:1.9;color:var(--text-dim);">
+              dev/tasks/sprint3/<br>
+              packages/mechdsl-core/tests/<br>
+              packages/algo2code/tests/<br>
+              dev/tracking/<br>
+              src/mechdsl/verify/<br>
+              src/mechdsl/codegen/
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 04 · DECISION LOG ──────────────────────────────────────────── -->
+    <section class="section" id="decisions">
+      <div class="section__heading">04 · Decision Log</div>
+
+      <div class="decision-list">
+
+        <div class="decision-item">
+          <div class="decision-item__header">
+            <span class="decision-item__num">D-1</span>
+            <span class="decision-item__what">Finite-difference J2 tangent in MVP; analytical tangent deferred to Plan B</span>
+          </div>
+          <div class="decision-item__body">
+            <strong>What:</strong> The emitted J2 plasticity kernel uses a finite-difference consistent tangent
+            (<code>taichi_printer.py:517–520</code>).<br>
+            <strong>Why:</strong> Analytical consistent tangent crosses codegen, solver, and verification layers
+            simultaneously — out of MVP scope. FD tangent is correct, just O(n) more expensive per matvec.<br>
+            <strong>Considered:</strong> Skipping the tangent entirely (bad convergence); partial analytical tangent
+            (complex split). FD was simplest correct option. Pointer: "See PLAN-A Phase 8 (analytical tangent)".
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-item__header">
+            <span class="decision-item__num">D-2</span>
+            <span class="decision-item__what">Nightly benchmark failures create issues, not block merges (P4-3)</span>
+          </div>
+          <div class="decision-item__body">
+            <strong>What:</strong> CI nightly e2e tier files a GitHub issue on benchmark failure but does not
+            fail the merge gate.<br>
+            <strong>Why:</strong> Benchmark results can vary with numerical noise or platform differences;
+            making them hard blockers caused false CI failures during Sprint 3 development.<br>
+            <strong>Considered:</strong> Keeping them as hard blockers. Risk accepted: a genuine regression
+            could slip through, but the issue trail still makes it traceable.
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-item__header">
+            <span class="decision-item__num">D-3</span>
+            <span class="decision-item__what">ScipyCGSolver + analytical elastic tangent — 60–370× speedup</span>
+          </div>
+          <div class="decision-item__body">
+            <strong>What:</strong> Replaced FD tangent with analytical elastic tangent;
+            introduced <code>ScipyCGSolver</code> adapter (commit <code>6897c3d</code>).<br>
+            <strong>Why:</strong> Convergence test wall time was prohibitively slow with FD;
+            the 4-level MMS test and necking bar were unusable at that speed.<br>
+            <strong>Considered:</strong> Iterative FD improvement. Decided analytical was worth the implementation
+            cost because three tests could be un-skipped and the speedup applies across all elastic benchmarks.
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-item__header">
+            <span class="decision-item__num">D-4</span>
+            <span class="decision-item__what">Supply-chain date lock: exclude-newer = 2026-02-20</span>
+          </div>
+          <div class="decision-item__body">
+            <strong>What:</strong> <code>pyproject.toml</code> sets <code>exclude-newer = "2026-02-20T00:00:00Z"</code>,
+            blocking any package version published after that date from being resolved by uv.<br>
+            <strong>Why:</strong> Defense against supply-chain attacks (compromised package releases).
+            Bump this date intentionally after auditing the diff in <code>uv.lock</code>.<br>
+            <strong>Considered:</strong> Version pinning without the date gate. Date gate was chosen because
+            it catches newly published malicious versions even of indirect deps with pinned ranges.
+          </div>
+        </div>
+
+        <div class="decision-item">
+          <div class="decision-item__header">
+            <span class="decision-item__num">D-5</span>
+            <span class="decision-item__what">Root-suite pytest over package-by-package invocation (Phase 6 exit criterion)</span>
+          </div>
+          <div class="decision-item__body">
+            <strong>What:</strong> The official verification command is <code>uv run pytest --tb=short -q</code>
+            from the repo root, collecting both packages simultaneously.<br>
+            <strong>Why:</strong> A conftest collision between <code>mechdsl-core</code> and <code>algo2code</code>
+            under <code>--import-mode=importlib</code> only surfaced when both packages were collected together.
+            Fixing it at the root level ensures the integration surface is always exercised.<br>
+            <strong>Considered:</strong> Package-by-package (faster, avoids conflicts). Decided root-suite is
+            worth the setup cost because the collision was a real bug, not a tooling annoyance.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 05 · STATE OF THINGS ───────────────────────────────────────── -->
+    <section class="section" id="state">
+      <div class="section__heading">05 · State of Things</div>
+
+      <!-- KPI row -->
+      <div class="kpi-row" style="margin-bottom: 24px;">
+        <div class="kpi-card kpi--green">
+          <div class="kpi-card__value">1 015</div>
+          <div class="kpi-card__label">Tests Passing</div>
+          <div class="kpi-card__trend trend-up">✓ 0 failures</div>
+        </div>
+        <div class="kpi-card kpi--teal">
+          <div class="kpi-card__value">26/26</div>
+          <div class="kpi-card__label">Sprint 3 Tasks Done</div>
+          <div class="kpi-card__trend trend-up">✓ all complete</div>
+        </div>
+        <div class="kpi-card kpi--green">
+          <div class="kpi-card__value">5</div>
+          <div class="kpi-card__label">Benchmarks Passing</div>
+          <div class="kpi-card__trend trend-up">patch · cantilever · cooks · necking · MMS</div>
+        </div>
+        <div class="kpi-card kpi--blue">
+          <div class="kpi-card__value">0</div>
+          <div class="kpi-card__label">Open Blockers</div>
+          <div class="kpi-card__trend trend-flat">MVP scope clean</div>
+        </div>
+        <div class="kpi-card kpi--amber">
+          <div class="kpi-card__value">1</div>
+          <div class="kpi-card__label">Deferred TODOs</div>
+          <div class="kpi-card__trend trend-warn">J2 analytical tangent</div>
+        </div>
+      </div>
+
+      <!-- Status grid -->
+      <div class="status-grid">
+        <div class="status-card status-card--working">
+          <div class="status-card__header">✓ Working &amp; Stable</div>
+          <div class="status-card__body">
+            <ul class="status-list">
+              <li>Full 6-layer compiler pipeline (build_context → Taichi emission)</li>
+              <li>SVK elasticity + J2 power-law plasticity codegen</li>
+              <li>Hex8 Total Lagrangian formulation, convected coordinates</li>
+              <li>Einsum optimizer with JIT budget enforcement</li>
+              <li>Newton-Raphson solver with CG/PCG, adaptive load stepping</li>
+              <li>All 5 physical benchmarks (patch, rigid, cantilever, Cook's, necking)</li>
+              <li>MMS convergence verification (L2 ≥ 2.0, H1 ≥ 1.0)</li>
+              <li>3-tier CI (fast/push · slow/PR · nightly/e2e)</li>
+              <li>ruff lint · mypy types · 1 015 tests</li>
+              <li>algo2code PCG transpilation pipeline</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="status-card status-card--progress">
+          <div class="status-card__header">→ In Progress / Upcoming</div>
+          <div class="status-card__body">
+            <ul class="status-list">
+              <li>Plan B not yet started — Sprint 4 entry point is Phase B1</li>
+              <li>Updated Lagrangian formulation (B1) — design doc complete, no code yet</li>
+              <li>Analytical J2 consistent tangent — deferred to Plan B</li>
+              <li>Worktree branch <code>claude/modest-johnson</code> open (no uncommitted changes)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="status-card status-card--broken">
+          <div class="status-card__header">✓ Nothing Broken</div>
+          <div class="status-card__body">
+            <ul class="status-list">
+              <li>Zero known failing tests as of 2026-04-12 Phase 6 exit</li>
+              <li>Zero open ruff or mypy violations</li>
+              <li>No scaffold stubs remaining</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="status-card status-card--blocked">
+          <div class="status-card__header">⚠ Blocked / Deferred</div>
+          <div class="status-card__body">
+            <ul class="status-list">
+              <li>LaTeX <code>.tex</code> frontend parsing — blocked on NRPyLaTeX fork dep</li>
+              <li>Plan B features (UL, curvilinear coords, hyperelastics, Hex20/Tet10, explicit dynamics, MFEM/MOOSE backends) — intentionally out of MVP scope</li>
+              <li>J2 analytical consistent tangent — FD fallback in place, Plan B item</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 06 · MENTAL MODEL ──────────────────────────────────────────── -->
+    <section class="section" id="mental-model">
+      <div class="section__heading">06 · Mental Model Essentials</div>
+      <p style="font-family:var(--font-sans);font-size:13.5px;color:var(--text-dim);margin-bottom:18px;">
+        The 9 things you need to hold in your head to work on this project effectively.
+      </p>
+
+      <div class="essentials-grid">
+
+        <div class="essential-item">
+          <span class="essential-item__num">1</span>
+          <div class="essential-item__title">Three explicit IRs, never bypassed</div>
+          <div class="essential-item__body">
+            <code>ProblemIR</code> → <code>ElementIR</code> → <code>EinsumIR</code>.
+            Symbolic expressions never call the backend directly. Every layer boundary is a
+            typed, immutable handoff. Skipping a layer is always a bug.
+          </div>
+        </div>
+
+        <div class="essential-item">
+          <span class="essential-item__num">2</span>
+          <div class="essential-item__title">Validation at construction, not call-time</div>
+          <div class="essential-item__body">
+            All IR dataclasses validate in <code>__post_init__</code>. If a <code>ProblemIR</code>
+            or <code>HexMesh</code> was constructed, its invariants hold. Errors surface at the
+            boundary, not deep inside codegen.
+          </div>
+        </div>
+
+        <div class="essential-item">
+          <span class="essential-item__num">3</span>
+          <div class="essential-item__title">Unsupported = raise with Plan B phase reference</div>
+          <div class="essential-item__body">
+            Every rejection names which Plan B phase adds that feature (e.g., "Updated Lagrangian
+            is planned for Plan B phase B1"). Callers always know whether to wait or implement.
+          </div>
+        </div>
+
+        <div class="essential-item">
+          <span class="essential-item__num">4</span>
+          <div class="essential-item__title">ti.static vs runtime — index partitioning rule</div>
+          <div class="essential-item__body">
+            Physics indices (range ≤ 6: spatial i,j,k,l; material I,J,K,L) → <code>ti.static</code>.
+            Mesh indices (nodes, quads, elements) → runtime loops. <em>Never</em> unroll mesh indices —
+            JIT budget explodes.
+          </div>
+        </div>
+
+        <div class="essential-item">
+          <span class="essential-item__num">5</span>
+          <div class="essential-item__title">JIT budget hard limits</div>
+          <div class="essential-item__body">
+            512 unrolled lines per <code>@ti.func</code>,
+            2 000 per <code>@ti.kernel</code>,
+            5 000 absolute ceiling.
+            The einsum optimizer enforces this. Exceeding it causes silent JIT slowdowns, not errors.
+          </div>
+        </div>
+
+        <div class="essential-item">
+          <span class="essential-item__num">6</span>
+          <div class="essential-item__title">Voigt ordering: unscaled, not engineering</div>
+          <div class="essential-item__body">
+            <code>[xx, yy, zz, xy, xz, yz]</code> with unscaled shear components (tensorial Voigt).
+            Engineering Voigt has factors of 2 on shears — this codebase does not.
+            Mixing them is silent and numerically wrong.
+          </div>
+        </div>
+
+        <div class="essential-item">
+          <span class="essential-item__num">7</span>
+          <div class="essential-item__title">Index convention: case encodes domain</div>
+          <div class="essential-item__body">
+            Lowercase <code>i,j,k,l</code> = spatial (current config).
+            Uppercase <code>I,J,K,L</code> = material (reference config).
+            Mixed <code>F_&#123;iI&#125;</code> = two-point tensor. Violating this is a physics error.
+          </div>
+        </div>
+
+        <div class="essential-item">
+          <span class="essential-item__num">8</span>
+          <div class="essential-item__title">Always uv run — never invoke tools directly</div>
+          <div class="essential-item__body">
+            <code>uv run pytest</code>, <code>uv run ruff</code>, <code>uv run mypy</code>.
+            Never bare <code>pytest</code> / <code>python</code> / <code>ruff</code> —
+            they may pick up the wrong environment or not exist on PATH.
+          </div>
+        </div>
+
+        <div class="essential-item">
+          <span class="essential-item__num">9</span>
+          <div class="essential-item__title">Design docs win over code</div>
+          <div class="essential-item__body">
+            <code>dev/design_docs/</code> is read-only authority.
+            <code>07-CONVENTIONS.md</code> always wins over conflicting code or comments.
+            Sign convention: tension-positive stress, compression-positive pressure (<code>p = −m</code>).
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 07 · COGNITIVE DEBT ───────────────────────────────────────── -->
+    <section class="section" id="debt">
+      <div class="section__heading">07 · Cognitive Debt Hotspots</div>
+      <p style="font-family:var(--font-sans);font-size:13.5px;color:var(--text-dim);margin-bottom:18px;">
+        Areas where understanding is weakest or rationale is most likely to evaporate.
+      </p>
+
+      <div class="debt-list">
+
+        <div class="debt-item debt-item--high">
+          <div class="debt-item__header">
+            <span class="debt-badge debt-badge--high">High</span>
+            <span class="debt-item__file">packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py · lines 517–520</span>
+          </div>
+          <div class="debt-item__body">
+            The J2 plasticity kernel emits a <strong>finite-difference consistent tangent</strong> as a
+            deliberate fallback. The TODO comment reads: <em>"Replace FD tangent with analytical consistent
+            tangent … O(n) more expensive per matvec. See PLAN-A Phase 8 (analytical tangent)."</em>
+            This function is called from the J2 kernel emission path and affects Newton convergence rate
+            for every plastic solve. The behavior switch (FD vs analytical) is undocumented inline beyond
+            the TODO, and the performance implications are easy to forget.
+            <div class="debt-item__suggestion">
+              Suggestion: Add a doc comment at the function head explaining the FD approach,
+              its convergence-rate cost vs analytical, and the Plan B (Phase B analogue) that resolves it.
+              Link to the design doc section. This function will be the first stop in Sprint 4.
+            </div>
+          </div>
+        </div>
+
+        <div class="debt-item debt-item--medium">
+          <div class="debt-item__header">
+            <span class="debt-badge debt-badge--medium">Medium</span>
+            <span class="debt-item__file">packages/mechdsl-core/src/mechdsl/symbolic/ (kinematics, constitutive, voigt)</span>
+          </div>
+          <div class="debt-item__body">
+            The symbolic layer (kinematics chain F→C→E→J, constitutive evaluation, Voigt contraction)
+            is exercised through full-pipeline tests and individual unit tests in <code>test_symbolic.py</code>,
+            <code>test_kinematics.py</code>, and <code>test_voigt.py</code>, but there are
+            <strong>no dedicated boundary tests at the symbolic-to-IR interface</strong>.
+            It's unclear from the test files alone which combinations of symbolic outputs are valid inputs to
+            <code>ProblemIR</code> construction without reading the lowering code.
+            <div class="debt-item__suggestion">
+              Suggestion: Add a test module <code>test_symbolic_ir_interface.py</code> that explicitly
+              checks which symbolic outputs produce valid IR and which should raise at the IR boundary.
+              This will matter when Plan B adds new kinematic terms.
+            </div>
+          </div>
+        </div>
+
+        <div class="debt-item debt-item--medium">
+          <div class="debt-item__header">
+            <span class="debt-badge debt-badge--medium">Medium</span>
+            <span class="debt-item__file">packages/mechdsl-core/src/mechdsl/verify/_assembly.py</span>
+          </div>
+          <div class="debt-item__body">
+            An <strong>explicit <code>ndarray</code> cast</strong> was added to the Newton residual closure
+            in Phase 6 as a mypy fix (commit: "Finish sprint 3 phase 6 exit").
+            The cast is structurally innocuous but there is no test that exercises the code path
+            where the cast matters (i.e., where the input is not already an ndarray).
+            If the upstream type changes in Plan B, this cast could mask a real type error.
+            <div class="debt-item__suggestion">
+              Suggestion: Add a test case with a mock array-like input to <code>_assembly.py</code>
+              to verify the cast path is exercised and the residual computation is correct regardless
+              of input container type.
+            </div>
+          </div>
+        </div>
+
+        <div class="debt-item debt-item--low">
+          <div class="debt-item__header">
+            <span class="debt-badge debt-badge--low">Low</span>
+            <span class="debt-item__file">packages/algo2code/tests/ (fixture restructure, Phase 6)</span>
+          </div>
+          <div class="debt-item__body">
+            The algo2code test suite was restructured in Phase 6 to use <strong>fixture-driven
+            sample access</strong> instead of direct conftest imports, to resolve the pytest
+            root-suite collection collision. The fixture content (<code>pcg_latex</code> and siblings)
+            is now defined in <code>conftest.py</code> but the <em>intent</em> of each fixture —
+            what algorithm variant it represents and why — is implicit.
+            <div class="debt-item__suggestion">
+              Suggestion: Add a one-line docstring to each fixture in
+              <code>packages/algo2code/tests/conftest.py</code> describing the algorithm variant
+              and its key properties. Low effort, high payoff when re-entering this code.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 08 · NEXT STEPS ─────────────────────────────────────────────── -->
+    <section class="section" id="next">
+      <div class="section__heading">08 · Next Steps</div>
+      <p style="font-family:var(--font-sans);font-size:13.5px;color:var(--text-dim);margin-bottom:18px;">
+        Inferred from Handoff Phase 7 doc, commit trajectory, and open Plan B phases.
+        Not prescriptive — just where momentum was pointing when Sprint 3 closed.
+      </p>
+
+      <div class="next-steps-grid">
+
+        <div class="next-item" style="border-left: 3px solid var(--accent);">
+          <div class="next-item__phase">Phase B1 · Highest Priority</div>
+          <div class="next-item__title">Updated Lagrangian formulation</div>
+          <div class="next-item__body">
+            UL residual + tangent (spatial Cauchy stress, current-config volume), Jaumann objective
+            stress rate, <code>ConfigurationIR</code> extension to Mechanics IR, formulation switch
+            via <code>% mechanics formulation updated_lagrangian</code> directive.
+            Acceptance: TL vs UL on cantilever agree within 1e-8.
+          </div>
+        </div>
+
+        <div class="next-item" style="border-left: 3px solid var(--red);">
+          <div class="next-item__phase">High Risk · Address Early</div>
+          <div class="next-item__title">Analytical J2 consistent tangent</div>
+          <div class="next-item__body">
+            The FD tangent in <code>taichi_printer.py</code> crosses codegen, solver, and
+            verification layers. Entry point: the existing TODO at lines 517–520.
+            High risk because it touches three layers simultaneously. Do this before adding
+            new constitutive models on top of the FD baseline.
+          </div>
+        </div>
+
+        <div class="next-item" style="border-left: 3px solid var(--node-b);">
+          <div class="next-item__phase">Recommended Entry Point</div>
+          <div class="next-item__title">Read Phase 6 Exit Report first</div>
+          <div class="next-item__body">
+            <code>dev/tasks/sprint3/Phase_6_Exit_Report.md</code> is the authoritative MVP
+            completion record. Treat it as the baseline before expanding any formulation or
+            constitutive model. Then read <code>dev/design_docs/PLAN-B.md</code> for the
+            Phase B1 spec.
+          </div>
+        </div>
+
+        <div class="next-item" style="border-left: 3px solid var(--node-c);">
+          <div class="next-item__phase">Longer Horizon</div>
+          <div class="next-item__title">Plan B feature set</div>
+          <div class="next-item__body">
+            Designed but unstarted: curvilinear reference coordinates (B2), hyperelastic models
+            neo-Hookean / Mooney-Rivlin / Ogden / HGO (B3), viscoplasticity Perzyna / Johnson-Cook (B4),
+            additional elements Hex20 / Tet10 (B5), explicit dynamics (B7), MFEM + MOOSE backends (B8).
+            Acceptance test: Taylor impact problem with Johnson-Cook viscoplasticity.
+          </div>
+        </div>
+
+      </div>
+
+      <div class="ve-card" style="margin-top: 20px; border-left: 3px solid var(--amber);">
+        <div class="ve-card__label">From Phase 7 Handoff</div>
+        <p style="font-family:var(--font-sans);font-size:13.5px;color:var(--text-dim);">
+          "The Sprint 3 physics benchmark surface is now stable enough that the limiting factor in
+          Phase 6 was harness/tooling hygiene rather than constitutive correctness. The next work
+          should start from deferred features, not more Sprint 3 cleanup."
+          — Phase 6 agent, 2026-04-12
+        </p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══ MERMAID + ZOOM ENGINE ══════════════════════════════════════════════ -->
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    look: 'classic',
+    themeVariables: {
+      primaryColor:        isDark ? '#1a3a38' : '#d4eeec',
+      primaryBorderColor:  isDark ? '#3d7c78' : '#3d7c78',
+      primaryTextColor:    isDark ? '#e8f5f4' : '#1a3a38',
+      secondaryColor:      isDark ? '#1e2d1e' : '#deeede',
+      secondaryBorderColor:isDark ? '#5c8f5a' : '#5c8f5a',
+      secondaryTextColor:  isDark ? '#e8f2e8' : '#1e2d1e',
+      tertiaryColor:       isDark ? '#2d2410' : '#faefd8',
+      tertiaryBorderColor: isDark ? '#b07d2e' : '#b07d2e',
+      tertiaryTextColor:   isDark ? '#faefd8' : '#2d2410',
+      lineColor:           isDark ? '#6b5e4a' : '#a8967a',
+      fontSize:            '15px',
+      fontFamily:          'DM Sans, system-ui, sans-serif',
+      clusterBkg:          isDark ? '#1c2820' : '#f0f8f0',
+      clusterBorder:       isDark ? '#3d7c78' : '#5c8f5a',
+      titleColor:          isDark ? '#e8f5f4' : '#1a3a38',
+      edgeLabelBackground: isDark ? '#1c2820' : '#f4efe6',
+      noteBkgColor:        isDark ? '#2d2410' : '#faefd8',
+      noteTextColor:       isDark ? '#faefd8' : '#2d2410',
+      noteBorderColor:     isDark ? '#b07d2e' : '#b07d2e',
+    }
+  });
+
+  /* ── Zoom / pan engine ──────────────────────────────────────── */
+  const CFG = { fitPadding: 40, minZoom: 0.15, maxZoom: 5, zoomStep: 0.14, readFloor: 0.35 };
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  let activeDrag = null;
+
+  addEventListener('mousemove', (e) => activeDrag?.move(e));
+  addEventListener('mouseup',   ()  => { activeDrag?.end(); activeDrag = null; });
+
+  function openInNewTab(svgHTML, title) {
+    const blob = new Blob([
+      `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>`
+      + `<style>body{margin:0;background:#f4efe6;display:flex;align-items:center;`
+      + `justify-content:center;min-height:100vh;padding:24px;}svg{max-width:100%;height:auto;}</style>`
+      + `</head><body>${svgHTML}</body></html>`
+    ], { type: 'text/html' });
+    window.open(URL.createObjectURL(blob), '_blank');
+  }
+
+  async function initDiagram(shell) {
+    const wrap     = shell.querySelector('.mermaid-wrap');
+    const viewport = shell.querySelector('.mermaid-viewport');
+    const canvas   = shell.querySelector('.mermaid-canvas');
+    const src      = shell.querySelector('.diagram-source');
+    const label    = shell.querySelector('.zoom-label');
+    if (!wrap || !viewport || !canvas || !src || !label) return;
+
+    let zoom = 1, panX = 0, panY = 0, svgW = 0, svgH = 0;
+
+    function readSize() {
+      const svg = canvas.querySelector('svg');
+      if (!svg) return false;
+      const vb = svg.getAttribute('viewBox');
+      if (vb) {
+        const p = vb.trim().split(/[\s,]+/).map(Number);
+        if (p.length >= 4 && p[2] > 0 && p[3] > 0) { svgW = p[2]; svgH = p[3]; return true; }
+      }
+      svgW = parseFloat(svg.getAttribute('width'))  || 800;
+      svgH = parseFloat(svg.getAttribute('height')) || 500;
+      return true;
+    }
+
+    function applyTransform() {
+      const svg = canvas.querySelector('svg');
+      if (!svg) return;
+      svg.style.width  = (svgW * zoom) + 'px';
+      svg.style.height = (svgH * zoom) + 'px';
+      canvas.style.width  = (svgW * zoom) + 'px';
+      canvas.style.height = (svgH * zoom) + 'px';
+      canvas.style.transform = `translate(${panX}px, ${panY}px)`;
+      label.textContent = Math.round(zoom * 100) + '%';
+    }
+
+    function fit() {
+      if (!svgW || !svgH) return;
+      const vw = viewport.offsetWidth  - CFG.fitPadding * 2;
+      const vh = viewport.offsetHeight - CFG.fitPadding * 2;
+      const s = Math.min(vw / svgW, vh / svgH, 1);
+      zoom = Math.max(s, CFG.readFloor);
+      panX = (viewport.offsetWidth  - svgW * zoom) / 2;
+      panY = Math.max((viewport.offsetHeight - svgH * zoom) / 2, CFG.fitPadding);
+      applyTransform();
+    }
+
+    function adaptHeight() {
+      if (!svgH || !svgW) return;
+      const nat = svgH * (viewport.offsetWidth / svgW);
+      viewport.style.height = Math.max(320, Math.min(nat, 680)) + 'px';
+    }
+
+    async function render() {
+      try {
+        const code = src.textContent.trim();
+        if (!code) { label.textContent = 'Empty'; return; }
+        const id = 'md-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        const { svg } = await mermaid.render(id, code);
+        canvas.innerHTML = svg;
+        if (!readSize()) return;
+        adaptHeight();
+        fit();
+      } catch (e) {
+        console.error(e);
+        label.textContent = 'Error';
+      }
+    }
+
+    // Controls
+    wrap.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const a = btn.dataset.action;
+        if      (a === 'zoom-in')     { zoom = clamp(zoom * (1 + CFG.zoomStep), CFG.minZoom, CFG.maxZoom); applyTransform(); }
+        else if (a === 'zoom-out')    { zoom = clamp(zoom / (1 + CFG.zoomStep), CFG.minZoom, CFG.maxZoom); applyTransform(); }
+        else if (a === 'zoom-fit')    { fit(); }
+        else if (a === 'zoom-one')    { zoom = 1; panX = (viewport.offsetWidth - svgW) / 2; panY = (viewport.offsetHeight - svgH) / 2; applyTransform(); }
+        else if (a === 'zoom-expand') { openInNewTab(canvas.innerHTML, 'MechDSL Architecture'); }
+      });
+    });
+
+    // Ctrl/Cmd + wheel → zoom; plain wheel → scroll page
+    viewport.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const rect = viewport.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const f = e.deltaY < 0 ? (1 + CFG.zoomStep) : 1 / (1 + CFG.zoomStep);
+      const nz = clamp(zoom * f, CFG.minZoom, CFG.maxZoom);
+      panX = mx - (mx - panX) * (nz / zoom);
+      panY = my - (my - panY) * (nz / zoom);
+      zoom = nz;
+      applyTransform();
+    }, { passive: false });
+
+    // Drag pan
+    wrap.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      const ox = e.clientX - panX, oy = e.clientY - panY;
+      wrap.classList.add('is-panning');
+      activeDrag = {
+        move: (ev) => { panX = ev.clientX - ox; panY = ev.clientY - oy; applyTransform(); },
+        end:  ()   => wrap.classList.remove('is-panning'),
+      };
+    });
+
+    // Double-click → fit
+    wrap.addEventListener('dblclick', fit);
+
+    render();
+  }
+
+  document.querySelectorAll('.diagram-shell').forEach(initDiagram);
+
+  /* ── Active nav highlight on scroll ──────────────────────────── */
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.side-nav__list a');
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.side-nav__list a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>

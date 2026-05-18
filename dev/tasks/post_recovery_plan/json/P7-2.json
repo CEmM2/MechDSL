@@ -1,0 +1,88 @@
+{
+    "task_id": "P7-2",
+    "title": "Robustify test_p7_3.py ordering check + README path matching (items 5, 6)",
+    "phase": "7",
+    "objective": "Replace text.find() ordering offsets with a first-runnable-code-block detector, and loosen README path matching to accept relative, ./-prefixed, and absolute path variants.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": [
+        "327",
+        "330"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Items 5, 6: test_p7_3.py first-occurrence ordering and README path matching fragility",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 48,
+            "Plan_file_end_line": 49
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [],
+    "scope": [
+        "Edit packages/mechdsl-core/tests/test_p7_3.py around lines 50 and 117",
+        "Replace text.find() with markdown code-block walker that returns first runnable block",
+        "Loosen README path matching to accept dev/examples/, ./dev/examples/, absolute"
+    ],
+    "implementation_steps": [
+        "Read test_p7_3.py around lines 50 and 117",
+        "Implement small markdown code-block iterator (regex on ``` fences)",
+        "Find first block whose language is python or shell",
+        "Update path-matching regex to allow optional ./ or absolute prefix"
+    ],
+    "deliverables": [
+        "Updated test_p7_3.py",
+        "Passing test under prose-shift fixture"
+    ],
+    "acceptance_criteria": [
+        "Ordering check passes when prose mention of compile_latex( is added near top of README",
+        "Path matching passes for all three prefix variants"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p7_2.py -v",
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_3.py -v"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "First-runnable-block detection survives prose insertion (missing)",
+            "Three path-prefix variants accepted (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p7_2.py",
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_3.py"
+    ],
+    "risks": [],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p7_2.py -v",
+                "passed": 3,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-7",
+    "completion_notes": [
+        "test_p7_3.py ordering check now scans markdown code-fence content (runnable blocks).",
+        "Path matching accepts `dev/examples/`, `./dev/examples/`, and absolute prefixes via `/dev/examples/` substring."
+    ],
+    "github_issue": {
+        "phase_issue": 206,
+        "task_issue": 240,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

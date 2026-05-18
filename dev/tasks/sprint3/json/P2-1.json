@@ -1,0 +1,69 @@
+{
+    "task_id": "P2-1",
+    "title": "Implement generate_cook_membrane_mesh() trapezoidal mesh generator",
+    "phase": "2",
+    "objective": "Add a trapezoidal mesh generator for Cook's membrane geometry (left height=44mm, right height=16mm, length=48mm) to mesh_io.py using coordinate warping of a structured hex mesh.",
+    "plan_file": "dev/plans/sprint3.md",
+    "plan_lines": ["77", "81-85"],
+    "plan_assets": [
+        {
+            "asset_description": "Cook's membrane geometry and y-coordinate warping formula",
+            "asset_type": "equation",
+            "Plan_file_start_line": 81,
+            "Plan_file_end_line": 85
+        }
+    ],
+    "blocked_by": [],
+    "blocks": ["P2-2", "P2-3", "P5-2"],
+    "scope": [
+        "Add generate_cook_membrane_mesh(nx, ny, nz) -> HexMesh to mesh_io.py",
+        "Geometry: x in [0,48], left height 44, right height 16, thickness z in [0,1]",
+        "Y-coordinate warping: y_warped = y * (44 - 28*x/48) / 44",
+        "Boundary tags: x0, x1, y0, y1, z0, z1"
+    ],
+    "implementation_steps": [
+        "Read existing generate_hex8_mesh in mesh_io.py for patterns",
+        "Implement generate_cook_membrane_mesh using structured mesh + y-warping",
+        "Generate rectangular mesh on [0,48]x[0,44]x[0,1] then warp y-coordinates",
+        "Tag boundaries: x0 (fixed), x1 (loaded), y0, y1, z0, z1",
+        "Return HexMesh dataclass"
+    ],
+    "deliverables": [
+        "generate_cook_membrane_mesh function in mesh_io.py",
+        "Function returns HexMesh with correct trapezoidal geometry and boundary tags"
+    ],
+    "acceptance_criteria": [
+        "Corner coordinates match Cook's geometry (0,0), (48,0), (48,16), (0,44)",
+        "Boundary tags correctly identify all 6 faces",
+        "Node count = (nx+1)*(ny+1)*(nz+1)"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_mesh_io.py::TestCookMembraneGeometry -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Verify corner coordinates match trapezoidal geometry",
+            "Verify boundary tags",
+            "Verify node and element counts"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_mesh_io.py::TestCookMembraneGeometry"
+    ],
+    "risks": [
+        "Coordinate warping may produce negative Jacobians for very coarse meshes with extreme taper. Mitigation: use reasonable mesh density (nx >= 4)."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-09",
+    "test_completion": {
+        "passed": 6, "total": 6, "pass_rate": 100,
+        "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_mesh_io.py::TestCookMembraneGeometry -v", "passed": 6, "total": 6}]
+    },
+    "review_score": 9,
+    "review_breakdown": {"minor": 2, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "sprint3_phase-2",
+    "completion_notes": ["Boundary tags detected pre-warp for correct y1 identification. Warping formula verified: h(x)=44-28x/48 strictly positive, no Jacobian inversion risk."],
+    "github_issue": {"phase_issue": 16, "task_issue": 25, "repo": "SOSOVSKI/MechDSL"}
+}

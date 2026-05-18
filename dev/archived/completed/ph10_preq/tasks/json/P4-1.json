@@ -1,0 +1,98 @@
+{
+  "task_id": "P4-1",
+  "title": "Elastic benchmark solver contracts",
+  "phase": "4",
+  "objective": "Create internal TL/UL hyperelastic solver contracts for cantilever benchmark enablement.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "101",
+    "135"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E2 elastic benchmark solver scope and non-goals.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 101,
+      "Plan_file_end_line": 135
+    }
+  ],
+  "blocked_by": [
+    "P1-2"
+  ],
+  "blocks": [
+    "P4-2"
+  ],
+  "scope": [
+    "Add internal elastic benchmark solver interfaces for TL and UL.",
+    "Support SVK and Neo-Hookean material dispatch through existing model behavior.",
+    "Keep the public cantilever runner out of this phase."
+  ],
+  "implementation_steps": [
+    "Run GitNexus impact before editing any existing elastic solver/helper symbols.",
+    "Define internal solver parameter/result contracts.",
+    "Implement TL and UL small-displacement solve paths on cheap Hex8 meshes.",
+    "Add TL/UL small-displacement agreement tests.",
+    "Run targeted tests and static checks."
+  ],
+  "deliverables": [
+    "Internal elastic benchmark solver contracts.",
+    "TL/UL small-displacement agreement tests."
+  ],
+  "acceptance_criteria": [
+    "TL and UL Hex8 agree in the small-displacement limit.",
+    "No public cantilever runner is exposed yet.",
+    "No frontend or codegen APIs are changed."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_elastic_solver.py -v",
+    "uv run ruff check packages/mechdsl-core/src/mechdsl/verify/benchmarks/_elastic_solver.py packages/mechdsl-core/tests/test_phase10_elastic_solver.py",
+    "uv run mypy packages/mechdsl-core/src/mechdsl/verify/benchmarks/_elastic_solver.py"
+  ],
+  "test_plan": {
+    "tier": "integration",
+    "cases": [
+      "TL SVK Hex8 small displacement",
+      "UL SVK Hex8 small displacement",
+      "TL/UL displacement agreement"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_phase10_elastic_solver.py"
+  ],
+  "risks": [
+    "Solver helper contracts may duplicate existing benchmark internals; mitigate by keeping the API internal and moving shared behavior only when duplication is concrete."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-25",
+  "test_completion": {
+    "passed": 9,
+    "total": 9,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_elastic_solver.py -v",
+        "passed": 9,
+        "total": 9
+      }
+    ]
+  },
+  "review_score": 0,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e2-elastic-solver",
+  "completion_notes": [
+    "Added internal benchmark-local elastic solver contracts in _elastic_solver.py.",
+    "TL and UL Hex8 SVK agree in the small-displacement limit.",
+    "No public cantilever runner, frontend API, codegen API, or BenchmarkResult change was introduced."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

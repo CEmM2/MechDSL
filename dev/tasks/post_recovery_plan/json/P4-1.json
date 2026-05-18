@@ -1,0 +1,104 @@
+{
+    "task_id": "P4-1",
+    "title": "New frontend/math_parser.py wrapping nrpylatex",
+    "phase": "4",
+    "objective": "Create a frontend module that imports nrpylatex, parses $...$ LaTeX math blocks, and produces normalized intermediate AST suitable for the symbolic bridge.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": [
+        "195",
+        "199"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "nrpylatex dependency wired in pyproject.toml but never imported under src/",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 36,
+            "Plan_file_end_line": 38
+        },
+        {
+            "asset_description": "Math example: $P_{iJ} = \\mu (F_{iJ} - F_{iJ}^{-T}) + \\lambda \\log(J) F_{iJ}^{-T}$",
+            "asset_type": "equation",
+            "Plan_file_start_line": 191,
+            "Plan_file_end_line": 192
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [
+        "P4-3"
+    ],
+    "scope": [
+        "New module packages/mechdsl-core/src/mechdsl/frontend/math_parser.py",
+        "Wrap nrpylatex parser invocation",
+        "Normalize index conventions: lowercase spatial, uppercase material (per 07-CONVENTIONS)",
+        "Return intermediate AST consumable by symbolic/bridge.py"
+    ],
+    "implementation_steps": [
+        "Read 07-CONVENTIONS for index rules; consult plan line 222-225 on convention enforcement",
+        "Implement parse_math(latex_block: str) -> NRPyAst",
+        "Post-process AST: enforce lowercase spatial / uppercase material",
+        "Raise explicit error on unsupported nrpylatex node referencing this phase",
+        "Unit-test parsing the SVK PK1 expression"
+    ],
+    "deliverables": [
+        "frontend/math_parser.py",
+        "Parse-success cases for SVK PK1, J2 yield function fragment, two-point F_{iI}",
+        "Convention enforcement docstring/mapping table"
+    ],
+    "acceptance_criteria": [
+        "Parses SVK first-PK expression without error",
+        "Mixed F_{iI} preserves spatial/material distinction",
+        "Unsupported node raises with explicit Phase-4 reference"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_1.py -v",
+        "uv run python -c \"from mechdsl.frontend.math_parser import parse_math; print('import ok')\""
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "SVK PK1 expression parses (missing)",
+            "Two-point tensor index distinction preserved (missing)",
+            "Unknown node raises with phase pointer (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_1.py"
+    ],
+    "risks": [
+        "nrpylatex AST shapes incompatible with mechdsl symbolic types \u2014 mitigation: bridge module isolates conversion (per plan line 219-221)",
+        "Index convention conflict \u2014 mitigation: post-process AST per plan line 222-225"
+    ],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 4,
+        "total": 4,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_1.py -v",
+                "passed": 4,
+                "total": 4
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-4",
+    "completion_notes": [
+        "frontend/math_parser.py wraps nrpylatex.parse_latex; traps every nrpylatex exception class plus sympy.SympifyError, re-raises as MathParseError with literal 'post_recovery_plan Phase 4' pointer.",
+        "enforce_index_convention classifies tensor axes (spatial [ijkl] / material [IJKL]); strips trailing U/D suffix from namespace key when matching source name.",
+        "Module docstring documents nrpylatex 1.4.0 grammar constraints discovered during the survey: U/D suffix encodes rank, no --rank/--metric flags, no `*` op, no \\det/\\log{} intrinsics."
+    ],
+    "github_issue": {
+        "phase_issue": 203,
+        "task_issue": 222,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

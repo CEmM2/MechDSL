@@ -1,0 +1,85 @@
+{
+    "task_id": "P4-3",
+    "title": "Implement failure protocol (benchmark regressions create issues)",
+    "phase": "4",
+    "objective": "Configure the e2e-benchmarks CI job so that benchmark test failures create GitHub issues instead of blocking merges, while compiler-pass failures still block.",
+    "plan_file": "dev/plans/sprint3.md",
+    "plan_lines": [
+        "173",
+        "194-196"
+    ],
+    "plan_assets": [],
+    "blocked_by": [
+        "P4-2"
+    ],
+    "blocks": [],
+    "scope": [
+        "Set continue-on-error: true on e2e benchmark test step",
+        "Add step to create GitHub issue on failure via actions/github-script@v7"
+    ],
+    "implementation_steps": [
+        "Add continue-on-error: true to e2e test step",
+        "Add GitHub issue creation step triggered on failure",
+        "Use actions/github-script@v7 with benchmark-regression label"
+    ],
+    "deliverables": [
+        "Failure protocol in ci.yml e2e-benchmarks job"
+    ],
+    "acceptance_criteria": [
+        "Benchmark failures create issues instead of blocking merge",
+        "Compiler-pass test failures still block merge"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_ci_config.py::TestCIFailureProtocol -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "test_benchmark_step_has_continue_on_error: e2e benchmark test step in e2e-benchmarks job has continue-on-error: true",
+            "test_github_script_issue_creation_step_present: e2e-benchmarks job has a step with uses: actions/github-script@v7, if: failure(), and the benchmark-regression label"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_ci_config.py"
+    ],
+    "risks": [
+        "continue-on-error only suppresses step failure -- the whole job still needs a separate issue-creating step, which is non-trivial and easy to misconfigure",
+        "actions/github-script@v7 requires the default GITHUB_TOKEN to have `issues: write` permission; missing permission block silently no-ops issue creation"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-12",
+    "test_completion": {
+        "passed": 2,
+        "total": 2,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_ci_config.py::TestCIFailureProtocol -v",
+                "passed": 2,
+                "total": 2
+            },
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_ci_config.py -v",
+                "passed": 4,
+                "total": 4
+            }
+        ]
+    },
+    "review_score": 9,
+    "review_breakdown": {
+        "minor": 1,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/sprint3-phase4",
+    "completion_notes": [
+        "Made the nightly e2e benchmark step non-blocking and added a GitHub issue creation path that self-creates the benchmark-regression label if it does not exist."
+    ],
+    "github_issue": {
+        "phase_issue": 18,
+        "task_issue": 35,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

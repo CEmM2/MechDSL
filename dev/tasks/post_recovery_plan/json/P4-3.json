@@ -1,0 +1,109 @@
+{
+    "task_id": "P4-3",
+    "title": "Wire math parser into frontend/__init__.py pipeline",
+    "phase": "4",
+    "objective": "Plumb math_parser into the top-level frontend pipeline so $...$ blocks reach the symbolic layer via the bridge.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": [
+        "199",
+        "200"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Performance risk: only invoke math parser for $...$ blocks; directive-only files skip",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 226,
+            "Plan_file_end_line": 227
+        }
+    ],
+    "blocked_by": [
+        "P4-1",
+        "P4-2"
+    ],
+    "blocks": [
+        "P4-4",
+        "P4-5"
+    ],
+    "scope": [
+        "Edit packages/mechdsl-core/src/mechdsl/frontend/__init__.py",
+        "Detect $...$ math blocks in input LaTeX",
+        "Route math blocks to math_parser \u2192 bridge \u2192 symbolic",
+        "Preserve directive parsing path unchanged"
+    ],
+    "implementation_steps": [
+        "Identify current frontend entry point and parse loop",
+        "Add $...$ block detection (regex or LaTeX tokenizer)",
+        "On match, call math_parser then bridge",
+        "Skip math parsing entirely if no $...$ block in input",
+        "Smoke test: directive-only file path unchanged"
+    ],
+    "deliverables": [
+        "Updated frontend/__init__.py routing math blocks",
+        "Path-only-invoke-when-needed guard in place",
+        "Smoke test confirming directive-only path is untouched"
+    ],
+    "acceptance_criteria": [
+        "Math-bearing LaTeX produces a populated symbolic expression tree",
+        "Directive-only LaTeX skips math parsing entirely (verified by mock or import counter)",
+        "No regression in existing frontend tests"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_3.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_directives.py packages/mechdsl-core/tests/test_two_point.py -v",
+        "uv run pytest -m \"not slow and not gpu\" --tb=line -q"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Math-bearing input routes through math_parser (missing)",
+            "Directive-only input skips math parser (missing)",
+            "Existing frontend tests still pass (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_3.py"
+    ],
+    "risks": [
+        "Regex-based detection of $...$ may misfire with verbatim/escape \u2014 mitigation: use established LaTeX tokenizer if nrpylatex provides one"
+    ],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 5,
+        "total": 5,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_3.py -v",
+                "passed": 5,
+                "total": 5
+            },
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_frontend_parser.py -v",
+                "passed": 56,
+                "total": 56
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-4",
+    "completion_notes": [
+        "frontend/__init__.py exports parse_with_math + has_math_block + has_math_block_in_source.",
+        "Math-block regex skips %-comment lines (post-P4-5 fix; was over-matching prose).",
+        "% declare lines extracted from source and prepended to each $...$ block before nrpylatex parse.",
+        "Parse-when-needed guard verified by monkeypatch: directive-only inputs do not invoke math_parser.parse_math.",
+        "Local imports keep directive-only path off math parser dependency chain."
+    ],
+    "github_issue": {
+        "phase_issue": 203,
+        "task_issue": 224,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

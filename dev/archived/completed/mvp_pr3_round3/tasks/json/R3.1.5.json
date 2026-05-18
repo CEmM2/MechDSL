@@ -1,0 +1,64 @@
+{
+    "task_id": "R3.1.5",
+    "title": "Change node loops to runtime (C5)",
+    "phase": "1",
+    "objective": "Change three emitted node loops from ti.static(range(N_NODES)) to range(N_NODES) per convention (N_NODES=8 > 6 threshold)",
+    "plan_file": "dev/plans/mvp_pr3_round3.md",
+    "plan_lines": ["63", "73"],
+    "plan_assets": [],
+    "blocked_by": ["R3.1.2"],
+    "blocks": ["R3.6.1"],
+    "scope": [
+        "taichi_printer.py lines 416, 446, 476"
+    ],
+    "implementation_steps": [
+        "Change line 416 node gather loop to range(N_NODES)",
+        "Change line 446 deformation gradient loop to range(N_NODES)",
+        "Change line 476 force integration loop to range(N_NODES)",
+        "KEEP line 429 GRAD_AT_QUAD gather loop as ti.static \u2014 Python list access requires it"
+    ],
+    "deliverables": [
+        "Modified taichi_printer.py: 3 node loops changed, 1 kept ti.static"
+    ],
+    "acceptance_criteria": [
+        "Lines 416, 446, 476 emit range(N_NODES) not ti.static(range(N_NODES))",
+        "Line 429 still emits ti.static(range(N_NODES))"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_taichi_printer.py::TestIndexPartitioning -v --tb=short",
+        "uv run pytest packages/mechdsl-core/tests/test_emission_verification.py -v --tb=short -k 'node_loop or static'"
+    ],
+    "test_plan": {
+        "tier": "existing",
+        "cases": [
+            "test_taichi_printer.py golden snapshot"
+        ]
+    },
+    "test_artifacts": ["packages/mechdsl-core/tests/test_taichi_printer.py", "packages/mechdsl-core/tests/test_emission_verification.py"],
+    "risks": [
+        "Must be done AFTER C2 (R3.1.2) \u2014 the GRAD_AT_QUAD inner loop at line 429 must stay ti.static for Python list access with the now-static q index"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

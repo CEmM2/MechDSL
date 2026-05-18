@@ -1,0 +1,94 @@
+{
+    "task_id": "P4-3",
+    "title": "Rework lowering so it emits richer `ElementIR` first, then derives contraction/optimizer artifacts from it.",
+    "phase": "4",
+    "objective": "Rework lowering so it emits richer `ElementIR` first, then derives contraction/optimizer artifacts from it.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "237",
+        "237"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P4-3 (R3.3) in Phase 4 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 237,
+            "Plan_file_end_line": 237
+        }
+    ],
+    "blocked_by": [
+        "P3-1",
+        "P4-1",
+        "P4-2"
+    ],
+    "blocks": [
+        "P4-4"
+    ],
+    "scope": [
+        "Rework lowering so it emits richer `ElementIR` first, then derives contraction/optimizer artifacts from it.",
+        "Touched surfaces (per recovery plan): `lowering/`, `codegen/artifact.py`"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 4 (Enrich `ElementIR` and normalize lowering boundaries (R3)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Rework lowering so it emits richer `ElementIR` first, then derives contraction/optimizer artifacts from it.",
+        "Touch only the listed surfaces: `lowering/`, `codegen/artifact.py`.",
+        "Verify: Localisation tests validate both IR richness and optimizer compatibility.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `lowering/`",
+        "Changes to `codegen/artifact.py`"
+    ],
+    "acceptance_criteria": [
+        "Localisation tests validate both IR richness and optimizer compatibility.",
+        "All deliverables for P4-3 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p4_3.py -v -m regression"
+    ],
+    "test_plan": {
+        "tier": "regression",
+        "cases": [
+            "P4-3-c1: Localisation tests validate both IR richness and optimizer compatibility.",
+            "P4-3-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p4_3.py"
+    ],
+    "risks": [
+        "IR enrichment breaks downstream code. Mitigation: Use additive fields and compatibility constructors; land with focused regression tests."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-27",
+    "test_completion": {
+        "passed": 15,
+        "total": 15,
+        "pass_rate": 1.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p4_3.py -v -m regression",
+                "passed": 15,
+                "total": 15
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/recovery-phase4",
+    "completion_notes": [
+        "Reworked lowering so localise() emits the enriched ElementIR first, then derives the einsum optimizer view from it (now via LocalisationResult.from_element_ir). Added _enrich_element_ir(legacy_ir, problem_ir) helper in fe_localise.py that populates the four P4-1 contract dataclasses from the ProblemIR / ElementIR semantics: GeometrySummary (n_quad, reference_volume from per-element table, natural_coord_dim), MaterialEvalContract (TL→pk2/green_lagrange, UL→cauchy/almansi), LocalForceDescriptor (n_dof = n_nodes*dim), LocalTangentDescriptor (is_symmetric flag from _SYMMETRIC_TANGENT_MODELS = {svk, j2_power_law}). ArtifactBundle.from_pipeline now surfaces the enriched contract blocks in element_ir_summary; pre-P4-3 bundles round-trip cleanly (new keys default to None). 15/15 P4-3 tests pass; full mechdsl-core suite at 1560 pass / 0 fail."
+    ],
+    "github_issue": {
+        "phase_issue": 144,
+        "task_issue": 168,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

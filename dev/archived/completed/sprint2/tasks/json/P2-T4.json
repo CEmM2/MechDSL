@@ -1,0 +1,77 @@
+{
+    "task_id": "P2-T4",
+    "title": "Implement uniaxial_tension_hardening()",
+    "phase": "2",
+    "objective": "Implement uniaxial_tension_hardening(E, nu, sigma_y0, K, n, eps_total) -> (stress, eps_p) in verify/analytical.py. Computes the analytical uniaxial stress-strain curve for power-law J2 hardening. Critical reference for Phase 4 J2 E2E test.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": [
+        "76",
+        "80"
+    ],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": [
+        "P2-T5",
+        "P4-T5"
+    ],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/verify/analytical.py"
+    ],
+    "implementation_steps": [
+        "Implement uniaxial_tension_hardening(E, nu, sigma_y0, K, n, eps_total) -> tuple[float, float]",
+        "Elastic regime: if E*eps_total < sigma_y0, return (E*eps_total, 0.0)",
+        "Plastic regime: solve sigma = sigma_y0 + K * eps_p^n with eps_total = sigma/E + eps_p",
+        "Use scipy.optimize.brentq or Newton iteration for implicit solve",
+        "Return (stress, eps_p)"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/src/mechdsl/verify/analytical.py \u2014 uniaxial_tension_hardening()"
+    ],
+    "acceptance_criteria": [
+        "Below yield: \u03c3 = E*\u03b5 exactly",
+        "Above yield: \u03c3 follows \u03c3 = \u03c3_y0 + K*\u03b5_p^n",
+        "Total strain decomposition: \u03b5_total = \u03c3/E + \u03b5_p",
+        "Continuity at yield point"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_analytical.py -v -k uniaxial"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Below yield \u2192 elastic",
+            "Above yield \u2192 hardening law",
+            "Continuity at yield point",
+            "Large strain \u2192 monotonic hardening"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_analytical.py"
+    ],
+    "risks": [
+        "Risk: implicit solve may not converge for extreme hardening exponents. Mitigation: use robust root-finding (Brent's method) with bracketing."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-05",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "sprint2_phase-2",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

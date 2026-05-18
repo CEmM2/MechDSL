@@ -1,0 +1,90 @@
+{
+    "task_id": "P1-4",
+    "title": "Normalize tracker vocabulary to distinguish `done`, `deferred`, `implemented-via-substitute`, and `not_started`.",
+    "phase": "1",
+    "objective": "Normalize tracker vocabulary to distinguish `done`, `deferred`, `implemented-via-substitute`, and `not_started`.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "119",
+        "119"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P1-4 (R0.4) in Phase 1 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 119,
+            "Plan_file_end_line": 119
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [
+        "P1-6"
+    ],
+    "scope": [
+        "Normalize tracker vocabulary to distinguish `done`, `deferred`, `implemented-via-substitute`, and `not_started`.",
+        "Touched surfaces (per recovery plan): `dev/tracking/tasks-tracker_MVP_plan.md`, related trackers"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 1 (Freeze the contract surface (R0)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Normalize tracker vocabulary to distinguish `done`, `deferred`, `implemented-via-substitute`, and `not_started`.",
+        "Touch only the listed surfaces: `dev/tracking/tasks-tracker_MVP_plan.md`, related trackers.",
+        "Verify: Tracker rows no longer imply untouched work where substitute implementations exist.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to `dev/tracking/tasks-tracker_MVP_plan.md`",
+        "Changes to related trackers"
+    ],
+    "acceptance_criteria": [
+        "Tracker rows no longer imply untouched work where substitute implementations exist.",
+        "All deliverables for P1-4 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p1_4.py -v -m audit"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "P1-4-c1: Tracker rows no longer imply untouched work where substitute implementations exist.",
+            "P1-4-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p1_4.py"
+    ],
+    "risks": [
+        "Tracker/doc cleanup lags behind implementation. Mitigation: Make governance updates part of each recovery phase rather than a final afterthought."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-26",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p1_4.py -v -m audit",
+                "passed": 3,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Created dev/tracking/STATUS_LEGEND.md with the four-value vocabulary; wired MVP_plan tracker preamble to point at it. test_p1_4 passes 3/3."
+    ],
+    "github_issue": {
+        "phase_issue": 141,
+        "task_issue": 151,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

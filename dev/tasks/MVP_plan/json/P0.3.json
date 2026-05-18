@@ -1,0 +1,69 @@
+{
+    "task_id": "P0.3",
+    "title": "CI workflow baseline",
+    "phase": "0",
+    "objective": "Set up CI workflow with jobs for Ruff linting, mypy type checking (scoped), pytest, and contraction-budget regression stage.",
+    "plan_file": "dev/plans/MVP_plan.md",
+    "plan_lines": ["20", "24"],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": ["P5.3"],
+    "scope": [
+        "CI config only",
+        ".github/workflows/ci.yml"
+    ],
+    "implementation_steps": [
+        "Review existing ci.yml for current jobs",
+        "Add/verify Ruff check and format jobs",
+        "Add/verify mypy jobs scoped to mechdsl-core and algo2code",
+        "Add/verify pytest job excluding slow and gpu markers",
+        "Add contraction-budget regression stage placeholder",
+        "Validate YAML syntax"
+    ],
+    "deliverables": [
+        "Updated .github/workflows/ci.yml with all required jobs",
+        "CI YAML validates"
+    ],
+    "acceptance_criteria": [
+        "CI YAML validates syntactically",
+        "Jobs trigger on PR",
+        "Ruff, mypy, pytest, and budget regression stages present"
+    ],
+    "verification_commands": [
+        "python -c \"import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))\""
+    ],
+    "test_plan": {
+        "tier": "manual",
+        "cases": [
+            "CI YAML parses without errors",
+            "Push to PR triggers all jobs"
+        ]
+    },
+    "test_artifacts": [],
+    "risks": [
+        "Budget regression stage may fail if no einsum tests exist yet — acceptable as placeholder"
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

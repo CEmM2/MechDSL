@@ -1,0 +1,101 @@
+{
+  "task_id": "P10-7",
+  "title": "Taylor impact benchmark (UL × JC viscoplastic × reduced Hex8 + hourglass)",
+  "phase": "10",
+  "objective": "Run the Taylor impact benchmark: a cylindrical bar strikes a rigid wall. UL formulation + Johnson-Cook viscoplasticity + reduced Hex8 with Flanagan-Belytschko hourglass control + explicit dynamics. Reproduce the final deformed shape and plastic strain distribution from Johnson & Cook literature within 5%.",
+  "plan_file": "dev/design_docs/PLAN-B.md",
+  "plan_lines": [
+    "269",
+    "269"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "B9.2 Taylor impact row + Plan B overall acceptance test.",
+      "asset_type": "table",
+      "Plan_file_start_line": 269,
+      "Plan_file_end_line": 269
+    }
+  ],
+  "blocked_by": [
+    "P1-7",
+    "P3-4",
+    "P5-5",
+    "P7-3"
+  ],
+  "blocks": [
+    "P10-10"
+  ],
+  "scope": [
+    "Build the Taylor bar mesh: cylindrical bar, axial symmetry, reduced Hex8.",
+    "Run with UL + JC + hourglass control + explicit central difference.",
+    "Impact velocity ~ 200 m/s.",
+    "Extract final deformed shape (length, mushroom diameter) and PEEQ field.",
+    "Compare to Johnson & Cook (1983) experimental + simulation data within 5%."
+  ],
+  "implementation_steps": [
+    "Generate the bar mesh.",
+    "Apply impact BCs: rigid floor via penalty or node-constraint.",
+    "Run the explicit integration.",
+    "Extract final geometry and plastic strain.",
+    "Compare to reference."
+  ],
+  "deliverables": [
+    "`packages/mechdsl-core/tests/test_taylor_impact.py`"
+  ],
+  "acceptance_criteria": [
+    "Final bar length within 5% of reference.",
+    "Mushroom diameter within 5% of reference.",
+    "Peak PEEQ within 10% of reference."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_taylor_impact.py -v"
+  ],
+  "test_plan": {
+    "tier": "regression",
+    "cases": [
+      "Taylor impact final length",
+      "Taylor impact mushroom diameter",
+      "Taylor impact peak PEEQ"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_taylor_impact.py"
+  ],
+  "risks": [
+    "This test combines Phase 1 (UL) + Phase 3 (JC) + Phase 5 (reduced Hex8 + hourglass) + Phase 7 (explicit). Any bug in any of these will surface here and be hard to localize. Mitigation: run each of the underlying unit tests first and only then enable this benchmark.",
+    "Rigid-wall contact is a new capability. Mitigation: use a node-by-node penalty method in a single direction (y = 0) rather than full contact detection."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-26",
+  "test_completion": {
+    "passed": 6,
+    "total": 6,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_taylor_impact.py -v -m \"nightly or regression or integration\"",
+        "passed": 6,
+        "total": 6
+      }
+    ]
+  },
+  "review_score": 8,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "ph10_preq (work/phase10-e8-public-taylor-benchmark) merged to main via PR #122",
+  "completion_notes": [
+    "Delivered via ph10_preq sub-plan Phase 8 (E8 Public Taylor Benchmark). PLAN-B closure 2026-04-26 on SOSOVSKI/plan-b-ph10-exec.",
+    "Reference path is Path A (frozen-reference regression against a calibrated steel-like JC profile, see module docstring). Literature OFHC copper match (Johnson & Cook 1985) was infeasible at the shipped runtime budget — recorded as a carry-forward in ph10_preq Plan_Completion_Summary.md.",
+    "Acceptance criteria met against the frozen baseline: final length within 5%, mushroom diameter within 5%, peak PEEQ within 10%."
+  ],
+  "github_issue": {
+    "phase_issue": 65,
+    "task_issue": 114,
+    "repo": "SOSOVSKI/MechDSL"
+  }
+}

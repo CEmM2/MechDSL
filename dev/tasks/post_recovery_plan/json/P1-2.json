@@ -1,0 +1,83 @@
+{
+    "task_id": "P1-2",
+    "title": "Extend Neumann directive parser to capture traction vector and surface set",
+    "phase": "1",
+    "objective": "Parse `% mechanics boundary load --type neumann --traction \"x y z\" [--surface tag]` directives into the extended BoundaryCondition IR slot.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": ["88", "90"],
+    "plan_assets": [
+        {
+            "asset_description": "Directive example: % mechanics boundary load --type neumann --traction \"0 0 -1000\"",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 28,
+            "Plan_file_end_line": 31
+        }
+    ],
+    "blocked_by": ["P1-1"],
+    "blocks": ["P1-3"],
+    "scope": [
+        "Extend frontend/directives.py Neumann arm",
+        "Parse --traction \"x y z\" → 3-component float vector",
+        "Parse --surface <tag> (default to plan-defined fallback if omitted)",
+        "Surface symbolic emission and IR construction using P1-1 fields"
+    ],
+    "implementation_steps": [
+        "Read frontend/directives.py current Neumann handler",
+        "Add traction-vector parser (whitespace-split, float convert, length-3 check)",
+        "Add --surface flag plumbing",
+        "Construct BoundaryCondition with new traction + surface_tag fields",
+        "Add unit tests covering parse success and malformed-traction failure"
+    ],
+    "deliverables": [
+        "Updated frontend/directives.py with Neumann traction + surface parsing",
+        "Unit tests for directive parsing",
+        "Error message pointing to plan/IR contract on malformed input"
+    ],
+    "acceptance_criteria": [
+        "% mechanics boundary load --type neumann --traction \"0 0 -1000\" --surface top → BoundaryCondition(traction=[0,0,-1000], surface_tag='top')",
+        "Malformed traction string raises with directive line number",
+        "Existing Dirichlet directive parsing unchanged"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p1_2.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_metric_assign_directives.py packages/mechdsl-core/tests/test_frontend_parser.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Parse Neumann directive with traction + surface",
+            "Parse Neumann directive missing traction → error",
+            "Parse Neumann directive with malformed traction string → error",
+            "Dirichlet directive parsing unchanged"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p1_2.py",
+        "packages/mechdsl-core/tests/test_frontend_parser.py",
+        "packages/mechdsl-core/tests/test_metric_assign_directives.py"
+    ],
+    "risks": [
+        "Existing directive grammar may not support multi-token quoted args — mitigation: use shlex or argparse for tokenization"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-30",
+    "test_completion": {
+        "passed": 1682,
+        "total": 1682,
+        "pass_rate": 100,
+        "commands": [
+            {"command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p1_2.py -v", "passed": 6, "total": 6},
+            {"command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -q", "passed": 1682, "total": 1682}
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-1",
+    "completion_notes": [
+        "_mech_boundary now branches on --traction (numeric vs symbolic) and --surface (mapped to surface_tag)",
+        "Numeric form requires exactly 3 floats; both arity and non-numeric tokens raise ParseError citing the directive line",
+        "Symbolic single-token traction (e.g. 't_bar') still flows through unchanged"
+    ],
+    "github_issue": {"phase_issue": 200, "task_issue": 208, "repo": "SOSOVSKI/MechDSL"}
+}

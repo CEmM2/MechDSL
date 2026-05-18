@@ -1,0 +1,86 @@
+{
+    "task_id": "P1-3",
+    "title": "Lower Neumann BC to per-node force contributions on tagged surface",
+    "phase": "1",
+    "objective": "Build (or extend) lowering/boundary.py so a Neumann BoundaryCondition is converted into per-node f_ext contributions over the tagged surface element set.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": ["92", "94"],
+    "plan_assets": [
+        {
+            "asset_description": "Files list: lowering/boundary.py — new (or extended) module",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 92,
+            "Plan_file_end_line": 94
+        }
+    ],
+    "blocked_by": ["P1-1", "P1-2"],
+    "blocks": ["P1-4"],
+    "scope": [
+        "New or extended packages/mechdsl-core/src/mechdsl/lowering/boundary.py",
+        "Map BoundaryCondition (traction, surface_tag) → list of (node_id, force_vector) contributions",
+        "Use existing surface element set lookup from mesh adapter",
+        "Quadrature/integration for traction over surface (per Voigt/index conventions)"
+    ],
+    "implementation_steps": [
+        "Read lowering pipeline entry point and identify where Element IR currently consumes Dirichlet BCs",
+        "Create lowering/boundary.py implementing lower_neumann(bc, surface_set, mesh) → list of nodal forces",
+        "Apply surface quadrature consistent with hex8 face integration (07-CONVENTIONS Voigt unscaled-shears)",
+        "Surface ElementIR f_ext_contributions field or analogous output structure",
+        "Cover with unit tests against handwritten reference for a single hex8 face traction"
+    ],
+    "deliverables": [
+        "lowering/boundary.py module",
+        "Per-node force list output for Neumann BC",
+        "Unit test verifying total force = traction * surface_area for uniform traction"
+    ],
+    "acceptance_criteria": [
+        "Uniform traction \"0 0 -1000\" on a 1.0×1.0 hex8 face produces total nodal force [0, 0, -1000]",
+        "Non-tagged surface elements receive zero contribution",
+        "Index convention preserved: lowercase spatial indices on traction"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p1_3.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_boundary_codegen.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_boundaries.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Single-face uniform traction → expected total force",
+            "Empty surface tag → empty contribution list",
+            "Multi-face surface tag aggregates correctly",
+            "Lowercase spatial index convention preserved on traction"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p1_3.py",
+        "packages/mechdsl-core/tests/test_boundary_codegen.py",
+        "packages/mechdsl-core/tests/test_boundaries.py"
+    ],
+    "risks": [
+        "Surface element set may not yet be indexable by tag — mitigation: extend mesh adapter or look up via existing sideset interface"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-30",
+    "test_completion": {
+        "passed": 1691,
+        "total": 1691,
+        "pass_rate": 100,
+        "commands": [
+            {"command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p1_3.py -v", "passed": 9, "total": 9},
+            {"command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -q", "passed": 1691, "total": 1691}
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-1",
+    "completion_notes": [
+        "New module lowering/boundary.py exports lower_neumann, per_node_contributions, resolve_traction_vector, NodalForceContribution",
+        "Lowering delegates to codegen.boundary_codegen.compile_neumann; no quadrature duplicated",
+        "Symbolic-string traction (legacy 't_bar' form) requires an explicit traction_registry mapping; numeric tuple form passes through directly",
+        "Surface resolution uses bc.effective_surface_tag (P1-1 fallback to bc.name)",
+        "Mapping import moved to TYPE_CHECKING block (TC003 fix)"
+    ],
+    "github_issue": {"phase_issue": 200, "task_issue": 209, "repo": "SOSOVSKI/MechDSL"}
+}

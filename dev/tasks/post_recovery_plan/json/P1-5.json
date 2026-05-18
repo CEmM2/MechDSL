@@ -1,0 +1,85 @@
+{
+    "task_id": "P1-5",
+    "title": "Extend compile_latex façade to surface emitted f_ext kernel",
+    "phase": "1",
+    "objective": "Expose the f_ext init kernel through compile_latex output (P2-1 façade extension) without breaking existing callers.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": ["96", "98"],
+    "plan_assets": [
+        {
+            "asset_description": "Risk: keep current return shape default; add new f_ext_kernel field as optional",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 116,
+            "Plan_file_end_line": 117
+        }
+    ],
+    "blocked_by": ["P1-4"],
+    "blocks": ["P1-6", "P3-1"],
+    "scope": [
+        "Extend compile_latex (packages/mechdsl-core/src/mechdsl/__init__.py) return contract",
+        "Add optional f_ext_kernel field to the returned dataclass / dict",
+        "Preserve back-compat for callers not using Neumann BCs",
+        "No behavior change when no Neumann directive present"
+    ],
+    "implementation_steps": [
+        "Locate current compile_latex return type and downstream consumers",
+        "Add f_ext_kernel field (None default)",
+        "Wire boundary codegen output into the façade aggregator",
+        "Smoke test: directive-only Neumann LaTeX → f_ext_kernel populated",
+        "Smoke test: no Neumann directive → f_ext_kernel is None and existing fields unchanged"
+    ],
+    "deliverables": [
+        "Updated compile_latex return value including f_ext_kernel",
+        "Smoke tests proving optional surfacing",
+        "Brief in-code note (not docstring; that is P3-1)"
+    ],
+    "acceptance_criteria": [
+        "Calling compile_latex on a Neumann-directive LaTeX returns a non-None f_ext_kernel",
+        "Existing residual/tangent kernel fields unchanged in shape and content",
+        "No type errors under uv run mypy on the façade module"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p1_5.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_compile_pipeline.py -v",
+        "uv run mypy packages/mechdsl-core/src/mechdsl/__init__.py"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Neumann directive in LaTeX → f_ext_kernel returned",
+            "Pure Dirichlet LaTeX → f_ext_kernel is None",
+            "Pre-existing return shape preserved",
+            "mypy clean on façade module"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p1_5.py",
+        "packages/mechdsl-core/tests/test_compile_pipeline.py"
+    ],
+    "risks": [
+        "Façade signature change risks breaking existing callers — mitigation per plan line 116-117: keep current return shape default, add new field as optional"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-30",
+    "test_completion": {
+        "passed": 1704,
+        "total": 1704,
+        "pass_rate": 100,
+        "commands": [
+            {"command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p1_5.py -v", "passed": 5, "total": 5},
+            {"command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -q", "passed": 1704, "total": 1704},
+            {"command": "uv run mypy packages/mechdsl-core/src/mechdsl/__init__.py", "passed": 1, "total": 1}
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-1",
+    "completion_notes": [
+        "Added ArtifactBundle.f_ext_kernel: str | None = None with to_dict/from_dict round-trip support",
+        "Added sibling emitter emit_neumann_f_ext_kernel_for_ir(ctx, bc_name, surface_tag, traction) to taichi_printer.py — traction baked as literals, f_factor (= face_area / n_face_nodes) is a runtime kernel arg",
+        "compile_latex iterates problem_ir.boundaries, filters Neumann + numeric-tuple traction, emits one kernel per BC, rebuilds bundle via dataclasses.replace",
+        "Symbolic-string traction (legacy 't_bar' form) leaves f_ext_kernel at None — keeps the 30+ existing fixtures on the imported numeric-injection path with no behaviour change"
+    ],
+    "github_issue": {"phase_issue": 200, "task_issue": 211, "repo": "SOSOVSKI/MechDSL"}
+}

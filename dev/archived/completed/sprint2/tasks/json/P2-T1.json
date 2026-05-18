@@ -1,0 +1,77 @@
+{
+    "task_id": "P2-T1",
+    "title": "Implement patch_test_reference()",
+    "phase": "2",
+    "objective": "Implement patch_test_reference(mesh_coords, target_strain) in verify/analytical.py. Given a constant Green-Lagrange strain E (3x3) and mesh coordinates, compute exact nodal displacement field u_I = E_IJ * X_J.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": [
+        "60",
+        "64"
+    ],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": [
+        "P2-T5",
+        "P3-T4"
+    ],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/verify/analytical.py"
+    ],
+    "implementation_steps": [
+        "Read existing analytical.py stub",
+        "Implement patch_test_reference(coords: NDArray, strain: NDArray) -> NDArray",
+        "For constant strain E, the displacement is u = E @ X for each node (small strain approximation)",
+        "For finite strain (Green-Lagrange): u = (sqrt(I + 2E) - I) @ X (exact), or linearized u \u2248 E @ X for small E",
+        "Choose the appropriate formulation based on design docs"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/src/mechdsl/verify/analytical.py \u2014 patch_test_reference()"
+    ],
+    "acceptance_criteria": [
+        "For zero strain \u2192 zero displacement",
+        "For known constant strain \u2192 displacement matches hand calculation",
+        "Input validation: strain must be (3,3) symmetric"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_analytical.py::TestPatchTestReference -v",
+        "uv run pytest packages/mechdsl-core/tests/test_ref_elastic.py -v -k patch"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Zero strain \u2192 zero displacement",
+            "Known strain \u2192 hand-calc displacement",
+            "Symmetric strain check"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_analytical.py",
+        "packages/mechdsl-core/tests/test_ref_elastic.py"
+    ],
+    "risks": [
+        "Small/finite strain formulation choice affects displacement computation \u2014 must match design docs convention"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-05",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "sprint2_phase-2",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

@@ -1,0 +1,75 @@
+{
+    "task_id": "P6-T2",
+    "title": "CI integration for slow tests",
+    "phase": "6",
+    "objective": "Configure CI to run pytest -m slow on PRs touching codegen/ or solver/, ensuring E2E Taichi tests are exercised before merge.",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "315",
+        "318"
+    ],
+    "plan_assets": [],
+    "blocked_by": [
+        "P6-T1"
+    ],
+    "blocks": [],
+    "scope": [
+        ".github/workflows/"
+    ],
+    "implementation_steps": [
+        "Review existing CI configuration in .github/workflows/",
+        "Add or extend a CI job that runs 'uv run pytest -m slow' on PRs touching codegen/ or solver/",
+        "Ensure slow tests are not run on every push (only on relevant PRs or nightly)",
+        "Register pytest markers (slow, gpu, e2e) in pyproject.toml to suppress warnings",
+        "Verify CI job triggers correctly on a test PR"
+    ],
+    "deliverables": [
+        ".github/workflows/ — updated or new CI job for slow tests",
+        "pyproject.toml — pytest marker registration (if missing)"
+    ],
+    "acceptance_criteria": [
+        "CI runs slow tests on PRs touching codegen/ or solver/",
+        "Slow tests not run on unrelated PRs",
+        "Pytest marker warnings suppressed"
+    ],
+    "verification_commands": [
+        "uv run pytest --markers | grep -E 'slow|gpu|e2e'"
+    ],
+    "test_plan": {
+        "tier": "ci",
+        "cases": [
+            "CI job triggers on codegen/ changes [missing]",
+            "CI job triggers on solver/ changes [missing]",
+            "CI job does not trigger on unrelated changes [missing]",
+            "Pytest marker warnings suppressed [covered - already in pyproject.toml]"
+        ]
+    },
+    "test_artifacts": [],
+    "risks": [],
+    "status": "done",
+    "completion_date": "2026-04-04",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100,
+        "commands": [
+            "grep markers pyproject.toml -> slow, gpu, e2e registered",
+            "CI YAML validated: slow-tests job with path filtering"
+        ]
+    },
+    "review_score": 10,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

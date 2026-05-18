@@ -1,0 +1,34 @@
+{
+    "task_id": "P6-3", "title": "Full test suite zero failures", "phase": "6",
+    "objective": "Run the full test suite (all markers) and verify zero failures.",
+    "plan_file": "dev/plans/sprint3.md", "plan_lines": ["249"],
+    "plan_assets": [], "blocked_by": ["P6-1", "P6-2"], "blocks": ["P6-6"],
+    "scope": ["Run uv run pytest packages/mechdsl-core/tests/ -x -q", "Verify zero failures"],
+    "implementation_steps": ["Run fast tests", "Run slow tests", "Run e2e tests", "Fix any failures"],
+    "deliverables": ["Zero test failures across all markers"],
+    "acceptance_criteria": ["All tests pass with exit code 0"],
+    "verification_commands": [
+        "uv run pytest --tb=short -q",
+        "uv run pytest packages/mechdsl-core/tests/test_phase6_exit.py::TestTaskP6T3 -v"
+    ], "test_plan": {"tier": "regression", "cases": ["Full suite pass"]},
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_benchmarks.py",
+        "packages/mechdsl-core/tests/test_convergence.py",
+        "packages/mechdsl-core/tests/test_full_pipeline.py",
+        "packages/mechdsl-core/tests/test_ci_config.py",
+        "packages/mechdsl-core/tests/test_documentation.py",
+        "packages/algo2code/tests/test_end_to_end.py",
+        "packages/mechdsl-core/tests/test_phase6_exit.py"
+    ], "risks": [
+        "The full-suite run spans fast, slow, e2e, and audit tiers, so one environment-sensitive failure can mask unrelated regressions and make reruns expensive.",
+        "Phase 6 exit depends on both mechdsl-core and algo2code test health; regressions outside the immediate Sprint 3 surface still block the final gate."
+    ],
+    "status": "done", "completion_date": "2026-04-12",
+    "test_completion": {"passed": 1015, "total": 1015, "pass_rate": 100, "commands": [
+        {"command": "uv run pytest --tb=short -q", "passed": 1014, "total": 1014},
+        {"command": "uv run pytest packages/mechdsl-core/tests/test_phase6_exit.py::TestTaskP6T3 -v", "passed": 1, "total": 1}
+    ]},
+    "review_score": 9, "review_breakdown": {"minor": 1, "medium": 0, "high": 0, "critical": 0}, "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/phase6-exec", "completion_notes": ["Fixed the root-suite pytest collision by flattening the algo2code test package and switching the four affected tests to the shared pcg_latex fixture so the repo-root command now runs cleanly."],
+    "github_issue": {"phase_issue": 20, "task_issue": 46, "repo": "SOSOVSKI/MechDSL"}
+}

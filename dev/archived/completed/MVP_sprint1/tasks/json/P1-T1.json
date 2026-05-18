@@ -1,0 +1,84 @@
+{
+    "task_id": "P1-T1",
+    "title": "Implement ConstitutiveModel ABC",
+    "phase": "1",
+    "objective": "Create the ConstitutiveModel abstract base class in symbolic/constitutive.py to provide a unified interface for all material models (hyperelastic and dissipative).",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "17",
+        "38"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "ConstitutiveModel ABC class definition with abstract methods",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 21,
+            "Plan_file_end_line": 35
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [
+        "P1-T2",
+        "P1-T3"
+    ],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/symbolic/constitutive.py"
+    ],
+    "implementation_steps": [
+        "Read the current stub at symbolic/constitutive.py (1-line docstring)",
+        "Implement ConstitutiveModel ABC with 5 abstract methods: pk2_stress, material_tangent, voigt_tangent, state_variables (property), is_dissipative (property)",
+        "Use **state kwargs pattern for flexible state variable passing",
+        "Add proper imports (ABC, abstractmethod, NDArray)",
+        "Add type hints and docstrings per .claude/rules/symbolic.md"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/src/mechdsl/symbolic/constitutive.py — complete ABC (~60 lines)"
+    ],
+    "acceptance_criteria": [
+        "ConstitutiveModel is importable from mechdsl.symbolic.constitutive",
+        "ABC defines all 5 abstract methods with correct signatures",
+        "ABC cannot be instantiated directly (raises TypeError)",
+        "All 687 pre-existing tests still pass"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_constitutive_abc.py::TestConstitutiveModelABC -v",
+        "uv run pytest packages/mechdsl-core/tests/test_smoke.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Import succeeds (missing)",
+            "Direct instantiation raises TypeError (missing)",
+            "ABC defines all 5 abstract methods (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_constitutive_abc.py"
+    ],
+    "risks": [
+        "ConstitutiveModel ABC is too rigid for future models. Mitigation: Use **state kwargs pattern to allow flexible state variable passing without prescribing a specific state container."
+    ],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

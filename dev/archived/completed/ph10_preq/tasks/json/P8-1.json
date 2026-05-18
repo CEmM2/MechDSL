@@ -1,0 +1,109 @@
+{
+  "task_id": "P8-1",
+  "title": "Public Taylor impact benchmark API",
+  "phase": "8",
+  "objective": "Expose the public Taylor impact benchmark parameter object and runner after the runtime surface is proven.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "317",
+    "348"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E8 public Taylor benchmark API scope.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 317,
+      "Plan_file_end_line": 348
+    }
+  ],
+  "blocked_by": [
+    "P7-2"
+  ],
+  "blocks": [
+    "P8-2"
+  ],
+  "scope": [
+    "Add TaylorImpactParameters.",
+    "Add run_taylor_impact_benchmark to the benchmark package.",
+    "Provide smoke and nightly configuration knobs."
+  ],
+  "implementation_steps": [
+    "Run GitNexus impact before editing benchmark package exports.",
+    "Add the public Taylor benchmark module and parameter dataclass.",
+    "Wire the runner to the internal Taylor runtime.",
+    "Export the public API from the benchmarks package.",
+    "Add API-level smoke tests."
+  ],
+  "deliverables": [
+    "Public Taylor impact benchmark module.",
+    "Benchmark package exports.",
+    "API smoke tests."
+  ],
+  "acceptance_criteria": [
+    "run_taylor_impact_benchmark is importable from mechdsl.verify.benchmarks.",
+    "TaylorImpactParameters exposes deterministic smoke settings and full/nightly settings.",
+    "No shared benchmark result schema changes are required."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_taylor_benchmark.py -v",
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_taylor_runtime.py packages/mechdsl-core/tests/test_phase10_taylor_state.py -v"
+  ],
+  "test_plan": {
+    "tier": "integration",
+    "cases": [
+      "public import",
+      "smoke-sized Taylor run",
+      "parameter validation"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_phase10_taylor_benchmark.py",
+    "packages/mechdsl-core/tests/test_phase10_taylor_runtime.py",
+    "packages/mechdsl-core/tests/test_phase10_taylor_state.py"
+  ],
+  "risks": [
+    "Taylor public API can lock in an unstable runtime shape; mitigate by exposing only the minimum parameters needed for smoke and nightly settings."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-26",
+  "test_completion": {
+    "passed": 22,
+    "total": 22,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_taylor_benchmark.py -v",
+        "passed": 3,
+        "total": 3
+      },
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_taylor_runtime.py packages/mechdsl-core/tests/test_phase10_taylor_state.py -v",
+        "passed": 19,
+        "total": 19
+      }
+    ]
+  },
+  "review_score": 0,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e8-public-taylor-benchmark",
+  "completion_notes": [
+    "Added mechdsl.verify.benchmarks.taylor_impact (TaylorImpactParameters + run_taylor_impact_benchmark) composing the Phase 7 internal runtime into a deterministic public runner.",
+    "Maps Taylor metrics into BenchmarkResult.extras (final_length, mushroom_radius, mushroom_diameter=2*radius, peak_peeq + telemetry); BenchmarkResult schema reused verbatim.",
+    "smoke()/nightly() classmethods mirror CantileverParameters; smoke profile runs in ~0.1s (2x2x8 mesh / 10 steps), nightly in O(seconds) (6x6x20 / 400 steps).",
+    "Smoke determinism verified across 5 consecutive runs (bit-for-bit). 5 parameter validation modes (impact_velocity sign, dt non-positive, dimensions non-positive, element_type non-Hex8, wall behind bar) all raise ValueError with field-named messages.",
+    "dt=2e-8 sized at ~30x safety margin vs dt_crit=6.3e-7 for the steel-calibrated smoke mesh — addresses Phase 7 P7-2 wave-physics carry-forward.",
+    "P10-7 stubs in test_taylor_impact.py deliberately untouched (P8-2 owns activation).",
+    "Commit 7aca187 on branch work/phase10-e8-public-taylor-benchmark."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

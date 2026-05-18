@@ -1,0 +1,99 @@
+{
+  "task_id": "P1-1",
+  "title": "Mesh datamodel and validation helpers",
+  "phase": "1",
+  "objective": "Create benchmark-local mesh dataclasses and validation helpers for Phase 10 prerequisite meshes without adding solver or material behavior.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "62",
+    "99"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E1 shared mesh utilities scope and acceptance criteria.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 62,
+      "Plan_file_end_line": 99
+    }
+  ],
+  "blocked_by": [],
+  "blocks": [
+    "P1-2"
+  ],
+  "scope": [
+    "Add benchmark-local mesh dataclasses for coordinates, connectivity, boundary node sets, and face tags.",
+    "Add positive Jacobian/orientation validation helpers for supported element families.",
+    "Keep the surface solver-agnostic and independent from existing benchmark runners."
+  ],
+  "implementation_steps": [
+    "Run GitNexus impact before editing any existing helper symbols.",
+    "Add the internal mesh datamodel in a new benchmark-local module.",
+    "Add validation helpers for element connectivity shape, deterministic boundary labels, and positive Jacobians.",
+    "Add focused unit tests for dataclass invariants and validation failure cases.",
+    "Run targeted tests, ruff, mypy, and GitNexus detect_changes before commit."
+  ],
+  "deliverables": [
+    "New benchmark-local mesh utility module.",
+    "Unit tests for mesh datamodel and validation helpers.",
+    "Updated phase gate history after execution."
+  ],
+  "acceptance_criteria": [
+    "Mesh dataclasses are importable without importing solvers or materials.",
+    "Validation detects invalid connectivity shape and non-positive Jacobians.",
+    "No existing benchmark runner behavior changes."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_mesh_utils.py::TestTaskP1_1 -v",
+    "uv run ruff check packages/mechdsl-core/src/mechdsl/verify/benchmarks/_meshes.py packages/mechdsl-core/tests/test_phase10_mesh_utils.py",
+    "uv run mypy packages/mechdsl-core/src/mechdsl/verify/benchmarks/_meshes.py"
+  ],
+  "test_plan": {
+    "tier": "unit",
+    "cases": [
+      "valid mesh datamodel construction",
+      "deterministic boundary labels",
+      "invalid connectivity rejection",
+      "non-positive Jacobian rejection"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/src/mechdsl/verify/benchmarks/_meshes.py",
+    "packages/mechdsl-core/tests/test_phase10_mesh_utils.py"
+  ],
+  "risks": [
+    "Shared mesh helpers may grow into a hidden solver abstraction; mitigate by keeping Phase 1 geometry-only."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-25",
+  "test_completion": {
+    "passed": 3,
+    "total": 3,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_mesh_utils.py::TestTaskP1_1 -v",
+        "passed": 3,
+        "total": 3
+      }
+    ]
+  },
+  "review_score": 100,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e1-mesh-utilities",
+  "completion_notes": [
+    "Added benchmark-local `BenchmarkMesh` datamodel and validation helpers in `_meshes.py`.",
+    "Gate C evidence: `uv run pytest packages/mechdsl-core/tests/test_phase10_mesh_utils.py -v` -> 10/10 passed; ruff and mypy clean for touched Phase 1 Python files.",
+    "GitHub issue updates were skipped because `gh auth status` reported an invalid token."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

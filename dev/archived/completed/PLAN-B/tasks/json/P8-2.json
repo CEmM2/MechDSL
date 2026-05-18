@@ -1,0 +1,73 @@
+{
+    "task_id": "P8-2",
+    "title": "MOOSE printer (ComputeStressBase + RankTwoTensor + input files)",
+    "phase": "8",
+    "objective": "Add a third code generator that emits a MOOSE `ComputeStressBase` subclass and a matching input file (`.i`) from the same Element IR. Maps to MOOSE's `RankTwoTensor` / `RankFourTensor` types.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["231", "233"],
+    "plan_assets": [
+        {
+            "asset_description": "B8.2 MOOSE printer requirements.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 231,
+            "Plan_file_end_line": 233
+        }
+    ],
+    "blocked_by": ["P1-1"],
+    "blocks": ["P8-3", "P9-1"],
+    "scope": [
+        "Add `mechdsl.codegen.moose_printer`.",
+        "Emit a `ComputeStressBase` subclass with `computeQpStress()`, `computeQpJacobian()`.",
+        "Map MVP tensor types to MOOSE `RankTwoTensor` and `RankFourTensor`.",
+        "Emit a matching MOOSE input file (`.i`) wired to the new material and a simple tension test.",
+        "Include a `Makefile.app` or CMakeLists template."
+    ],
+    "implementation_steps": [
+        "Design the module layout analogous to mfem_printer.",
+        "Implement the tensor-type mapping helpers.",
+        "Emit the material C++ subclass and the input file.",
+        "Unit-test at source-text level."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/codegen/moose_printer.py`",
+        "`packages/mechdsl-core/src/mechdsl/codegen/moose_template/input_template.i`",
+        "`packages/mechdsl-core/tests/test_moose_printer.py`"
+    ],
+    "acceptance_criteria": [
+        "MOOSE emission produces parseable C++ + a non-empty .i file.",
+        "RankTwoTensor / RankFourTensor references present.",
+        "Input file references the emitted material name."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_moose_printer.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "MOOSE C++ emission structural checks",
+            "MOOSE input file generation",
+            "Material type mapping sanity"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_moose_printer.py"
+    ],
+    "risks": [
+        "MOOSE's input file grammar is particular; typos produce runtime errors. Mitigation: use a templated .i file with fill-in fields rather than assembling strings ad hoc."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-17",
+    "test_completion": {"passed": 8, "total": 8, "pass_rate": 1.0, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_moose_printer.py -v", "passed": 8, "total": 8}]},
+    "review_score": 80,
+    "review_breakdown": {"minor": 4, "medium": 2, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "plan-b_phase-8",
+    "completion_notes": [
+        "emit(bundle) returns {cpp, header} dict for MOOSE .C+.h convention; separate emit_input_file() for .i.",
+        "Class naming: MechDSLSaintVenantKirchhoff (stable model->class map). MFEM aligned to same convention in Gate B fix.",
+        "Medium M1 (handoff follow-up): SVK body uses _mechanical_strain (MOOSE's small-strain incremental) rather than Green-Lagrange E from _deformation_gradient. Linearizes correctly for small strain but docstring claim of 'Total-Lagrangian' is a label nit. Flagged for P8-3 or Plan B refinement.",
+        "Medium M2 (handoff follow-up): beyond-MVP material names (perzyna/JC/HGO/neo_hookean/lemaitre) get valid-looking class names via the mapping, but the emitted stress body is SVK-style. Recommend restricting to svk/j2_power_law or raising NotImplementedError for unsupported models in a follow-up.",
+        "Scope bullet 'Makefile.app or CMakeLists template' was not delivered; not in enforceable acceptance_criteria. Flagged for Phase 8 handoff."
+    ],
+    "github_issue": {"phase_issue": 63, "task_issue": 103, "repo": "SOSOVSKI/MechDSL"}
+}

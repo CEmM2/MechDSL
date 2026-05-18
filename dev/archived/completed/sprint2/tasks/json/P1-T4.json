@@ -1,0 +1,32 @@
+{
+    "task_id": "P1-T4",
+    "title": "Update convected exports",
+    "phase": "1",
+    "objective": "Add compute_reference_metric, compute_convected_metric, green_lagrange_convected to symbolic/__init__.py exports.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["41", "43"],
+    "plan_assets": [],
+    "blocked_by": ["P1-T2"],
+    "blocks": [],
+    "scope": ["packages/mechdsl-core/src/mechdsl/symbolic/__init__.py"],
+    "implementation_steps": [
+        "Read symbolic/__init__.py",
+        "Add imports from mechdsl.symbolic.convected",
+        "Add to __all__ if defined"
+    ],
+    "deliverables": ["packages/mechdsl-core/src/mechdsl/symbolic/__init__.py — updated exports"],
+    "acceptance_criteria": ["from mechdsl.symbolic import compute_reference_metric succeeds", "from mechdsl.symbolic import compute_convected_metric succeeds", "from mechdsl.symbolic import green_lagrange_convected succeeds"],
+    "verification_commands": ["uv run python -c \"from mechdsl.symbolic import compute_reference_metric, compute_convected_metric, green_lagrange_convected; print('OK')\""],
+    "test_plan": {"tier": "unit", "cases": ["Import check"]},
+    "test_artifacts": [],
+    "risks": ["Low risk: export-only change, no logic modification."],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {"passed": 0, "total": 0, "pass_rate": 0, "commands": []},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "",
+    "implementation_branch": "sprint2_phase-1",
+    "completion_notes": [],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

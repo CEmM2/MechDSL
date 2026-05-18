@@ -1,0 +1,97 @@
+{
+    "task_id": "P7-2",
+    "title": "Add at least one canonical LaTeX-to-solution acceptance test on the MVP-stable path.",
+    "phase": "7",
+    "objective": "Add at least one canonical LaTeX-to-solution acceptance test on the MVP-stable path.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "359",
+        "359"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P7-2 (R6.2) in Phase 7 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 359,
+            "Plan_file_end_line": 359
+        }
+    ],
+    "blocked_by": [
+        "P2-1",
+        "P4-1",
+        "P5-1"
+    ],
+    "blocks": [],
+    "scope": [
+        "Add at least one canonical LaTeX-to-solution acceptance test on the MVP-stable path.",
+        "Touched surfaces (per recovery plan): e2e tests, examples"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 7 (Verification, governance, and closure (R6)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Add at least one canonical LaTeX-to-solution acceptance test on the MVP-stable path.",
+        "Touch only the listed surfaces: e2e tests, examples.",
+        "Verify: Acceptance test passes starting from LaTeX input.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to e2e tests",
+        "Changes to examples"
+    ],
+    "acceptance_criteria": [
+        "Acceptance test passes starting from LaTeX input.",
+        "All deliverables for P7-2 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_2.py -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "P7-2-c1: Acceptance test passes starting from LaTeX input.",
+            "P7-2-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_2.py"
+    ],
+    "risks": [
+        "No specific risk attributed in the plan; standard care applies."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-29",
+    "test_completion": {
+        "passed": 2,
+        "total": 2,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_2.py -v",
+                "passed": 2,
+                "total": 2
+            }
+        ]
+    },
+    "review_score": 9,
+    "review_breakdown": {
+        "minor": 2,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/recovery-phase7",
+    "completion_notes": [
+        "Canonical LaTeX-to-solution acceptance test: literal LaTeX source (% mechanics directives, SVK Hex8) -> compile_latex(profile='mvp') -> emitted Taichi module -> mod.newton_solve(LAM, MU, bc_dofs=...) -> reference compare via tests.ref.ref_hex8_elastic.solve_elastic within 1e-10 tolerance (07-CONVENTIONS Sec 6).",
+        "Module-level pytestmark = pytest.mark.from_latex anchors P7-1's previously-empty marker family (was 0 collected, now 2). Per-test stack: @slow + @e2e + @integration.",
+        "Surface-2 deliverable: test_deliverables_present_at_surfaces asserts dev/examples/run_compile_latex.py (P7-3) imports compile_latex and embeds % mechanics directives.",
+        "Acceptance test verifies the FULL canonical contract: parse, compile, emit Taichi (assert 'import taichi as ti' + '@ti.kernel' in emitted_source), JIT-compile, solve, compare to handwritten reference. Newton-sanity guards prevent false-pass.",
+        "Known gap (out of P7-2 scope): LaTeX traction string '0 0 -1000' is a placeholder for symbolic binding; numeric f_ext is injected directly. Boundary-directive-to-emitted-code flow not exercised - documented in test_p7_2.py:142-144.",
+        "Gate A 1 minor (informational): traction-string flow gap. Gate B score 9/10, 2 minors (forward pointer, parametrize-safety) - both informational."
+    ],
+    "github_issue": {
+        "phase_issue": 147,
+        "task_issue": 192,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

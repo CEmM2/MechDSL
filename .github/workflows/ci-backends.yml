@@ -1,0 +1,136 @@
+name: Cross-Backend Verification
+
+# P8-3 Phase 8 exit: same ProblemIR -> Taichi/MFEM/MOOSE -> displacement
+# fields agree pairwise on a small SVK cantilever.  This workflow runs
+# inside containers that preinstall MFEM + MOOSE so the cross-backend
+# tests actually execute (the tests skip gracefully on runners that lack
+# the toolchain).
+#
+# TEMP: PR triggers disabled until Docker image tags are pinned — deferred
+# to Plan B §B8 P9.  The `mfem/mfem:latest` and `idaholab/moose:latest`
+# placeholders used during Phase 8 scaffolding were found to be unstable
+# (tags drift upstream) and/or non-existent.  Until the CI Docker planning
+# task lands a pinned image sha/tag with confirmed MFEM_DIR + moose-opt
+# paths, this workflow is manual-only via `workflow_dispatch`.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  # --------------------------------------------------------------------
+  # MFEM leg: container ships with MFEM prebuilt under /opt/mfem.
+  # NOTE: `ghcr.io/mfem/mfem-ubuntu:4.7` is the preferred upstream publish
+  # point for a tagged release; this must be confirmed against upstream
+  # (https://github.com/mfem/mfem/pkgs) before re-enabling PR triggers.
+  # --------------------------------------------------------------------
+  cross-backend-mfem:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mfem/mfem-ubuntu:4.7  # NOTE: placeholder — confirm tag with upstream before enabling PR triggers (P9 carry-forward).
+    env:
+      MFEM_DIR: /opt/mfem
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+
+      - name: Probe MFEM toolchain
+        run: |
+          which cmake
+          which mpicxx
+          echo "MFEM_DIR=$MFEM_DIR"
+          ls "$MFEM_DIR" || true
+
+      - name: Run Taichi-vs-MFEM cross-backend test
+        run: |
+          uv run pytest \
+            packages/mechdsl-core/tests/test_cross_backend.py::TestTaskP8_3::test_taichi_vs_mfem_cantilever_converges \
+            -v -m slow --tb=short
+
+  # --------------------------------------------------------------------
+  # MOOSE leg: MOOSE images are heavier and change tags more aggressively
+  # than MFEM.  NOTE: `idaholab/moose:2024.12.30-moose` is a date-pinned
+  # placeholder; must be confirmed against
+  # https://hub.docker.com/r/idaholab/moose/tags before re-enabling PR
+  # triggers (P9 carry-forward).
+  # --------------------------------------------------------------------
+  cross-backend-moose:
+    runs-on: ubuntu-latest
+    container:
+      image: idaholab/moose:2024.12.30-moose  # NOTE: placeholder — confirm tag with upstream before enabling PR triggers (P9 carry-forward).
+    env:
+      MOOSE_DIR: /opt/moose
+      MOOSE_APP: moose-opt
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+
+      - name: Probe MOOSE toolchain
+        run: |
+          which cmake || true
+          which mpicxx || true
+          which "$MOOSE_APP" || true
+          echo "MOOSE_DIR=$MOOSE_DIR"
+          ls "$MOOSE_DIR" || true
+
+      - name: Run Taichi-vs-MOOSE cross-backend test
+        run: |
+          uv run pytest \
+            packages/mechdsl-core/tests/test_cross_backend.py::TestTaskP8_3::test_taichi_vs_moose_cantilever_converges \
+            -v -m slow --tb=short
+
+  # --------------------------------------------------------------------
+  # Triangulation leg: MFEM-vs-MOOSE requires both toolchains in the same
+  # container.  NOTE: a combined image (MFEM + MOOSE) is not published
+  # upstream, so this job currently uses the MOOSE base image and would
+  # need MFEM source-built inside the step.  Until the combined image
+  # exists, this leg runs only on manual dispatch; the pair-wise
+  # Taichi-vs-X gates above cover the Phase 8 acceptance criterion
+  # individually.
+  # --------------------------------------------------------------------
+  cross-backend-mfem-moose:
+    runs-on: ubuntu-latest
+    container:
+      image: idaholab/moose:2024.12.30-moose  # NOTE: placeholder — needs MFEM source-build step; confirm upstream tag (P9 carry-forward).
+    env:
+      MFEM_DIR: /opt/mfem
+      MOOSE_DIR: /opt/moose
+      MOOSE_APP: moose-opt
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project dependencies
+        run: uv sync --all-packages --all-groups --all-extras
+
+      - name: Run full cross-backend test suite
+        run: |
+          uv run pytest \
+            packages/mechdsl-core/tests/test_cross_backend.py \
+            -v -m slow --tb=short

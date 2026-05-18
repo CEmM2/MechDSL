@@ -1,0 +1,73 @@
+{
+    "task_id": "P5-4",
+    "title": "Hex8 reduced integration (1-point quadrature)",
+    "phase": "5",
+    "objective": "Add a 1-point integration variant of Hex8 alongside the existing 2x2x2 full-integration Hex8. Introduces the concept of an integration rule distinct from the element topology.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["174", "174"],
+    "plan_assets": [
+        {
+            "asset_description": "B5.1 Hex8 reduced with 1-point quadrature and hourglass control.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 174,
+            "Plan_file_end_line": 174
+        }
+    ],
+    "blocked_by": ["P1-1"],
+    "blocks": ["P5-5", "P5-6", "P10-7"],
+    "scope": [
+        "Introduce an `IntegrationRule` enum or string parameter: `FULL` (2x2x2, default), `REDUCED` (1-point).",
+        "Add a hex8_reduced_tables.py with the 1-point Gauss rule (center point, weight = 8 for unit cube).",
+        "Wire the integration rule through Element IR so the generator can pick the right tables.",
+        "Note: reduced integration produces hourglass modes; P5-5 adds the control. This task only adds the reduced integration itself — without hourglass control, the element is unstable on its own."
+    ],
+    "implementation_steps": [
+        "Define the IntegrationRule enum or parameter.",
+        "Add `hex8_reduced_tables.py`.",
+        "Extend Element IR's Hex8 basis construction to accept the integration rule.",
+        "Unit-test: under constant strain, reduced Hex8 produces the same stress as full Hex8 (the reduced rule integrates linear functions exactly)."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/codegen/hex8_reduced_tables.py`",
+        "`packages/mechdsl-core/src/mechdsl/ir/element_ir.py` — integration-rule parameter",
+        "`packages/mechdsl-core/tests/test_hex8_reduced.py`"
+    ],
+    "acceptance_criteria": [
+        "Constant-strain test: reduced and full Hex8 produce identical stress.",
+        "Non-constant strain: reduced Hex8 produces different (and without hourglass control, wrong) stress — documented as expected.",
+        "IntegrationRule enum round-trips through the IR."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_hex8_reduced.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Constant-strain equivalence (full vs reduced)",
+            "IntegrationRule enum round-trip",
+            "1-point quadrature table correctness"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_hex8_reduced.py"
+    ],
+    "risks": [
+        "Without hourglass control (P5-5), reduced Hex8 is unusable in practice. Document in the docstring that the user must set `hourglass='flanagan_belytschko'` before using reduced integration."
+    ],
+    "status": "completed",
+    "completion_date": "2026-04-17",
+    "test_completion": {"passed": 3, "total": 3, "pass_rate": 100, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_hex8_reduced.py -v", "passed": 3, "total": 3}]},
+    "review_score": 95,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "pass",
+    "implementation_branch": "plan-b_phase-5",
+    "completion_notes": [
+        "Added IntegrationRule enum (FULL, REDUCED) in mechanics_ir.py.",
+        "Added hex8_reduced_tables.py (1-pt Gauss at center, weight 8.0); re-exports shape functions from hex8_tables.",
+        "Added integration_rule field to ElementIR as trailing keyword-default (no callsite breakage).",
+        "REDUCED rule rejected on non-hex8 topologies with Plan B phase B5 pointer.",
+        "hex8_reduced_quadrature() and create_hex8_element_ir(integration_rule=...) wired.",
+        "Full fast suite: 1178 passed + 20 skipped + 1 expected TODO fail (delta +3/-3 vs post-P5-3)."
+    ],
+    "github_issue": {"phase_issue": 60, "task_issue": 92, "repo": "SOSOVSKI/MechDSL"}
+}

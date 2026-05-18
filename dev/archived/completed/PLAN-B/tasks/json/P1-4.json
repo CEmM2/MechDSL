@@ -1,0 +1,76 @@
+{
+    "task_id": "P1-4",
+    "title": "UL tangent operator emission (Jaumann material + geometric stiffness)",
+    "phase": "1",
+    "objective": "Extend `emit_tangent_matvec_kernel` to emit the linearised UL tangent K_{aibj} = integral(dN_a/dx_k c^Jau_{kijl} dN_b/dx_l + sigma_{ij} dN_a/dx_j dN_b/dx_i) dV when the configuration is CURRENT.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["38", "46"],
+    "plan_assets": [
+        {
+            "asset_description": "B1.2 UL tangent equation with Jaumann-rate material term and geometric stiffness term.",
+            "asset_type": "equation",
+            "Plan_file_start_line": 42,
+            "Plan_file_end_line": 44
+        }
+    ],
+    "blocked_by": ["P1-3", "P1-5"],
+    "blocks": ["P1-6"],
+    "scope": [
+        "Emit the two-term UL tangent inside `tangent_matvec` with the same analytical-linearisation pattern introduced in Plan A §A7.5/§A9.2 — element-by-element over NumPy, no FD, no Taichi kernel for the tangent body.",
+        "Use the Jaumann-rate material tangent c^Jau produced by P1-5 for the material term.",
+        "Add the geometric stiffness term sigma_{ij} dN_a/dx_j dN_b/dx_i explicitly.",
+        "Dispatch on `configuration`: REFERENCE → the existing analytical push-forward path (unchanged); CURRENT → the new UL two-term path."
+    ],
+    "implementation_steps": [
+        "Read the current `emit_tangent_matvec_kernel` (the analytical SVK/J2 body introduced in commit 2ae532a).",
+        "Factor the existing body into `emit_tl_tangent_body` (unchanged) and add a new `emit_ul_tangent_body` for the UL path.",
+        "The UL body computes grad_v from v_elem and spatial shape gradients, then sums the Jaumann-material contraction and the geometric stiffness directly.",
+        "Regenerate UL golden files.",
+        "Add emission-structure tests verifying both terms appear in the UL source and asserting TL emission is unchanged."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py` — UL tangent branch",
+        "`packages/mechdsl-core/tests/test_taichi_printer_ul.py` — tangent-structure assertions",
+        "`packages/mechdsl-core/tests/golden/generated_ul_svk.py.golden` — updated"
+    ],
+    "acceptance_criteria": [
+        "UL tangent source contains both the material term (using c^Jau) and the geometric stiffness term.",
+        "Plan A analytical TL tangent emission is unchanged (regression on the existing elastic golden).",
+        "No regressions on the 998 fast tests."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_taichi_printer_ul.py::TestTaskP1_4TangentMatvec -v",
+        "uv run pytest packages/mechdsl-core/tests/test_emission_verification.py::TestTangentMatvecEmission -v",
+        "uv run pytest packages/mechdsl-core/tests/test_plastic_emission.py -q"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "UL tangent contains Jaumann material term",
+            "UL tangent contains geometric stiffness term",
+            "TL tangent golden unchanged",
+            "UL tangent matches handwritten UL reference within 1e-10 (deferred to P1-7)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_taichi_printer_ul.py",
+        "packages/mechdsl-core/tests/test_emission_verification.py",
+        "packages/mechdsl-core/tests/test_plastic_emission.py",
+        "packages/mechdsl-core/tests/golden/generated_ul_svk.py.golden"
+    ],
+    "risks": [
+        "Jaumann rate tangent conversion from the C_IJKL material tangent is easy to get wrong. Mitigation: derive the formula symbolically with SymPy in a test and compare to the hand formula in 07-CONVENTIONS.md."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-16",
+    "test_completion": {"passed": 1023, "total": 1030, "pass_rate": 99.3, "commands": [
+        {"command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -q", "passed": 1023, "total": 1030},
+        {"command": "uv run pytest packages/mechdsl-core/tests/test_taichi_printer_ul.py::TestTaskP1_4TangentMatvec -v", "passed": 3, "total": 4}
+    ]},
+    "review_score": 10,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "main",
+    "completion_notes": ["UL tangent operator emission implementing Plan B B1.2 two-term linearisation: Jaumann material term via c^Jau einsum contraction + geometric stiffness via Hadamard product sigma * grad_v. TL path refactored into helper function, unchanged. All gates passed on first attempt."],
+    "github_issue": {"phase_issue": 56, "task_issue": 70, "repo": "SOSOVSKI/MechDSL"}
+}

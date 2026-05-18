@@ -1,0 +1,75 @@
+{
+    "task_id": "P5-5",
+    "title": "Flanagan-Belytschko hourglass control for reduced Hex8",
+    "phase": "5",
+    "objective": "Add the Flanagan-Belytschko hourglass control scheme so reduced-integration Hex8 does not develop zero-energy hourglass modes.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["174", "174"],
+    "plan_assets": [
+        {
+            "asset_description": "B5.1 hourglass control mention.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 174,
+            "Plan_file_end_line": 174
+        }
+    ],
+    "blocked_by": ["P5-4"],
+    "blocks": ["P5-6", "P5-7", "P10-7"],
+    "scope": [
+        "Implement the 4 hourglass basis vectors on the reference Hex8 (the four zero-energy modes of the 1-point rule).",
+        "Compute hourglass stiffness = k_h * lambda_h * h^(d-2) / vol_e where lambda_h is user-tunable hourglass control coefficient.",
+        "Add the hourglass force and stiffness contribution into the element internal force and tangent kernels.",
+        "Follow Flanagan-Belytschko (1981) exactly; reference it in the module docstring.",
+        "Expose a `hourglass_coef` parameter on `build_context` (default 0.05)."
+    ],
+    "implementation_steps": [
+        "Derive / copy the 4 hourglass vectors for the standard Hex8 node ordering.",
+        "Compute the hourglass projection of the element nodal velocities.",
+        "Add the hourglass force to the internal force assembly.",
+        "Add the hourglass stiffness to the tangent matvec.",
+        "Unit-test: on a constant-strain problem the hourglass force must vanish. On a patch test of reduced Hex8 (which would otherwise have hourglass energy), the force must now drive the solution correctly."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/codegen/hourglass.py`",
+        "`packages/mechdsl-core/tests/test_hourglass_control.py`"
+    ],
+    "acceptance_criteria": [
+        "Hourglass force is zero on a constant-strain state.",
+        "Reduced Hex8 patch test passes to 1e-8 with hourglass control on.",
+        "Without hourglass control, the same patch test fails (regression guard)."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_hourglass_control.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Constant strain: zero hourglass force",
+            "Reduced Hex8 patch test with HG control",
+            "Reduced Hex8 patch test without HG control (expected fail)",
+            "Hourglass coefficient sensitivity"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_hourglass_control.py"
+    ],
+    "risks": [
+        "The classical Flanagan-Belytschko formulation has subtle sign conventions. Mitigation: cite the original paper in the docstring and reference the exact equations used."
+    ],
+    "status": "completed",
+    "completion_date": "2026-04-17",
+    "test_completion": {"passed": 4, "total": 4, "pass_rate": 100, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_hourglass_control.py -v", "passed": 4, "total": 4}]},
+    "review_score": 96,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "pass",
+    "implementation_branch": "plan-b_phase-5",
+    "completion_notes": [
+        "Added hourglass.py with 4 HG vectors (xi*eta, eta*zeta, xi*zeta, xi*eta*zeta) derived from HEX8_NODE_COORDS.",
+        "flanagan_belytschko_force + flanagan_belytschko_stiffness per FB 1981 eqs. 2.28/2.31/2.33/4.8.",
+        "Distorted-element correction (gamma projection FB eq. 2.33) ensures AC-1 holds on non-regular hexes.",
+        "build_context exposes hourglass_coef (default 0.05).",
+        "Two strict-key-equality guards in test_frontend_build_context.py updated to include new key.",
+        "Full fast suite: 1182 passed + 16 skipped + 1 expected TODO fail (+4/-4 vs post-P5-4)."
+    ],
+    "github_issue": {"phase_issue": 60, "task_issue": 93, "repo": "SOSOVSKI/MechDSL"}
+}

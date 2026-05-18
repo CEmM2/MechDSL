@@ -1,0 +1,70 @@
+{
+    "task_id": "R3.1.3",
+    "title": "Emit raise RuntimeError on Newton non-convergence (C4)",
+    "phase": "1",
+    "objective": "Replace silent return max_iter with raise RuntimeError on Newton non-convergence in emitted code",
+    "plan_file": "dev/plans/mvp_pr3_round3.md",
+    "plan_lines": ["33", "50"],
+    "plan_assets": [
+        {
+            "asset_description": "Code snippet: RuntimeError emission",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 37,
+            "Plan_file_end_line": 46
+        }
+    ],
+    "blocked_by": [],
+    "blocks": ["R3.6.1"],
+    "scope": [
+        "taichi_printer.py lines 694-695"
+    ],
+    "implementation_steps": [
+        "Replace print + return max_iter with raise RuntimeError",
+        "Use res_norm (NOT r_norm) to avoid NameError in generated code",
+        "Match pattern from ref_hex8_plastic.py:452-460"
+    ],
+    "deliverables": [
+        "Modified taichi_printer.py:694-695"
+    ],
+    "acceptance_criteria": [
+        "Emitted Newton driver raises RuntimeError on non-convergence",
+        "Uses res_norm variable name matching line 662"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_phase1_codegen_fixes.py::TestC4NewtonNonConvergence -v --tb=short",
+        "uv run pytest packages/mechdsl-core/tests/test_emission_verification.py -v --tb=short -k newton"
+    ],
+    "test_plan": {
+        "tier": "existing",
+        "cases": [
+            "test_taichi_printer.py emission patterns"
+        ]
+    },
+    "test_artifacts": ["packages/mechdsl-core/tests/test_emission_verification.py", "packages/mechdsl-core/tests/test_phase1_codegen_fixes.py"],
+    "risks": [
+        "Generated code behavior change: callers expecting int return will get RuntimeError. Plan review verified this matches reference solver pattern."
+    ],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

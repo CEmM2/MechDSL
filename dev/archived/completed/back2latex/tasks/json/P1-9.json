@@ -1,0 +1,89 @@
+{
+    "task_id": "P1-9",
+    "title": "Update success criteria checklist with canonical-IDs row",
+    "phase": "1",
+    "objective": "Append a final checkbox to the success-criteria checklist in recovery_plan_latex_contract.md tying plan completion to all canonical task IDs reaching done status with their GitHub issues closed.",
+    "plan_file": "dev/plans/back2latex.md",
+    "plan_lines": [
+        "180",
+        "184"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "New checklist row tying plan completion to canonical task ID closure",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 184,
+            "Plan_file_end_line": 184
+        }
+    ],
+    "blocked_by": [
+        "P1-1"
+    ],
+    "blocks": [
+        "P2-1"
+    ],
+    "scope": [
+        "Edit only the success-criteria checklist in dev/plans/recovery_plan_latex_contract.md (currently lines 56-69)"
+    ],
+    "implementation_steps": [
+        "Locate the success-criteria checklist near the top of dev/plans/recovery_plan_latex_contract.md",
+        "Append at the bottom: '- [ ] All canonical task IDs in dev/tasks/recovery_plan_latex_contract/json/ reach done status, with their corresponding GitHub issues closed.'",
+        "Preserve all existing checkbox rows unchanged"
+    ],
+    "deliverables": [
+        "One additional checkbox row appended to the success-criteria checklist"
+    ],
+    "acceptance_criteria": [
+        "The new checkbox row appears as the last row in the success-criteria checklist",
+        "Existing checklist rows are unchanged in content and order",
+        "The row text references 'dev/tasks/recovery_plan_latex_contract/json/' verbatim"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p1_9.py -v -m audit"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "grep -c '^- \\[ \\]' over the checklist returns previous count + 1",
+            "New row contains the exact text from amendment 9",
+            "All prior rows remain bit-identical"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/test_p1_9.py"
+    ],
+    "risks": [
+        "Adding the row before the existing 'success criteria' boundary could shift formatting if it lands inside the wrong section \u2014 mitigated by anchoring to the explicit checklist heading"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-26",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p1_9.py -v -m audit",
+                "passed": 3,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Appended canonical-task-IDs checkbox to Success criteria; existing 9 rows unchanged; test_p1_9 passes 3/3."
+    ],
+    "github_issue": {
+        "phase_issue": 125,
+        "task_issue": 131,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

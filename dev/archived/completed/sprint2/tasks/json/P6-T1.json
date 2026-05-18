@@ -1,0 +1,35 @@
+{
+    "task_id": "P6-T1",
+    "title": "Full regression suite",
+    "phase": "6",
+    "objective": "Run full fast and slow test suites, verify all pre-existing + new tests pass.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["262", "265"],
+    "plan_assets": [],
+    "blocked_by": ["P5-T4"],
+    "blocks": ["P6-T2"],
+    "scope": ["packages/mechdsl-core/tests/"],
+    "implementation_steps": [
+        "Run uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -x -q",
+        "Run uv run pytest packages/mechdsl-core/tests/ -m slow -x -q",
+        "Record pass/fail counts"
+    ],
+    "deliverables": ["Pass/fail report"],
+    "acceptance_criteria": ["All fast tests pass", "All slow tests pass"],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -x -q",
+        "uv run pytest packages/mechdsl-core/tests/ -m slow -x -q"
+    ],
+    "test_plan": {"tier": "regression", "cases": ["Fast suite green", "Slow suite green"]},
+    "test_artifacts": ["packages/mechdsl-core/tests/"],
+    "risks": ["Risk: Slow tests (Taichi JIT) may timeout. Mitigation: run with generous timeout; report partial results if timeout occurs."],
+    "status": "done",
+    "completion_date": "2026-04-05",
+    "test_completion": {"passed": 862, "total": 862, "pass_rate": 100, "commands": ["uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -x -q → 853 passed", "uv run pytest packages/mechdsl-core/tests/test_e2e_taichi.py packages/mechdsl-core/tests/test_e2e_plastic.py -v -m slow → 9 passed"]},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "sprint2_phase-6",
+    "completion_notes": [],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

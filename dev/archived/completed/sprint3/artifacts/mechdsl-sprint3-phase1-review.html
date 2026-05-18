@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MechDSL Sprint 3 Phase 1 — Diff Review</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-raised: #1c2129;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-muted: #8b949e;
+    --text-bright: #f0f6fc;
+    --green: #3fb950;
+    --green-bg: #0d2818;
+    --green-border: #238636;
+    --red: #f85149;
+    --red-bg: #2d1214;
+    --red-border: #da3633;
+    --yellow: #d29922;
+    --yellow-bg: #2d2206;
+    --yellow-border: #9e6a03;
+    --blue: #58a6ff;
+    --blue-bg: #0c2d6b;
+    --blue-border: #1f6feb;
+    --purple: #bc8cff;
+    --accent: #79c0ff;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --radius: 8px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Navigation */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,17,23,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  nav a:hover { color: var(--text-bright); background: var(--surface); border-color: var(--border); }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* Section styling */
+  section { margin-top: 48px; }
+  section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  section h2 .section-num {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+    font-family: var(--font-mono);
+  }
+
+  /* Hero / Executive Summary */
+  .hero {
+    margin-top: 32px;
+    background: linear-gradient(135deg, var(--surface) 0%, #1a2332 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--blue), var(--purple));
+  }
+  .hero h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+  }
+  .hero .subtitle {
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 20px;
+    font-family: var(--font-mono);
+  }
+  .hero p {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--text);
+    max-width: 800px;
+  }
+  .hero .insight {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: rgba(88,166,255,0.06);
+    border-left: 3px solid var(--blue);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  /* KPI Dashboard */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+  }
+  .kpi-card .value {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    line-height: 1;
+  }
+  .kpi-card .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .kpi-card.green .value { color: var(--green); }
+  .kpi-card.blue .value { color: var(--blue); }
+  .kpi-card.yellow .value { color: var(--yellow); }
+  .kpi-card.purple .value { color: var(--purple); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .badge-red { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .badge-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow-border); }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  .card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+  .card p, .card li { font-size: 14px; color: var(--text); }
+  .card ul { padding-left: 18px; }
+  .card li { margin-bottom: 4px; }
+
+  /* Review cards with left border */
+  .review-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    border-left: 4px solid var(--border);
+  }
+  .review-card.good { border-left-color: var(--green); }
+  .review-card.bad { border-left-color: var(--red); }
+  .review-card.ugly { border-left-color: var(--yellow); }
+  .review-card.question { border-left-color: var(--blue); }
+  .review-card h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+  }
+  .review-card p { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .review-card code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(110,118,129,0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* Decision cards */
+  .decision-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    border-left: 4px solid var(--green-border);
+  }
+  .decision-card.inferred { border-left-color: var(--blue-border); }
+  .decision-card.low { border-left-color: var(--yellow-border); }
+  .decision-card .meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .decision-card h4 { font-size: 14px; font-weight: 600; color: var(--text-bright); margin-bottom: 6px; }
+  .decision-card p { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+
+  /* Side-by-side panels */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .comparison > * { min-width: 0; overflow-wrap: break-word; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .panel.before { border-top: 3px solid var(--red); }
+  .panel.after { border-top: 3px solid var(--green); }
+  .panel h4 {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .panel.before h4 { color: var(--red); }
+  .panel.after h4 { color: var(--green); }
+  .panel ul { padding-left: 16px; font-size: 13px; }
+  .panel li { margin-bottom: 4px; }
+  .panel code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(110,118,129,0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* Mermaid */
+  .mermaid-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    overflow: hidden;
+    position: relative;
+  }
+  .mermaid-wrap .mermaid { text-align: center; }
+  .mermaid-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 4px;
+    z-index: 10;
+  }
+  .mermaid-controls button {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface-raised);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mermaid-controls button:hover { color: var(--text-bright); border-color: var(--text-muted); }
+
+  /* File map */
+  .file-tree {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .file-tree .modified { color: var(--yellow); }
+  .file-tree .added { color: var(--green); }
+  .file-tree .indent { padding-left: 20px; }
+  .file-tree .stats {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  /* Test coverage table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  td { color: var(--text); }
+  td code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(110,118,129,0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .num-cell { font-family: var(--font-mono); text-align: right; }
+  .num-green { color: var(--green); }
+  .num-yellow { color: var(--yellow); }
+
+  /* Collapsible details */
+  details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+  }
+  details summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-bright);
+    font-size: 14px;
+  }
+  details summary:hover { background: var(--surface-raised); }
+  details > *:not(summary) { padding: 0 16px 16px; }
+
+  @media (max-width: 768px) {
+    .comparison { grid-template-columns: 1fr; }
+    .hero { padding: 24px; }
+    .hero h1 { font-size: 20px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    nav { padding: 8px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#summary">Summary</a>
+  <a href="#kpis">KPIs</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#features">Features</a>
+  <a href="#flow">Flow</a>
+  <a href="#files">Files</a>
+  <a href="#tests">Tests</a>
+  <a href="#review">Review</a>
+  <a href="#decisions">Decisions</a>
+  <a href="#reentry">Re-entry</a>
+</nav>
+
+<div class="container">
+
+<!-- 1. Executive Summary -->
+<section id="summary">
+  <div class="hero">
+    <h1>Sprint 3 Phase 1: Benchmark Hardening</h1>
+    <div class="subtitle">sprint3_phase-1 &larr; main &middot; +196 lines &middot; 3 files &middot; 0 deletions</div>
+    <p>
+      The MechDSL compiler pipeline was verified in Sprint 2, but the physical benchmarks used toy meshes with laughably loose tolerances. This phase hardens 3 benchmark test files to production quality: a cantilever beam now runs on a 40&times;8&times;4 mesh demanding 5% accuracy, the MMS convergence study uses proper 2&times; refinement ratios, and a 30&deg; finite rotation test proves frame-indifference of the SVK Total Lagrangian formulation.
+    </p>
+    <div class="insight">
+      <strong>Core insight:</strong> All changes are <em>purely additive test code</em>. No source modules were touched. The existing tests remain as fast regression gates; the new tests are <code>@e2e @slow</code> gates for nightly CI. This is a risk-free upgrade of verification rigor.
+    </div>
+  </div>
+</section>
+
+<!-- 2. KPI Dashboard -->
+<section id="kpis">
+  <h2><span class="section-num">02</span> KPI Dashboard</h2>
+  <div class="kpi-grid">
+    <div class="kpi-card green">
+      <div class="value">+196</div>
+      <div class="label">Lines Added</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="value">0</div>
+      <div class="label">Lines Removed</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="value">3</div>
+      <div class="label">Files Changed</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="value">+4</div>
+      <div class="label">New Test Functions</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="value">+2</div>
+      <div class="label">New Fixtures</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="value">+1</div>
+      <div class="label">New Test Class</div>
+    </div>
+  </div>
+  <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+    <div><span class="badge badge-red">CHANGELOG</span> <span style="font-size:12px;color:var(--text-muted)">not updated</span></div>
+    <div><span class="badge badge-green">README</span> <span style="font-size:12px;color:var(--text-muted)">no update needed (test-only changes)</span></div>
+    <div><span class="badge badge-green">DOCS</span> <span style="font-size:12px;color:var(--text-muted)">no update needed</span></div>
+  </div>
+</section>
+
+<!-- 3. Module Architecture -->
+<section id="architecture">
+  <h2><span class="section-num">03</span> Module Architecture</h2>
+  <div class="mermaid-wrap">
+    <div class="mermaid-controls">
+      <button onclick="zoomMermaid(this, 1.2)" title="Zoom in">+</button>
+      <button onclick="zoomMermaid(this, 0.8)" title="Zoom out">&minus;</button>
+      <button onclick="resetMermaid(this)" title="Reset">&#8634;</button>
+      <button onclick="openMermaidInNewTab(this)" title="Expand">&#x26F6;</button>
+    </div>
+    <div class="mermaid">
+graph LR
+    subgraph "Test Infrastructure (modified)"
+        TB["test_benchmarks.py<br/><small>925→1041 lines</small>"]
+        TC["test_convergence.py<br/><small>450→529 lines</small>"]
+        TP["test_patch_test.py<br/><small>404→405 lines</small>"]
+    end
+
+    subgraph "Reference Solvers (untouched)"
+        RE["ref_hex8_elastic.py"]
+        RP["ref_hex8_plastic.py"]
+    end
+
+    subgraph "Verify Harness (untouched)"
+        VC["convergence.py"]
+        VPT["patch_test.py"]
+    end
+
+    subgraph "Solver (untouched)"
+        MI["mesh_io.py"]
+    end
+
+    TB -->|"assemble_internal_force"| RE
+    TB -->|"solve_elastic"| RE
+    TB -->|"generate_hex8_mesh"| MI
+    TC -->|"run_mms_convergence"| VC
+    TC -->|"check_convergence_rate"| VC
+    TP -->|"run_patch_test"| VPT
+    TP -->|"run_rigid_body_test"| VPT
+
+    style TB fill:#2d2206,stroke:#9e6a03,color:#d29922
+    style TC fill:#2d2206,stroke:#9e6a03,color:#d29922
+    style TP fill:#2d2206,stroke:#9e6a03,color:#d29922
+    style RE fill:#161b22,stroke:#30363d,color:#8b949e
+    style RP fill:#161b22,stroke:#30363d,color:#8b949e
+    style VC fill:#161b22,stroke:#30363d,color:#8b949e
+    style VPT fill:#161b22,stroke:#30363d,color:#8b949e
+    style MI fill:#161b22,stroke:#30363d,color:#8b949e
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Yellow = modified. Grey = untouched dependencies. All changes are in test files; no source modules were modified.</p>
+</section>
+
+<!-- 4. Major Feature Comparisons -->
+<section id="features">
+  <h2><span class="section-num">04</span> Feature Comparisons</h2>
+
+  <h3 style="font-size:14px;color:var(--accent);margin-bottom:10px;">Cantilever Beam Benchmark</h3>
+  <div class="comparison">
+    <div class="panel before">
+      <h4>&minus; Before (main)</h4>
+      <ul>
+        <li>Mesh: <code>4&times;2&times;1</code> (45 nodes)</li>
+        <li>Tolerance: 0.25&ndash;2.0&times; EB (4&times; range!)</li>
+        <li>5 test methods</li>
+        <li>Markers: <code>@e2e @slow</code></li>
+      </ul>
+    </div>
+    <div class="panel after">
+      <h4>+ After (branch)</h4>
+      <ul>
+        <li>Mesh: <code>40&times;8&times;4</code> (12,285 nodes) <span class="badge badge-green" style="font-size:10px">NEW</span></li>
+        <li>Tolerance: &lt;5% of EB prediction</li>
+        <li>6 test methods (+1), 2 fixtures (+1)</li>
+        <li><code>cg_max_iter=5000</code> for larger system</li>
+        <li>Old coarse tests preserved as fast regression</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="font-size:14px;color:var(--accent);margin-bottom:10px;">MMS Convergence Study</h3>
+  <div class="comparison">
+    <div class="panel before">
+      <h4>&minus; Before (main)</h4>
+      <ul>
+        <li>Mesh levels: <code>[2, 3, 4]</code></li>
+        <li>Refinement ratio: 1.5&times; then 1.33&times;</li>
+        <li>2 rate tests (L2 &ge; 2.0, H1 &ge; 1.0)</li>
+        <li>Class: <code>TestTaskP3T3</code></li>
+      </ul>
+    </div>
+    <div class="panel after">
+      <h4>+ After (branch)</h4>
+      <ul>
+        <li>Mesh levels: <code>[2, 4, 8, 16]</code> <span class="badge badge-green" style="font-size:10px">NEW</span></li>
+        <li>Refinement ratio: strict 2&times; throughout</li>
+        <li>2 rate tests (same thresholds)</li>
+        <li>Class: <code>TestMMS4LevelConvergence</code></li>
+        <li>Class-scoped fixture avoids redundant FEM solves</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="font-size:14px;color:var(--accent);margin-bottom:10px;">Rigid Body Motion Tests</h3>
+  <div class="comparison">
+    <div class="panel before">
+      <h4>&minus; Before (main)</h4>
+      <ul>
+        <li>4 tests: 3 translations + 1 small rotation (1e-4 rad)</li>
+        <li>No finite rotation test in benchmarks</li>
+        <li>30&deg; test only in <code>test_patch_test.py</code></li>
+      </ul>
+    </div>
+    <div class="panel after">
+      <h4>+ After (branch)</h4>
+      <ul>
+        <li>5 tests (+1 finite rotation) <span class="badge badge-green" style="font-size:10px">NEW</span></li>
+        <li><code>test_finite_rotation_30_degrees</code></li>
+        <li>Multi-element mesh (3&times;2&times;2) + translation</li>
+        <li>Tolerance: <code>&lt;1e-9</code> (reference solver roundoff)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="font-size:14px;color:var(--accent);margin-bottom:10px;">Test Markers (CI Tier Integration)</h3>
+  <div class="comparison">
+    <div class="panel before">
+      <h4>&minus; Before (main)</h4>
+      <ul>
+        <li><code>TestTaskP3T5</code>: only <code>@slow</code></li>
+        <li>Not collected by <code>-m e2e</code></li>
+        <li>Invisible to nightly CI tier</li>
+      </ul>
+    </div>
+    <div class="panel after">
+      <h4>+ After (branch)</h4>
+      <ul>
+        <li><code>TestTaskP3T5</code>: <code>@e2e</code> + <code>@slow</code></li>
+        <li>2 tests collected by <code>-m e2e</code></li>
+        <li>Ready for Phase 4 nightly schedule</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Flow Diagrams -->
+<section id="flow">
+  <h2><span class="section-num">05</span> Test Execution Flow</h2>
+  <div class="mermaid-wrap">
+    <div class="mermaid-controls">
+      <button onclick="zoomMermaid(this, 1.2)">+</button>
+      <button onclick="zoomMermaid(this, 0.8)">&minus;</button>
+      <button onclick="resetMermaid(this)">&#8634;</button>
+      <button onclick="openMermaidInNewTab(this)">&#x26F6;</button>
+    </div>
+    <div class="mermaid">
+graph TD
+    CI["CI Trigger"] --> FAST["Fast Tests<br/><code>-m 'not slow and not gpu and not e2e'</code><br/>~803 tests, &lt;8 min"]
+    CI --> SLOW["PR Slow Tests<br/><code>-m slow</code><br/>JIT compilation"]
+    CI --> E2E["Nightly e2e<br/><code>-m e2e</code><br/>Full benchmarks"]
+
+    FAST --> RB["TestRigidBodyMotion<br/>5 tests incl. 30° rotation"]
+    FAST --> FA["TestFastAcceptanceGate<br/>3 single-element tests"]
+
+    SLOW --> CANT["TestCantilever<br/>6 tests incl. 5% EB"]
+    SLOW --> MMS3["TestTaskP3T3<br/>MMS [2,3,4]"]
+
+    E2E --> CANT
+    E2E --> MMS4["TestMMS4LevelConvergence<br/>MMS [2,4,8,16]"]
+    E2E --> PT["TestTaskP3T5<br/>Patch + Rigid Body"]
+
+    style RB fill:#0d2818,stroke:#238636,color:#3fb950
+    style MMS4 fill:#0d2818,stroke:#238636,color:#3fb950
+    style CANT fill:#2d2206,stroke:#9e6a03,color:#d29922
+    style PT fill:#2d2206,stroke:#9e6a03,color:#d29922
+    style FAST fill:#161b22,stroke:#30363d,color:#c9d1d9
+    style SLOW fill:#161b22,stroke:#30363d,color:#c9d1d9
+    style E2E fill:#0c2d6b,stroke:#1f6feb,color:#58a6ff
+    style CI fill:#161b22,stroke:#30363d,color:#c9d1d9
+    style FA fill:#161b22,stroke:#30363d,color:#8b949e
+    style MMS3 fill:#161b22,stroke:#30363d,color:#8b949e
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Green = new tests from Phase 1. Yellow = modified tests. Blue = e2e tier. The 30° rotation test runs in the fast tier (no JIT needed).</p>
+</section>
+
+<!-- 6. File Map -->
+<section id="files">
+  <h2><span class="section-num">06</span> File Map</h2>
+  <details open>
+    <summary>3 files changed</summary>
+    <div class="file-tree" style="padding: 16px;">
+      <div>packages/mechdsl-core/tests/</div>
+      <div class="indent">
+        <span class="modified">M</span> test_benchmarks.py
+        <span class="stats">925 &rarr; 1041 (+116) &middot; +1 fixture, +2 test methods</span>
+      </div>
+      <div class="indent">
+        <span class="modified">M</span> test_convergence.py
+        <span class="stats">450 &rarr; 529 (+79) &middot; +1 class, +1 fixture, +2 test methods</span>
+      </div>
+      <div class="indent">
+        <span class="modified">M</span> test_patch_test.py
+        <span class="stats">404 &rarr; 405 (+1) &middot; +1 marker decorator</span>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- 7. Test Coverage -->
+<section id="tests">
+  <h2><span class="section-num">07</span> Test Coverage</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>File</th>
+        <th>Before</th>
+        <th>After</th>
+        <th>Delta</th>
+        <th>New Functions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>test_benchmarks.py</code></td>
+        <td class="num-cell">26</td>
+        <td class="num-cell num-green">28</td>
+        <td class="num-cell num-green">+2</td>
+        <td><code>test_finite_rotation_30_degrees</code>, <code>test_tip_displacement_within_5_percent</code></td>
+      </tr>
+      <tr>
+        <td><code>test_convergence.py</code></td>
+        <td class="num-cell">18</td>
+        <td class="num-cell num-green">20</td>
+        <td class="num-cell num-green">+2</td>
+        <td><code>test_mms_4level_l2_convergence_rate</code>, <code>test_mms_4level_h1_convergence_rate</code></td>
+      </tr>
+      <tr>
+        <td><code>test_patch_test.py</code></td>
+        <td class="num-cell">14</td>
+        <td class="num-cell">14</td>
+        <td class="num-cell">0</td>
+        <td><em>marker only</em></td>
+      </tr>
+      <tr style="font-weight:600;">
+        <td>Total (3 files)</td>
+        <td class="num-cell">58</td>
+        <td class="num-cell num-green">62</td>
+        <td class="num-cell num-green">+4</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="margin-top: 12px;">
+    <div class="card">
+      <h3>Benchmark Coverage Matrix</h3>
+      <table>
+        <thead>
+          <tr><th>Sprint 3 Benchmark</th><th>Status</th><th>Tolerance</th><th>Tier</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Patch test (irregular mesh)</td><td><span class="badge badge-green">passing</span></td><td>&lt;1e-12</td><td>e2e + slow</td></tr>
+          <tr><td>Rigid body 30° rotation</td><td><span class="badge badge-green">passing</span></td><td>&lt;1e-9</td><td>fast</td></tr>
+          <tr><td>Cantilever 5% EB</td><td><span class="badge badge-yellow">test added</span></td><td>&lt;5%</td><td>e2e + slow</td></tr>
+          <tr><td>MMS 4-level convergence</td><td><span class="badge badge-yellow">test added</span></td><td>L2&ge;2.0, H1&ge;1.0</td><td>e2e + slow</td></tr>
+          <tr><td>Cook's membrane</td><td><span class="badge badge-red">Phase 2</span></td><td>&lt;2%</td><td>&mdash;</td></tr>
+          <tr><td>Necking bar</td><td><span class="badge badge-red">Phase 3</span></td><td>&lt;2%</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Code Review -->
+<section id="review">
+  <h2><span class="section-num">08</span> Code Review</h2>
+
+  <div class="review-card good">
+    <h4>Good: Purely additive, zero-regression design</h4>
+    <p>All 196 lines are insertions. Existing tests are untouched. Old coarse-mesh cantilever tests remain as fast regression gates. This is textbook benchmark hardening &mdash; tighten tolerances without breaking the safety net.</p>
+  </div>
+
+  <div class="review-card good">
+    <h4>Good: Class-scoped fixture for MMS avoids redundant FEM solves</h4>
+    <p><code>mms_convergence_results_4level</code> uses <code>scope="class"</code> so the expensive 4-level convergence study (including a 16&sup3; mesh) runs exactly once, shared by both L2 and H1 tests. Matches the existing <code>TestTaskP3T3</code> pattern.</p>
+  </div>
+
+  <div class="review-card good">
+    <h4>Good: Physics documentation in docstrings</h4>
+    <p>The 30° rotation test at <code>test_benchmarks.py:326</code> clearly explains the derivation chain: F=R &rarr; C=R<sup>T</sup>R=I &rarr; E=0 &rarr; S=0 &rarr; f<sub>int</sub>=0. The tolerance relaxation rationale is documented inline, not hidden in a comment.</p>
+  </div>
+
+  <div class="review-card ugly">
+    <h4>Ugly: Tolerance divergence between reference solver and verify harness</h4>
+    <p><code>test_finite_rotation_30_degrees</code> uses <code>&lt;1e-9</code> while the equivalent test in <code>test_patch_test.py</code> uses <code>&lt;1e-12</code>. The 3-order gap is documented but may confuse future developers. The root cause (different integration paths in <code>ref_hex8_elastic.py</code> vs <code>verify/patch_test.py</code>) deserves a shared comment or constant.</p>
+  </div>
+
+  <div class="review-card ugly">
+    <h4>Ugly: Cantilever fixture defined as instance method inside test class</h4>
+    <p><code>cantilever_problem_refined</code> at line 553 is a <code>self</code> fixture inside <code>TestCantilever</code>, while the MMS fixture is module-level with <code>scope="class"</code>. The inconsistency is inherited from the existing <code>cantilever_problem</code> fixture. Not a bug, but a pattern that will accumulate if Cook's and necking bar follow the same style.</p>
+  </div>
+
+  <div class="review-card question">
+    <h4>Question: Has the 40&times;8&times;4 cantilever been run to completion?</h4>
+    <p>The test is marked <code>@slow</code> and was NOT executed during this phase (only collection was verified). With 12,285 nodes and <code>cg_max_iter=5000</code> in pure NumPy, the first actual run in CI may reveal convergence issues or timeout. Consider a one-time local validation run before merging.</p>
+  </div>
+
+  <div class="review-card question">
+    <h4>Question: Will the 16&sup3; MMS mesh complete within nightly budget?</h4>
+    <p>4,913 nodes &times; 4 mesh levels. The plan allows fallback to <code>[2, 4, 8]</code> if too slow. The test exists but hasn't been timed. Phase 4 CI nightly has a 60-minute budget.</p>
+  </div>
+
+  <div class="review-card bad">
+    <h4>Bad: No CHANGELOG entry for Sprint 3 Phase 1</h4>
+    <p>196 lines of benchmark hardening with no CHANGELOG record. While this is test-only, the benchmark status is a user-facing quality signal. The plan defers CHANGELOG to Phase 5 (P5-4), so this is by design &mdash; but worth noting.</p>
+  </div>
+</section>
+
+<!-- 9. Decision Log -->
+<section id="decisions">
+  <h2><span class="section-num">09</span> Decision Log</h2>
+
+  <div class="decision-card">
+    <div class="meta">HIGH CONFIDENCE &middot; sourced from plan + conversation</div>
+    <h4>Keep coarse-mesh cantilever tests alongside refined mesh</h4>
+    <p><strong>Rationale:</strong> The 4&times;2&times;1 tests run in milliseconds and catch regressions immediately. The 40&times;8&times;4 test takes minutes and runs nightly. Both are needed: fast feedback loop + production accuracy.</p>
+    <p><strong>Alternatives:</strong> Replace coarse tests entirely (rejected: loses fast feedback). Parameterize over mesh sizes (rejected: different tolerances make parameterization awkward).</p>
+  </div>
+
+  <div class="decision-card">
+    <div class="meta">HIGH CONFIDENCE &middot; sourced from plan</div>
+    <h4>Use [2,4,8,16] mesh levels instead of [2,3,4]</h4>
+    <p><strong>Rationale:</strong> Proper 2&times; refinement ratios produce unbiased log-log slope estimates for convergence rate measurement. Non-uniform ratios ([2,3,4] = 1.5&times; then 1.33&times;) bias the fit and can mask superconvergence or degradation.</p>
+    <p><strong>Alternatives:</strong> Keep [2,3,4] (rejected: biased rates). Use [4,8,16,32] for finer meshes (rejected: 32&sup3; = 35K nodes is prohibitive in pure NumPy).</p>
+  </div>
+
+  <div class="decision-card inferred">
+    <div class="meta">MEDIUM CONFIDENCE &middot; inferred from code</div>
+    <h4>Relax 30° rotation tolerance from 1e-12 to 1e-9</h4>
+    <p><strong>Rationale:</strong> The reference solver (<code>ref_hex8_elastic.py</code>) accumulates O(1e-10) floating-point roundoff during multi-element Gauss quadrature assembly with steel-like material parameters (MU&asymp;77,000). The verify harness achieves 1e-12 via a different integration path. Tolerance of 1e-9 provides 2 orders of headroom.</p>
+    <p><strong>Alternatives:</strong> Use unit material parameters (rejected: breaks consistency with the TestRigidBodyMotion class which uses steel parameters throughout). Switch to verify harness API (rejected: task spec requires reference solver API).</p>
+  </div>
+
+  <div class="decision-card">
+    <div class="meta">HIGH CONFIDENCE &middot; sourced from plan</div>
+    <h4>Add @e2e marker at class level on TestTaskP3T5</h4>
+    <p><strong>Rationale:</strong> Phase 4 introduces a nightly CI tier collecting <code>-m e2e</code>. Patch test and rigid body tests on irregular mesh must be in that tier. Class-level marker is inherited by all methods, matching the existing <code>@slow</code> pattern.</p>
+    <p><strong>Alternatives:</strong> Method-level markers (rejected: redundant, class already has @slow per-method). No marker, let Phase 4 add it (rejected: Phase 4 expects it done).</p>
+  </div>
+</section>
+
+<!-- 10. Re-entry Context -->
+<section id="reentry">
+  <h2><span class="section-num">10</span> Re-entry Context</h2>
+  <details open>
+    <summary>Note from present-you to future-you</summary>
+    <div>
+      <div class="review-card" style="border-left-color: var(--purple);">
+        <h4>Key Invariants</h4>
+        <ul>
+          <li>The 40&times;8&times;4 cantilever test assumes <code>solve_elastic</code> accepts <code>cg_max_iter</code> as a keyword argument. If the solver API changes, this test breaks silently (it would just use the default).</li>
+          <li><code>TestMMS4LevelConvergence</code> fixture is <code>scope="class"</code> &mdash; moving a test method to a different class will re-trigger the expensive solve.</li>
+          <li>The 30° rotation test tolerance (1e-9) is coupled to the <strong>reference solver implementation</strong>, not the physics. If ref_hex8_elastic.py is improved, the tolerance can be tightened.</li>
+        </ul>
+      </div>
+      <div class="review-card" style="border-left-color: var(--purple);">
+        <h4>Non-obvious Coupling</h4>
+        <ul>
+          <li><code>test_benchmarks.py</code> has two independent test scopes on cantilever: the original <code>cantilever_problem</code> fixture (4&times;2&times;1) and the new <code>cantilever_problem_refined</code> (40&times;8&times;4). They use the same material constants but different meshes. Changing <code>E_YOUNG</code> or <code>NU</code> at module level affects both.</li>
+          <li>Phase 4's CI nightly tier (<code>-m e2e</code>) now collects tests from 3 files. Adding <code>@e2e</code> to more tests increases nightly runtime &mdash; budget is 60 minutes.</li>
+        </ul>
+      </div>
+      <div class="review-card" style="border-left-color: var(--purple);">
+        <h4>Gotchas</h4>
+        <ul>
+          <li>The <code>@e2e @slow</code> tests have NOT been run to completion &mdash; only collection was verified. First real execution will be Phase 4's nightly CI or a manual <code>-m slow</code> run.</li>
+          <li>Pre-existing failure: <code>test_analytical.py::test_uniaxial_above_yield_hardening_law</code> fails due to missing <code>scipy</code> dependency. Excluded from fast suite but will appear in full <code>pytest</code> runs.</li>
+        </ul>
+      </div>
+      <div class="review-card" style="border-left-color: var(--purple);">
+        <h4>Don't Forget</h4>
+        <ul>
+          <li>These changes are <strong>uncommitted</strong> on branch <code>sprint3_phase-1</code>. Commit before starting Phase 2.</li>
+          <li>CHANGELOG update is deferred to Phase 5 (P5-4).</li>
+          <li>Phase 2 (Cook's membrane) needs <code>generate_cook_membrane_mesh()</code> in <code>mesh_io.py</code> &mdash; that's the first blocker.</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+</section>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#161b22',
+      primaryColor: '#1f6feb',
+      primaryTextColor: '#c9d1d9',
+      lineColor: '#30363d',
+      fontSize: '13px'
+    }
+  });
+
+  function zoomMermaid(btn, factor) {
+    const wrap = btn.closest('.mermaid-wrap');
+    const svg = wrap.querySelector('svg');
+    if (!svg) return;
+    const current = parseFloat(svg.style.transform?.match(/scale\(([^)]+)\)/)?.[1] || '1');
+    svg.style.transform = `scale(${current * factor})`;
+    svg.style.transformOrigin = 'center top';
+  }
+
+  function resetMermaid(btn) {
+    const svg = btn.closest('.mermaid-wrap').querySelector('svg');
+    if (svg) svg.style.transform = 'scale(1)';
+  }
+
+  function openMermaidInNewTab(btn) {
+    const svg = btn.closest('.mermaid-wrap').querySelector('svg');
+    if (!svg) return;
+    const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+    window.open(URL.createObjectURL(blob), '_blank');
+  }
+</script>
+
+</body>
+</html>

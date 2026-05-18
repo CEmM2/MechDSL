@@ -1,0 +1,85 @@
+{
+    "task_id": "P9-2",
+    "title": "Refactor einsum_optimizer to emit via template families",
+    "phase": "9",
+    "objective": "Refactor `mechdsl.codegen.einsum_optimizer` so `plan_contraction` returns both a tier (scheduling) AND a template-family dispatch key (realisation). Backend printers look up the family in their own per-backend emission table.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["247", "249"],
+    "plan_assets": [
+        {
+            "asset_description": "B8b tier-vs-family distinction.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 247,
+            "Plan_file_end_line": 249
+        }
+    ],
+    "blocked_by": ["P9-1"],
+    "blocks": ["P9-3"],
+    "scope": [
+        "Extend `ContractionPlan` with a `family` field (enum from the P9-1 spec).",
+        "Populate the family in `plan_contraction` via pattern matching on the einsum string.",
+        "Each backend printer gets a `family_emitters: dict[Family, EmitterFunc]` lookup.",
+        "Refactor Taichi printer to route through the family emitters.",
+        "Gate the refactor behind a flag (default ON) so it can be rolled back quickly if regressions appear."
+    ],
+    "implementation_steps": [
+        "Add the `Family` enum and extend `ContractionPlan`.",
+        "Implement pattern matching to classify existing einsum strings.",
+        "Refactor Taichi printer to use family emitters.",
+        "Refactor MFEM/MOOSE printers similarly.",
+        "Regenerate goldens — emitted source may change in whitespace but not in semantics.",
+        "Run the full fast suite + slow equivalence tests."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/codegen/einsum_optimizer.py`",
+        "`packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py`",
+        "`packages/mechdsl-core/src/mechdsl/codegen/mfem_printer.py`",
+        "`packages/mechdsl-core/src/mechdsl/codegen/moose_printer.py`"
+    ],
+    "acceptance_criteria": [
+        "All existing contractions classify into a family.",
+        "Taichi printer produces equivalent (perhaps whitespace-different) source before/after.",
+        "No semantic regressions (cross-backend equivalence from P8-3 still passes).",
+        "Golden files updated and reviewed."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_p9_2_family_emitters.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_einsum_optimizer.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_taichi_printer.py packages/mechdsl-core/tests/test_mfem_printer.py packages/mechdsl-core/tests/test_moose_printer.py -v"
+    ],
+    "test_plan": {
+        "tier": "regression",
+        "cases": [
+            "All contractions classified into a family enum",
+            "Taichi emission numerically equivalent before/after refactor (slow)",
+            "MFEM emission textually equivalent modulo whitespace",
+            "MOOSE emission textually equivalent modulo whitespace"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_p9_2_family_emitters.py",
+        "packages/mechdsl-core/tests/test_einsum_optimizer.py",
+        "packages/mechdsl-core/tests/test_taichi_printer.py",
+        "packages/mechdsl-core/tests/test_mfem_printer.py",
+        "packages/mechdsl-core/tests/test_moose_printer.py"
+    ],
+    "risks": [
+        "A large refactor touches the entire codegen layer; regressions are hard to localize. Mitigation: keep the old tier-only path reachable via a feature flag during the refactor."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-18",
+    "test_completion": {"passed": 4, "total": 4, "pass_rate": 1.0, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_p9_2_family_emitters.py -v", "passed": 4, "total": 4}, {"command": "uv run pytest -m 'not slow and not gpu' -q", "passed": 1291, "total": 1292, "note": "only pre-existing P9-1 spec-gap failure remains"}]},
+    "review_score": 1,
+    "review_breakdown": {"minor": 2, "medium": 1, "high": 0, "critical": 0},
+    "review_status": "pass-with-findings-addressed",
+    "implementation_branch": "plan-b_phase-9",
+    "completion_notes": [
+        "ContractionResult/ContractionPlan extended with Family field; family is classified in optimize_contraction and threaded through _contraction_result_to_plan as enum .name (JSON-safe, default 'FALLBACK' for legacy bundles).",
+        "Three backend printers (Taichi, MFEM, MOOSE) gained family_emitters dispatch tables + _dispatch_family router gated by family_emitters_enabled() reading MECHDSL_FAMILY_EMITTERS env var (off: '0'/'false'/'no'/'off').",
+        "Dispatch call sites verified reachable on hot paths: Taichi 945/996/1067/1165, MFEM 471/493/590, MOOSE 445/471. Per-family emitter helpers are verbatim copies of legacy inline bodies, so flag-OFF is byte-identical to legacy path (cross-backend whitespace-normalised equivalence test passes for all three backends).",
+        "Gate B medium finding addressed: _dispatch_family now emits a DEBUG log (_logger.debug) when falling back to the legacy body, making silent-fallback collisions observable — closes the Phase 8 Gate B silent-failure pattern.",
+        "Goldens untouched (git diff HEAD -- packages/mechdsl-core/tests/golden/ is empty). No rename churn: optimize_contraction retains its name (not renamed to plan_contraction).",
+        "Fast suite: 1291 passed, 2 skipped, only pre-existing P9-1 spec-gap test failing (user-owned; awaiting §9 patch)."
+    ],
+    "github_issue": {"phase_issue": 64, "task_issue": 106, "repo": "SOSOVSKI/MechDSL"}
+}

@@ -1,0 +1,104 @@
+{
+    "task_id": "P5-3",
+    "title": "Switch lib/plasticity.py default to algo2code path; feature-flag fallback",
+    "phase": "5",
+    "objective": "Make the algo2code-generated radial-return the default path, with a MECHDSL_USE_IMPORTED_RR=1 feature flag preserving the imported fallback.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": [
+        "242",
+        "246"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Feature flag: MECHDSL_USE_IMPORTED_RR for fallback to imported path",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 242,
+            "Plan_file_end_line": 246
+        }
+    ],
+    "blocked_by": [
+        "P5-2"
+    ],
+    "blocks": [
+        "P5-4",
+        "P5-5"
+    ],
+    "scope": [
+        "Edit packages/mechdsl-core/src/mechdsl/lib/plasticity.py",
+        "Switch default radial-return dispatch to algo2code-generated function",
+        "Read MECHDSL_USE_IMPORTED_RR env var; fall back to imported path if set",
+        "No recompilation required to switch (env-driven dispatch)"
+    ],
+    "implementation_steps": [
+        "Locate current radial-return dispatch in plasticity.py",
+        "Import generated @ti.func from algo2code output",
+        "Read env var via os.environ.get('MECHDSL_USE_IMPORTED_RR')",
+        "Dispatch to imported fallback if env set; else generated path",
+        "Smoke test: env-driven switch works without recompile"
+    ],
+    "deliverables": [
+        "Updated lib/plasticity.py with feature-flag dispatch",
+        "Imported fallback retained",
+        "Smoke test for env-var switching"
+    ],
+    "acceptance_criteria": [
+        "Default solver run uses algo2code path (no flag)",
+        "Setting MECHDSL_USE_IMPORTED_RR=1 reverts to imported path",
+        "No recompilation needed for switch"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p5_3.py -v",
+        "MECHDSL_USE_IMPORTED_RR=1 uv run python -c \"from mechdsl.lib import plasticity; print(plasticity.radial_return.__module__)\""
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Default path = algo2code (missing)",
+            "Flag set \u2192 imported path (missing)",
+            "Switch via env var without recompile (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p5_3.py",
+        "packages/mechdsl-core/src/mechdsl/lib/plasticity.py"
+    ],
+    "risks": [
+        "Feature flag eventually removed \u2014 mitigation: track removal in design doc per P5-5",
+        "lib/plasticity.py does not exist yet \u2014 must be created. Existing imported radial_return lives in mechdsl.symbolic.models.j2_power_law (per audit)."
+    ],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 5,
+        "total": 5,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p5_3.py -v",
+                "passed": 5,
+                "total": 5
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-5",
+    "completion_notes": [
+        "packages/mechdsl-core/src/mechdsl/lib/plasticity.py: dispatcher with signature identical to imported reference.",
+        "Phase 5 ALSO landed the algo2code parser fixes (multi-letter scratch tokenisation; binary `/` in assignment LHS) plus the Taichi codegen scalar-only fix (no `n = b.shape[0]` for algorithms without a vector arg). The dispatcher now genuinely consumes `algo2code.transpile`: the algpseudocode at `dev/algorithms/radial_return_j2.tex` is transpiled at module-load, exec'd into a namespace, and the resulting scalar Newton callable runs inside the wrapper.",
+        "Tensor algebra (deviatoric, von Mises, return-mapping reconstruction, algorithmic tangent) is orchestrated in Python around the transpiled scalar Newton using the imported helpers \u2014 algo2code's grammar surface today does not cover those tensor ops.",
+        "FEATURE_FLAG_ENV='MECHDSL_USE_IMPORTED_RR'; truthy set {1, true, yes, on} (case-insensitive); active_path_name() re-evaluates env on every call.",
+        "Bit-equality with imported reference at BASELINE_TOL=1e-12 holds for elastic, elastoplastic, unloading load steps (P5-4 parity test)."
+    ],
+    "github_issue": {
+        "phase_issue": 204,
+        "task_issue": 230,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

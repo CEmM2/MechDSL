@@ -1,0 +1,95 @@
+{
+    "task_id": "P1-7",
+    "title": "Add P1-6 supersession task in recovery plan (recoveryplan namespace) + status vocabulary dependency",
+    "phase": "1",
+    "objective": "Enact the R0.5 commitment to record the frontend deferral as historical execution drift by adding a P1-6 task (in the recovery plan's namespace) that marks MVP plans as superseded, blocked by the new 'implemented-via-substitute' status vocabulary.",
+    "plan_file": "dev/plans/back2latex.md",
+    "plan_lines": [
+        "166",
+        "174"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Specification of the new recovery-plan task P1-6 with files, tier, verification, and blocker",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 168,
+            "Plan_file_end_line": 174
+        }
+    ],
+    "blocked_by": [
+        "P1-3"
+    ],
+    "blocks": [
+        "P2-1"
+    ],
+    "scope": [
+        "Edit Phase 1 (formerly R0) action-item table in dev/plans/recovery_plan_latex_contract.md to add a sixth row P1-6",
+        "Disambiguation: this is the recovery plan's P1-6 task slot, not this back2latex plan's P1-7 task itself"
+    ],
+    "implementation_steps": [
+        "Open dev/plans/recovery_plan_latex_contract.md and locate the Phase 1 (R0) action-item table",
+        "Append a new row with Task ID P1-6, Legacy ID 'R0.6 (new)'",
+        "Action item: 'Mark dev/plans/MVP_plan.md and dev/plans/MVP_sprint{1,2,3}.md as superseded by this recovery plan for the frontend contract; add a banner pointing here and an explicit superseded tag'",
+        "Files / surfaces: dev/plans/MVP_plan.md, dev/plans/MVP_sprint1.md, dev/plans/MVP_sprint2.md, dev/plans/MVP_sprint3.md",
+        "Blocked by: P1-4 (status vocabulary expansion must land first so 'implemented-via-substitute' is a legal value)",
+        "Tier: docs",
+        "Verification: each superseded plan has a top banner; tracker rows for old P2.1..P2.5 carry 'implemented-via-substitute' status (not 'not_started')"
+    ],
+    "deliverables": [
+        "New row P1-6 in Phase 1 action-item table of dev/plans/recovery_plan_latex_contract.md",
+        "Row complete with all seven columns from amendment 3"
+    ],
+    "acceptance_criteria": [
+        "Phase 1 (R0) action-item table contains exactly six rows after this edit",
+        "P1-6 row has Tier=docs and Blocked by=P1-4",
+        "All four MVP plan files appear in the Files / surfaces column"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p1_7.py -v -m audit"
+    ],
+    "test_plan": {
+        "tier": "docs",
+        "cases": [
+            "P1-6 row exists with the specified field values",
+            "Phase 1 row count is six (P1-1..P1-6)",
+            "Blocked-by reference to P1-4 is consistent with P1-3's table"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/test_p1_7.py"
+    ],
+    "risks": [
+        "Naming collision is conceptually possible \u2014 P1-6 in recovery plan differs from P1-6 in back2latex plan; mitigated because each plan's tasks live in their own namespace (dev/tasks/<plan>/json/)"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-26",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p1_7.py -v -m audit",
+                "passed": 3,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Appended P1-6 supersession row to Phase 1 action-item table; Tier=docs, Blocked by=P1-4, all four MVP plan files listed; test_p1_7 passes 3/3."
+    ],
+    "github_issue": {
+        "phase_issue": 125,
+        "task_issue": 135,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

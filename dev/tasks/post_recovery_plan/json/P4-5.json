@@ -1,0 +1,99 @@
+{
+    "task_id": "P4-5",
+    "title": "Add dev/examples/svk_latex_math.tex + README inventory entry",
+    "phase": "4",
+    "objective": "Ship a runnable example exercising the new math grammar so users have a discoverable entry point.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": [
+        "206",
+        "208"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Example deliverable: dev/examples/svk_latex_math.tex",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 206,
+            "Plan_file_end_line": 208
+        }
+    ],
+    "blocked_by": [
+        "P4-3"
+    ],
+    "blocks": [],
+    "scope": [
+        "New dev/examples/svk_latex_math.tex with SVK math expression",
+        "Update dev/examples/README.md inventory entry",
+        "Example must compile via documented compile_latex path"
+    ],
+    "implementation_steps": [
+        "Author LaTeX example using SVK PK1 math expression",
+        "Add inventory bullet under ## Inventory in dev/examples/README.md",
+        "Verify example compiles via uv run python -m mechdsl.compile dev/examples/svk_latex_math.tex (or analogous CLI)"
+    ],
+    "deliverables": [
+        "dev/examples/svk_latex_math.tex",
+        "Updated README.md inventory"
+    ],
+    "acceptance_criteria": [
+        "Example runs via documented path",
+        "README inventory mentions the new example"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_5.py -v",
+        "uv run python -c \"from pathlib import Path; from mechdsl import compile_latex; src = Path('dev/examples/svk_latex_math.tex').read_text(); b = compile_latex(src); print('emitted_source bytes:', len(b.emitted_source))\""
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Example compiles end-to-end (missing)",
+            "README inventory contains entry (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_5.py",
+        "dev/examples/svk_latex_math.tex",
+        "dev/examples/README.md"
+    ],
+    "risks": [
+        "Example may rely on directive defaults not present in math-only source \u2014 mitigation: include the minimum % mechanics directives needed for ProblemIR construction (mesh, boundary), keep constitutive expression in $...$"
+    ],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_5.py -v",
+                "passed": 3,
+                "total": 3
+            },
+            {
+                "command": "uv run pytest -m \"not slow and not gpu\" --tb=line -q",
+                "passed": 1804,
+                "total": 1804
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-4",
+    "completion_notes": [
+        "dev/examples/svk_latex_math.tex: mixed % mechanics + % declare + $...$ math block; documents deferral + rank-2-copy surrogate in header.",
+        "dev/examples/README.md gains 'LaTeX-math grammar' section with run command.",
+        "Caught and fixed regex bug: _MATH_BLOCK_RE was matching $...$ in %-comment prose. Fix scans line-by-line, skipping comment lines.",
+        "Cross-task: widened P2-2 docs-collection allowlist (second occurrence of integration_break pattern from P3-1) to admit tests/test_nrpylatex_round_trip.py."
+    ],
+    "github_issue": {
+        "phase_issue": 203,
+        "task_issue": 226,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

@@ -1,0 +1,98 @@
+{
+  "task_id": "P4-2",
+  "title": "Elastic element/material smoke and runtime budget",
+  "phase": "4",
+  "objective": "Prove the internal elastic solver layer across SVK/Neo-Hookean and Hex8/Tet10/Hex20, and record candidate runtime budget data.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "101",
+    "135"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E2 acceptance criteria for element/material execution and runtime measurement.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 101,
+      "Plan_file_end_line": 135
+    }
+  ],
+  "blocked_by": [
+    "P4-1"
+  ],
+  "blocks": [
+    "P5-1"
+  ],
+  "scope": [
+    "Exercise internal elastic solver helpers across SVK and Neo-Hookean.",
+    "Exercise Hex8, Tet10, and Hex20 on cheap meshes.",
+    "Record runtime observations before the public cantilever matrix is activated."
+  ],
+  "implementation_steps": [
+    "Add smoke tests for every material/element combination.",
+    "Capture coarse runtime data for representative cantilever cells.",
+    "Document any cell requiring nightly-only sizing.",
+    "Keep solver APIs internal.",
+    "Run targeted tests and static checks."
+  ],
+  "deliverables": [
+    "Elastic solver smoke matrix tests.",
+    "Runtime budget notes for public cantilever activation."
+  ],
+  "acceptance_criteria": [
+    "SVK and Neo-Hookean run for Hex8, Tet10, and Hex20.",
+    "Runtime for candidate cantilever cells is measured and recorded.",
+    "No public benchmark API changes are made in this task."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_elastic_solver.py -v",
+    "uv run ruff check packages/mechdsl-core/src/mechdsl/verify/benchmarks/_elastic_solver.py packages/mechdsl-core/tests/test_phase10_elastic_solver.py",
+    "uv run mypy packages/mechdsl-core/src/mechdsl/verify/benchmarks/_elastic_solver.py"
+  ],
+  "test_plan": {
+    "tier": "integration",
+    "cases": [
+      "SVK Hex8/Tet10/Hex20 smoke",
+      "Neo-Hookean Hex8/Tet10/Hex20 smoke",
+      "representative runtime capture"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_phase10_elastic_solver.py"
+  ],
+  "risks": [
+    "Quadratic element cells may be too slow for local regression; mitigate by separating smoke settings from nightly/full settings."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-25",
+  "test_completion": {
+    "passed": 9,
+    "total": 9,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_elastic_solver.py -v",
+        "passed": 9,
+        "total": 9
+      }
+    ]
+  },
+  "review_score": 0,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e2-elastic-solver",
+  "completion_notes": [
+    "SVK and Neo-Hookean smoke cells run for Hex8, Tet10, and Hex20.",
+    "Representative runtime data is captured on every ElasticSolveResult via wallclock_s.",
+    "The solver API remains internal to the benchmark package."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

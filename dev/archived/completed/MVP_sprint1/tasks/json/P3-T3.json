@@ -1,0 +1,77 @@
+{
+    "task_id": "P3-T3",
+    "title": "Newton + load_stepping integration test",
+    "phase": "3",
+    "objective": "Write integration test that wires newton_solve to adaptive_load_stepping and compares output against ref_hex8_plastic.py::solve_plastic (atol=1e-10).",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "192",
+        "193"
+    ],
+    "plan_assets": [],
+    "blocked_by": [
+        "P3-T1"
+    ],
+    "blocks": [
+        "P6-T1"
+    ],
+    "scope": [
+        "packages/mechdsl-core/tests/test_newton.py"
+    ],
+    "implementation_steps": [
+        "In test_newton.py, add integration test class/section",
+        "Build newton_solve_fn(load_factor) closure using ref_hex8_plastic assembly functions",
+        "Pass closure to adaptive_load_stepping()",
+        "Run ref_hex8_plastic.py::solve_plastic on same mesh/BCs/material",
+        "Compare displacement fields: max |u_newton - u_ref| < 1e-10",
+        "Verify load stepping result shows convergence with appropriate step count"
+    ],
+    "deliverables": [
+        "Integration test in packages/mechdsl-core/tests/test_newton.py"
+    ],
+    "acceptance_criteria": [
+        "newton_solve + adaptive_load_stepping produces displacement matching reference within atol=1e-10",
+        "Load stepping converges successfully",
+        "History fields are properly committed at converged steps"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_newton.py -v -k 'integration'",
+        "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -x -q"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Plastic cantilever: newton_solve + load_stepping vs ref_hex8_plastic (atol=1e-10) (missing)",
+            "Load stepping converges with reasonable step count (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_newton.py"
+    ],
+    "risks": [
+        "newton.py callbacks don't match reference solver patterns. Mitigation: Design callbacks to exactly match ref_hex8_plastic.py patterns. If callbacks diverge, debug by comparing intermediate values (f_int, residual) step-by-step."
+    ],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

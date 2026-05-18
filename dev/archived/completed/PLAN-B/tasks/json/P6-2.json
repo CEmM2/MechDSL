@@ -1,0 +1,76 @@
+{
+    "task_id": "P6-2",
+    "title": "Plasticity coupling + element deletion at D > D_crit",
+    "phase": "6",
+    "objective": "Integrate Lemaitre damage into the codegen: extend the plastic history field to store (alpha, D), emit the coupled return map in the Taichi kernel, and add element-deletion logic when D exceeds D_crit.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["193", "193"],
+    "plan_assets": [
+        {
+            "asset_description": "B6.1 element deletion at D > D_crit.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 193,
+            "Plan_file_end_line": 193
+        }
+    ],
+    "blocked_by": ["P6-1"],
+    "blocks": ["P6-3"],
+    "scope": [
+        "Extend `solver/history_fields.py` so `material_type='lemaitre'` allocates (alpha, D) per qp.",
+        "Extend `emit_internal_force_kernel` and `emit_tangent_matvec_kernel` for the Lemaitre branch (reuse the analytical-tangent path via radial_return).",
+        "Add an `is_deleted` boolean field per element; when D > D_crit at any QP, set it and skip the element in assembly.",
+        "Deleted elements contribute nothing to force or tangent."
+    ],
+    "implementation_steps": [
+        "Extend the history field allocator.",
+        "Branch `compute_internal_force` on material model: Lemaitre path calls `lemaitre.radial_return` and writes back both alpha and D.",
+        "Add the `is_deleted` field and the skip-if-deleted guard in the element loop.",
+        "Unit-test element deletion: initialize D at 0.95 for one element, run one step with damage evolution, assert the element is marked deleted."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/solver/history_fields.py`",
+        "`packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py` — Lemaitre branch",
+        "`packages/mechdsl-core/tests/test_lemaitre_codegen.py`"
+    ],
+    "acceptance_criteria": [
+        "Emitted Lemaitre code compiles as valid Python.",
+        "Element deletion works: an element with D > D_crit contributes zero force.",
+        "At D = 0 everywhere, the emitted Lemaitre code produces the same result as J2 power-law (regression)."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_lemaitre_codegen.py -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "Lemaitre emission compiles",
+            "Element deletion skip-in-assembly",
+            "D = 0 matches J2 emission"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_lemaitre_codegen.py"
+    ],
+    "risks": [
+        "Element deletion changes the residual shape mid-solve and can break Newton. Mitigation: update the residual norm computation to use only active elements and document the behaviour in the generated file's docstring."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-17",
+    "test_completion": {"passed": 3, "total": 3, "pass_rate": 100, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_lemaitre_codegen.py -v", "passed": 3, "total": 3}]},
+    "review_score": 78,
+    "review_breakdown": {"minor": 3, "medium": 3, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "plan-b_phase-6",
+    "completion_notes": [
+        "Added create_lemaitre_history() registering alpha + plastic_strain + damage_D (n_elem, n_qp) + is_deleted (n_elem,).",
+        "Extended taichi_printer with _is_plastic_material / _is_damage_material helpers and _emit_lemaitre_constitutive emitting constitutive_update_lemaitre @ti.func.",
+        "Field decls allocate damage_D (n_elem × N_QP, f64) and is_deleted (n_elem, i32); D_crit threaded as ti.f64 kernel parameter.",
+        "compute_internal_force: element-loop guard `if is_deleted[e] != 0: continue` + post-QP one-way deletion `if damage_D[e, q_chk] > D_crit: is_deleted[e] = 1`.",
+        "tangent_matvec: snapshots is_deleted via to_numpy() and skips deleted elements; uses Option A (undamaged J2 algorithmic tangent, documented).",
+        "Whitelist additions in frontend/__init__.py, ir/mechanics_ir.py, lowering/fe_localise.py thread 'lemaitre' through build_context; 'lemaitre_damage' retained as unsupported-name regression guard.",
+        "3 integration tests (emission-compiles via ast.parse + symbol presence; deletion-skip in both kernels; D=0 structural regression via J2 function substring check).",
+        "Fast suite: 1214 passed / 3 skipped / 1 pre-existing P6T5 TODO-guard (now flagging only test_lemaitre_acceptance.py for P6-3).",
+        "Forward-warning to P6-3: set S_d/s_d/eps_D/D_crit explicitly in ProblemIR params (avoid silent fallbacks in emit_main); budget Newton convergence with undamaged tangent (≤0.5% strain/step, ≥30 iterations); consider numerical D=0≡J2 probe under non-isotropic state."
+    ],
+    "github_issue": {"phase_issue": 61, "task_issue": 97, "repo": "SOSOVSKI/MechDSL"}
+}

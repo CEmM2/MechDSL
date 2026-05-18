@@ -1,0 +1,84 @@
+{
+    "task_id": "P1-T3",
+    "title": "Add J2Model wrapper class",
+    "phase": "1",
+    "objective": "Add J2Model(ConstitutiveModel) wrapper class to j2_power_law.py that delegates to radial_return(). All existing standalone functions must remain unchanged.",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "48",
+        "53"
+    ],
+    "plan_assets": [],
+    "blocked_by": [
+        "P1-T1"
+    ],
+    "blocks": [
+        "P1-T4",
+        "P1-T5"
+    ],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/symbolic/models/j2_power_law.py"
+    ],
+    "implementation_steps": [
+        "Read existing j2_power_law.py — note J2PowerLawMaterial, radial_return, ReturnMappingResult",
+        "Add J2Model class at bottom of file, inheriting from ConstitutiveModel",
+        "__init__(self, mat: J2PowerLawMaterial) stores the material",
+        "pk2_stress(E, alpha=0.0) calls radial_return(self._mat, E, alpha).stress",
+        "material_tangent(E, alpha=0.0) calls radial_return(self._mat, E, alpha).tangent",
+        "voigt_tangent(E, alpha=0.0) converts tangent to Voigt via tangent_to_voigt_66",
+        "state_variables returns ('alpha',), is_dissipative returns True",
+        "Verify all existing standalone functions are unchanged"
+    ],
+    "deliverables": [
+        "J2Model class appended to packages/mechdsl-core/src/mechdsl/symbolic/models/j2_power_law.py (~40 lines)"
+    ],
+    "acceptance_criteria": [
+        "J2Model is importable from mechdsl.symbolic.models.j2_power_law",
+        "J2Model wraps radial_return, producing identical numerical output",
+        "state_variables == ('alpha',), is_dissipative == True",
+        "All existing j2_power_law.py standalone functions untouched",
+        "All pre-existing tests pass unchanged"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_constitutive_abc.py::TestJ2ModelWrapper -v",
+        "uv run pytest packages/mechdsl-core/tests/test_j2.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "J2Model produces identical stress to radial_return (missing)",
+            "J2Model produces identical tangent to radial_return (missing)",
+            "J2Model handles alpha state variable correctly (missing)",
+            "state_variables returns ('alpha',) (missing)",
+            "is_dissipative returns True (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_j2.py",
+        "packages/mechdsl-core/tests/test_constitutive_abc.py"
+    ],
+    "risks": [],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

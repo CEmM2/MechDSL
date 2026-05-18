@@ -1,0 +1,84 @@
+{
+    "task_id": "P1-T2",
+    "title": "Add SVKModel wrapper class",
+    "phase": "1",
+    "objective": "Add SVKModel(ConstitutiveModel) wrapper class to svk.py that delegates to existing standalone functions. All existing standalone functions must remain unchanged.",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "42",
+        "46"
+    ],
+    "plan_assets": [],
+    "blocked_by": [
+        "P1-T1"
+    ],
+    "blocks": [
+        "P1-T4",
+        "P1-T5"
+    ],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/symbolic/models/svk.py"
+    ],
+    "implementation_steps": [
+        "Read existing svk.py — note SVKMaterial dataclass and standalone functions",
+        "Add SVKModel class at bottom of file, inheriting from ConstitutiveModel",
+        "__init__(self, mat: SVKMaterial) stores the material",
+        "pk2_stress delegates to existing pk2_stress(self._mat, E)",
+        "material_tangent delegates to existing material_tangent_4th(self._mat)",
+        "voigt_tangent delegates to existing material_tangent_voigt(self._mat)",
+        "state_variables returns empty tuple, is_dissipative returns False",
+        "Verify all existing standalone functions and SVKMaterial are unchanged"
+    ],
+    "deliverables": [
+        "SVKModel class appended to packages/mechdsl-core/src/mechdsl/symbolic/models/svk.py (~30 lines)"
+    ],
+    "acceptance_criteria": [
+        "SVKModel is importable from mechdsl.symbolic.models.svk",
+        "SVKModel wraps existing functions, producing identical numerical output",
+        "state_variables == (), is_dissipative == False",
+        "All existing svk.py standalone functions untouched",
+        "All pre-existing tests pass unchanged"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_constitutive_abc.py::TestSVKModelWrapper -v",
+        "uv run pytest packages/mechdsl-core/tests/test_svk.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "SVKModel produces identical stress to standalone pk2_stress (missing)",
+            "SVKModel produces identical tangent to standalone material_tangent_4th (missing)",
+            "SVKModel produces identical voigt tangent (missing)",
+            "state_variables returns empty tuple (missing)",
+            "is_dissipative returns False (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_svk.py",
+        "packages/mechdsl-core/tests/test_constitutive_abc.py"
+    ],
+    "risks": [],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

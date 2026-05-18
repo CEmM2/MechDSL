@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MechDSL — Project Recap</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root{--bg:#faf8f5;--bg2:#f5f0e8;--bg3:#eee8dd;--border:#d4cfc6;--text:#2c2c2c;--text2:#6b6b6b;--text3:#8a8578;--teal:#2a9d8f;--blue:#4a7c9b;--sage:#6b9080;--amber:#d4a843;--coral:#c75c5c;--green:#3d8b5a;--teal-bg:rgba(42,157,143,.08);--blue-bg:rgba(74,124,155,.08);--amber-bg:rgba(212,168,67,.1);--coral-bg:rgba(199,92,92,.08);--green-bg:rgba(61,139,90,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,248,245,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;height:48px;padding:0 24px;gap:6px;overflow-x:auto}
+nav a{color:var(--text2);text-decoration:none;font-size:12px;font-weight:500;padding:6px 12px;border-radius:6px;white-space:nowrap;transition:all .2s}
+nav a:hover{color:var(--teal);background:var(--teal-bg)}
+nav .brand{font-family:Georgia,serif;color:var(--teal);font-weight:700;font-size:14px;margin-right:16px;letter-spacing:.3px}
+.container{max-width:1200px;margin:0 auto;padding:68px 24px 48px}
+section{margin-bottom:44px;scroll-margin-top:60px}
+h2{font-family:Georgia,serif;font-size:22px;font-weight:700;color:var(--text);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:10px}
+h2 .num{font-size:10px;color:var(--teal);background:var(--teal-bg);padding:3px 8px;border-radius:4px;font-weight:700;font-family:system-ui}
+h3{font-size:16px;font-weight:600;margin:16px 0 8px;color:var(--text)}
+.hero{background:linear-gradient(135deg,var(--teal-bg),var(--blue-bg));border:1px solid var(--border);border-radius:16px;padding:44px 40px;margin-bottom:44px}
+.hero h1{font-family:Georgia,serif;font-size:36px;font-weight:700;margin-bottom:8px;color:var(--text)}.hero h1 span{color:var(--teal)}
+.hero .tagline{font-size:18px;color:var(--text2);margin-bottom:6px;font-style:italic}
+.hero .sub{font-size:15px;color:var(--text2);margin-bottom:24px;max-width:750px}
+.hero-stats{display:flex;gap:32px;flex-wrap:wrap}
+.hero-stat .val{font-size:32px;font-weight:800;color:var(--teal);font-family:Georgia,serif}
+.hero-stat .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px}
+.badge-teal{background:var(--teal-bg);color:var(--teal)}.badge-amber{background:var(--amber-bg);color:var(--amber)}.badge-coral{background:var(--coral-bg);color:var(--coral)}.badge-green{background:var(--green-bg);color:var(--green)}.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.card{background:white;border:1px solid var(--border);border-radius:12px;padding:18px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card:hover{border-color:var(--teal);box-shadow:0 2px 8px rgba(42,157,143,.1)}
+.card .title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.card .big{font-size:28px;font-weight:800;font-family:Georgia,serif;margin-bottom:2px}
+.card .note{font-size:12px;color:var(--text3)}
+.big.teal{color:var(--teal)}.big.green{color:var(--green)}.big.amber{color:var(--amber)}.big.coral{color:var(--coral)}.big.blue{color:var(--blue)}
+.mermaid-wrap{background:white;border:1px solid var(--border);border-radius:14px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.04);margin:16px 0;overflow-x:auto}
+.mermaid{display:flex;justify-content:center}.mermaid svg{max-width:100%}
+.timeline{border-left:3px solid var(--teal);padding-left:24px;margin:16px 0}
+.timeline .event{margin-bottom:20px;position:relative}
+.timeline .event::before{content:'';position:absolute;left:-30px;top:8px;width:12px;height:12px;border-radius:50%;background:var(--teal);border:2px solid white}
+.timeline .event .date{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.timeline .event .title{font-size:15px;font-weight:600;color:var(--text)}
+.timeline .event .desc{font-size:13px;color:var(--text2)}
+.decision{background:white;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;border-left:3px solid var(--teal)}
+.decision h4{font-size:14px;font-weight:700;margin-bottom:4px}.decision p{font-size:13px;color:var(--text2);margin-bottom:2px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+th{text-align:left;padding:10px 12px;background:var(--bg2);color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+code{font-family:'SF Mono','Cascadia Code',monospace;font-size:12px;background:var(--bg2);padding:2px 6px;border-radius:3px;color:var(--teal)}
+.debt-card{background:white;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;border-left:4px solid var(--amber)}
+.debt-card.high{border-left-color:var(--coral)}.debt-card.low{border-left-color:var(--blue)}
+.debt-card h4{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.debt-card p{font-size:13px;color:var(--text2)}
+.convention{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px}
+.convention strong{color:var(--teal);font-size:13px}
+.convention p{font-size:13px;color:var(--text2);margin-top:2px}
+details{margin:8px 0}summary{cursor:pointer;font-weight:600;font-size:14px;padding:10px 16px;background:white;border:1px solid var(--border);border-radius:8px}
+details[open] summary{border-radius:8px 8px 0 0}
+details .content{border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:16px;background:white}
+</style>
+</head>
+<body>
+<nav>
+<span class="brand">MechDSL</span>
+<a href="#identity">Identity</a>
+<a href="#arch">Architecture</a>
+<a href="#activity">Activity</a>
+<a href="#decisions">Decisions</a>
+<a href="#state">State</a>
+<a href="#mental">Mental Model</a>
+<a href="#debt">Debt</a>
+<a href="#next">Next Steps</a>
+</nav>
+<div class="container">
+
+<!-- 1. PROJECT IDENTITY -->
+<section id="identity">
+<div class="hero">
+<h1><span>MechDSL</span></h1>
+<p class="tagline">LaTeX tensor expressions &rarr; FEM solver code</p>
+<p class="sub">A domain-specific compiler that transforms continuum mechanics notation written in LaTeX into production Taichi FEM solvers. Currently at MVP stage &mdash; the complete pipeline from ProblemIR through Taichi code generation works for 3D Hex8 elements with Total Lagrangian formulation, St. Venant-Kirchhoff elasticity, and J2 power-law plasticity.</p>
+<div class="hero-stats">
+<div class="hero-stat"><div class="val">4,257</div><div class="lbl">Source Lines</div></div>
+<div class="hero-stat"><div class="val">29</div><div class="lbl">Source Modules</div></div>
+<div class="hero-stat"><div class="val">687</div><div class="lbl">Tests Passing</div></div>
+<div class="hero-stat"><div class="val">11,850</div><div class="lbl">Test Lines</div></div>
+<div class="hero-stat"><div class="val" style="color:var(--amber)">MVP</div><div class="lbl">Stage</div></div>
+</div>
+</div>
+</section>
+
+<!-- 2. ARCHITECTURE -->
+<section id="arch">
+<h2><span class="num">02</span> Architecture Snapshot</h2>
+<div class="mermaid-wrap">
+<div class="mermaid">
+graph TB
+    subgraph Frontend["Layer 1: Frontend (BLOCKED)"]
+        FE["mechdsl.frontend<br/><i>LaTeX parsing + % mechanics directives</i>"]
+    end
+    subgraph Symbolic["Layer 2: Symbolic Engine"]
+        KIN["kinematics.py<br/><i>F &rarr; C &rarr; E &rarr; J</i>"]
+        SVK["svk.py<br/><i>S = &lambda;tr(E)I + 2&mu;E</i>"]
+        J2["j2_power_law.py<br/><i>Radial return + consistent tangent</i>"]
+        VOI["voigt.py<br/><i>[xx,yy,zz,xy,xz,yz] conversions</i>"]
+    end
+    subgraph IR["Layer 3: Immutable IR"]
+        PIR["ProblemIR<br/><i>Frozen dataclass + __post_init__</i>"]
+        EIR["ElementIR<br/><i>Hex8 basis + quadrature</i>"]
+    end
+    subgraph Lowering["Layer 4: Lowering"]
+        LOC["fe_localise.py<br/><i>ProblemIR &rarr; ElementIR + einsum specs</i>"]
+        OPT["einsum_optimizer.py<br/><i>opt_einsum paths + JIT budget</i>"]
+    end
+    subgraph Codegen["Layer 5: Code Generation"]
+        PRT["taichi_printer.py<br/><i>774 lines &mdash; Taichi source emitter</i>"]
+        ART["artifact.py<br/><i>Bundles + golden file hashing</i>"]
+        BC["boundary_codegen.py<br/><i>Dirichlet + Neumann compilation</i>"]
+        HEX["hex8_tables.py<br/><i>Shape functions + gradients</i>"]
+    end
+    subgraph Solver["Solver Infrastructure"]
+        CG["import_adapter.py<br/><i>CG/PCG with breakdown warnings</i>"]
+        MESH["mesh_io.py<br/><i>Hex8 mesh generation</i>"]
+        HIST["history_fields.py<br/><i>Commit/rollback lifecycle</i>"]
+        LOAD["load_stepping.py<br/><i>Adaptive step control</i>"]
+    end
+    subgraph Verify["Layer 6: Verification"]
+        AD["ad_oracle.py<br/><i>FD stress/tangent verification</i>"]
+        REF["ref_hex8_elastic/plastic<br/><i>Handwritten reference solvers</i>"]
+    end
+
+    FE -.->|blocked| PIR
+    KIN --> PIR
+    SVK --> PIR
+    J2 --> PIR
+    VOI --> PIR
+    PIR --> LOC
+    EIR --> LOC
+    LOC --> OPT
+    OPT --> PRT
+    HEX --> PRT
+    BC --> PRT
+    ART --> PRT
+    PRT -->|emits| OUTPUT["Generated Taichi Solver"]
+    CG --> REF
+    MESH --> REF
+    HIST --> REF
+    AD --> SVK
+    AD --> J2
+
+    style FE fill:#fff3cd,stroke:#d4a843
+    style OUTPUT fill:#d4edda,stroke:#3d8b5a
+    style PIR fill:#e8f4f0,stroke:#2a9d8f
+    style EIR fill:#e8f4f0,stroke:#2a9d8f
+</div>
+</div>
+</section>
+
+<!-- 3. RECENT ACTIVITY -->
+<section id="activity">
+<h2><span class="num">03</span> Recent Activity (2 weeks)</h2>
+<div class="timeline">
+<div class="event">
+<div class="date">Apr 1 &mdash; MVP Implementation</div>
+<div class="title">38/43 tasks implemented across Phases 0-9</div>
+<div class="desc">Built the complete pipeline from ProblemIR through Taichi code generation. 18 source modules, 27 test files, 656 tests. Phase 2 (LaTeX frontend) skipped &mdash; blocked on NRPyLaTeX fork.</div>
+</div>
+<div class="event">
+<div class="date">Apr 1-2 &mdash; Review Cycle</div>
+<div class="title">5-agent review + Gemini Code Assist &rarr; 5 critical + 13 high findings</div>
+<div class="desc">Code reviewer, test analyzer, silent failure hunter, comment analyzer, type design analyzer. Found: ti.static/break incompatibility, runtime Python list access in kernels, silent CG breakdown, Newton non-convergence returning garbage, missing __post_init__ on 6 types.</div>
+</div>
+<div class="event">
+<div class="date">Apr 2 &mdash; CI Fixes</div>
+<div class="title">.gitignore case-insensitive match + 12 mypy errors resolved</div>
+<div class="desc">Critical: .gitignore had <code>MechDSL/</code> which matched <code>mechdsl/</code> on macOS, preventing 27 source files from being tracked.</div>
+</div>
+<div class="event">
+<div class="date">Apr 2-3 &mdash; Resolution Plan Execution</div>
+<div class="title">29 tasks across 6 phases &mdash; all complete</div>
+<div class="desc">Phase 1: Taichi codegen fixes (C1-C5, H1-H2, H9). Phase 2: Error handling (C3, H3-H8). Phase 3: Type validation (__post_init__). Phase 4: CI flags. Phase 5: +25 tests + tolerance tightening. Phase 6: Golden regen + verification. 3 Codex reviews caught additional bugs (res_norm unbound, hydrostatic test strains).</div>
+</div>
+<div class="event">
+<div class="date">Apr 3 &mdash; Cleanup</div>
+<div class="title">Phase 2 stubs implemented, CHANGELOG updated, golden workflow fixed</div>
+<div class="desc">Replaced 15 pytest.skip stubs with 10 real tests. generate_golden.py now writes .py.golden source snapshots alongside .npz data in a single command.</div>
+</div>
+</div>
+</section>
+
+<!-- 4. DECISION LOG -->
+<section id="decisions">
+<h2><span class="num">04</span> Key Decisions</h2>
+<div class="decision">
+<h4>C2: Quadrature loop ti.static instead of ti.field restructure</h4>
+<p>N_QP=8 is a fixed element-type constant. Making the quad loop ti.static allows Python list access for GRAD_AT_QUAD/QUAD_WEIGHTS. ~240 unrolled lines fits within the 2000-line kernel budget. Convention docs updated with carve-out.</p>
+</div>
+<div class="decision">
+<h4>H1: NaN propagation for J2 non-convergence</h4>
+<p>Taichi @ti.func cannot return error codes alongside stress tensors. Setting dl=NaN propagates through stress &rarr; internal force &rarr; residual &rarr; res_norm, where the C4b isfinite guard catches it. IEEE 754 guarantees NaN propagation.</p>
+</div>
+<div class="decision">
+<h4>G3: Dirichlet BC identity on diagonal</h4>
+<p>Changed from Kv[bc_mask]=0.0 (singular) to Kv[bc_mask]=v[bc_mask] (identity, preserves SPD). CG convergence is more robust. Applied symmetrically to both reference solvers.</p>
+</div>
+<div class="decision">
+<h4>G1+G4: Physics-backed tolerance tightening</h4>
+<p>G1: Green-Lagrange strain is rotationally invariant &rarr; 1e-10 (was 1e-2*MU ~769 MPa). G4: Central FD O(h&sup2;) with h=1e-7 &rarr; 1e-8 for smooth elastic tangent (was 1e-4). Plastic kept at 1e-4 due to yield surface kinks.</p>
+</div>
+<div class="decision">
+<h4>IR discipline: frozen dataclasses with __post_init__</h4>
+<p>Every IR type validates invariants at construction time. Added to 6 types (J2Material, SVK, HexMesh, QuadratureRule, DirichletBC, NeumannBC). ReturnMappingResult also frozen. HistoryFields intentionally mutable (state management).</p>
+</div>
+</section>
+
+<!-- 5. STATE OF THINGS -->
+<section id="state">
+<h2><span class="num">05</span> State of Things</h2>
+<div class="grid">
+<div class="card"><div class="title">Working</div><div class="big green">687</div><div class="note">Tests passing, 0 failures, 0 skips</div></div>
+<div class="card"><div class="title">Source Modules</div><div class="big teal">29</div><div class="note">18 src + 11 __init__.py across 6 layers</div></div>
+<div class="card"><div class="title">Test:Source Ratio</div><div class="big teal">2.8:1</div><div class="note">11,850 test lines / 4,257 source lines</div></div>
+<div class="card"><div class="title">Linter</div><div class="big green">Clean</div><div class="note">Ruff + Mypy (29 source files)</div></div>
+<div class="card"><div class="title">In Progress</div><div class="big blue">0</div><div class="note">All 29 resolution tasks complete</div></div>
+<div class="card"><div class="title">Blocked</div><div class="big amber">1</div><div class="note">Phase 2: LaTeX frontend (NRPyLaTeX fork)</div></div>
+<div class="card"><div class="title">Skipped Benchmarks</div><div class="big amber">2</div><div class="note">Cook's membrane + necking bar (missing ref data)</div></div>
+<div class="card"><div class="title">E2E Execution</div><div class="big coral">No</div><div class="note">Generated Taichi code verified structurally only</div></div>
+</div>
+</section>
+
+<!-- 6. MENTAL MODEL -->
+<section id="mental">
+<h2><span class="num">06</span> Mental Model Essentials</h2>
+<div class="convention"><strong>Voigt ordering</strong><p>[xx, yy, zz, xy, xz, yz] with unscaled (tensorial) shears. Not engineering Voigt.</p></div>
+<div class="convention"><strong>Index convention</strong><p>Lowercase i,j,k,l = spatial. Uppercase I,J,K,L = material. Mixed F_{iI} = two-point tensor.</p></div>
+<div class="convention"><strong>IR discipline</strong><p>Three layers: ProblemIR &rarr; ElementIR &rarr; EinsumIR. Never bypass. All frozen dataclasses with __post_init__ validation.</p></div>
+<div class="convention"><strong>JIT budget</strong><p>512 lines/@ti.func, 2000/@ti.kernel, 5000 ceiling. Physics indices (range &le; 6) &rarr; ti.static. Mesh indices &rarr; runtime. Exception: quad points are ti.static when count is element-type constant.</p></div>
+<div class="convention"><strong>Sign convention</strong><p>Tension-positive stress, compression-positive pressure (p = -m). f64 only.</p></div>
+<div class="convention"><strong>Formulation</strong><p>Total Lagrangian. All quantities in reference configuration. PK2 stress, Green-Lagrange strain.</p></div>
+<div class="convention"><strong>Error handling pattern</strong><p>warnings.warn for non-fatal (CG breakdown, FLOPS extraction). raise RuntimeError/ValueError for fatal (non-convergence, invalid params, zero-area face).</p></div>
+<div class="convention"><strong>Generated code safety</strong><p>Must be at least as safe as handwritten reference solvers. RuntimeError on non-convergence, NaN guard on residual, CG failure counter (raises after 3), negative dl clamp.</p></div>
+</section>
+
+<!-- 7. COGNITIVE DEBT -->
+<section id="debt">
+<h2><span class="num">07</span> Cognitive Debt Hotspots</h2>
+<div class="debt-card high">
+<h4><span class="badge badge-coral">HIGH</span> Generated code never executed end-to-end</h4>
+<p>The emitted Taichi solver is verified structurally (ast.parse + pattern matching + golden snapshots) but never actually run. A bug in the generated Newton driver or constitutive function would pass all current tests. Add a @pytest.mark.slow test that imports and runs the emitted module on a 1-element mesh.</p>
+</div>
+<div class="debt-card">
+<h4><span class="badge badge-amber">MEDIUM</span> FD tangent used everywhere instead of analytical</h4>
+<p>Both reference solvers and emitted code use finite-difference tangent approximation. The analytical consistent tangent exists in j2_power_law.py (algorithmic_tangent function) but is never wired into code generation. O(n) performance penalty per Newton iteration.</p>
+</div>
+<div class="debt-card">
+<h4><span class="badge badge-amber">MEDIUM</span> Phase 2 completely absent</h4>
+<p>The LaTeX frontend (5 tasks: P2.1-P2.5) is blocked on the NRPyLaTeX fork. The pipeline currently starts at ProblemIR construction, not LaTeX input. No fallback parser exists.</p>
+</div>
+<div class="debt-card low">
+<h4><span class="badge badge-blue">LOW</span> Cook's membrane + necking bar benchmarks skipped</h4>
+<p>Both require infrastructure not yet built: Cook's needs a trapezoidal mesh generator, necking bar needs digitized Simo &amp; Hughes reference data. These are the validation benchmarks that would give confidence in multi-element nonlinear convergence.</p>
+</div>
+<div class="debt-card low">
+<h4><span class="badge badge-blue">LOW</span> Frozen dataclass mutable contents</h4>
+<p>frozen=True prevents field reassignment but numpy arrays and dicts inside remain mutable. Affects HexMesh, QuadratureRule, DirichletBC, NeumannBC, ArtifactBundle. Fix: array.flags.writeable = False in factory functions.</p>
+</div>
+</section>
+
+<!-- 8. NEXT STEPS -->
+<section id="next">
+<h2><span class="num">08</span> Next Steps</h2>
+<table>
+<tr><th>Priority</th><th>Item</th><th>Notes</th></tr>
+<tr><td><span class="badge badge-green">NOW</span></td><td>Merge phase branches + update PR #3</td><td>Consolidate mvp_pr3_round3_phase-3 and phase-6 branches</td></tr>
+<tr><td><span class="badge badge-green">NOW</span></td><td>Verify CI passes</td><td>All 3 jobs: lint, test, budget-regression</td></tr>
+<tr><td><span class="badge badge-teal">NEXT</span></td><td>Add Taichi JIT smoke test</td><td>@pytest.mark.slow: emit &rarr; import &rarr; run on 1-element mesh</td></tr>
+<tr><td><span class="badge badge-teal">NEXT</span></td><td>Wire analytical tangent into codegen</td><td>Replace FD with j2_power_law.py algorithmic tangent</td></tr>
+<tr><td><span class="badge badge-amber">BLOCKED</span></td><td>Phase 2: LaTeX frontend</td><td>Needs NRPyLaTeX fork with two-point tensor index typing</td></tr>
+<tr><td><span class="badge badge-blue">LATER</span></td><td>Cook's membrane benchmark</td><td>Needs trapezoidal mesh generator</td></tr>
+<tr><td><span class="badge badge-blue">LATER</span></td><td>Necking bar benchmark</td><td>Needs digitized Simo &amp; Hughes reference data</td></tr>
+</table>
+</section>
+
+</div>
+<script>mermaid.initialize({startOnLoad:true,theme:'default',themeVariables:{primaryColor:'#e8f4f0',primaryTextColor:'#2c2c2c',primaryBorderColor:'#2a9d8f',lineColor:'#4a7c9b',secondaryColor:'#f5f0e8',tertiaryColor:'#faf8f5',fontSize:'13px'}})</script>
+</body>
+</html>

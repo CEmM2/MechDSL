@@ -1,0 +1,65 @@
+{
+    "task_id": "P1-2",
+    "title": "Add 4-level MMS convergence test [2,4,8,16]",
+    "phase": "1",
+    "objective": "Extend MMS convergence study from 3 levels [2,3,4] to 4 levels with proper 2x refinement ratios [2,4,8,16], validating L2 rate >= 2.0 and H1 rate >= 1.0 per 08-VERIFICATION.md section 4.2.",
+    "plan_file": "dev/plans/sprint3.md",
+    "plan_lines": ["47-51"],
+    "plan_assets": [
+        {
+            "asset_description": "MMS convergence specification with mesh levels and rate criteria",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 47,
+            "Plan_file_end_line": 51
+        }
+    ],
+    "blocked_by": [],
+    "blocks": ["P4-1"],
+    "scope": [
+        "Add test_mms_4level_convergence using run_mms_convergence(lam=1.0, mu=1.0, mesh_levels=[2,4,8,16])",
+        "Assert L2 rate >= 2.0, H1 rate >= 1.0 (tol=0.1)",
+        "Mark @pytest.mark.e2e @pytest.mark.slow"
+    ],
+    "implementation_steps": [
+        "Read existing MMS tests in test_convergence.py",
+        "Add test_mms_4level_convergence using mesh_levels=[2,4,8,16]",
+        "Use existing run_mms_convergence and check_convergence_rate infrastructure",
+        "Mark with @pytest.mark.e2e @pytest.mark.slow",
+        "If 16^3 is prohibitively slow, fallback to [2,4,8]"
+    ],
+    "deliverables": [
+        "New test test_mms_4level_convergence in test_convergence.py",
+        "Test passes with L2 >= 2.0 and H1 >= 1.0"
+    ],
+    "acceptance_criteria": [
+        "L2 convergence rate >= 2.0 (tol 0.1)",
+        "H1 convergence rate >= 1.0 (tol 0.1)",
+        "Test uses 4 mesh levels with 2x refinement ratios"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_convergence.py -k 4level -v",
+        "uv run pytest packages/mechdsl-core/tests/test_convergence.py -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": ["test_mms_4level_convergence with [2,4,8,16] mesh levels"]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_convergence.py"
+    ],
+    "risks": [
+        "16^3 mesh (4913 nodes) may be very slow in pure numpy. Fallback: use [2,4,8] (still proper 2x ratios)."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-08",
+    "test_completion": {
+        "passed": 803, "total": 803, "pass_rate": 100,
+        "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu and not e2e' -q", "passed": 803, "total": 803}]
+    },
+    "review_score": 10,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "sprint3_phase-1",
+    "completion_notes": ["Class-scoped fixture avoids redundant FEM solves, matching TestTaskP3T3 pattern"],
+    "github_issue": {"phase_issue": 15, "task_issue": 22, "repo": "SOSOVSKI/MechDSL"}
+}

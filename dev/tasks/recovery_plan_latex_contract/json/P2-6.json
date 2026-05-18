@@ -1,0 +1,90 @@
+{
+    "task_id": "P2-6",
+    "title": "Ensure frontend failures produce contract-level errors (unsupported syntax, missing directives, invalid tensor/index sem",
+    "phase": "2",
+    "objective": "Ensure frontend failures produce contract-level errors (unsupported syntax, missing directives, invalid tensor/index semantics).",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "157",
+        "157"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P2-6 (R1.6) in Phase 2 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 157,
+            "Plan_file_end_line": 157
+        }
+    ],
+    "blocked_by": [
+        "P2-1",
+        "P2-5"
+    ],
+    "blocks": [],
+    "scope": [
+        "Ensure frontend failures produce contract-level errors (unsupported syntax, missing directives, invalid tensor/index semantics).",
+        "Touched surfaces (per recovery plan): frontend parser/adapter layers"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 2 (Restore the frontend as the canonical entry point (R1)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Ensure frontend failures produce contract-level errors (unsupported syntax, missing directives, invalid tensor/index semantics).",
+        "Touch only the listed surfaces: frontend parser/adapter layers.",
+        "Verify: Negative tests cover malformed/unsupported LaTeX cases with stable error messages.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to frontend parser/adapter layers"
+    ],
+    "acceptance_criteria": [
+        "Negative tests cover malformed/unsupported LaTeX cases with stable error messages.",
+        "All deliverables for P2-6 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p2_6.py -v -m integration"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "P2-6-c1: Negative tests cover malformed/unsupported LaTeX cases with stable error messages.",
+            "P2-6-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p2_6.py"
+    ],
+    "risks": [
+        "No specific risk attributed in the plan; standard care applies."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-27",
+    "test_completion": {
+        "passed": 10,
+        "total": 10,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p2_6.py -v",
+                "passed": 10,
+                "total": 10
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Negative-test contract: 4 unsupported-construct cases (dim-2, bad material, bad formulation, bad coord_system) all raise UnsupportedError with phase pointers; 4 malformed-LaTeX cases (missing --type, extra positional, unknown directive, deferred directive) raise ParseError; 1 unknown-index-family case raises ParseError; 1 stable-message case verifies the error echoes the offender and remedy. All 10 pass via the canonical compile_latex fa\u00e7ade."
+    ],
+    "github_issue": {
+        "phase_issue": 142,
+        "task_issue": 159,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

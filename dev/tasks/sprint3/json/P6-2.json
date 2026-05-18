@@ -1,0 +1,26 @@
+{
+    "task_id": "P6-2", "title": "Mypy type checking pass", "phase": "6",
+    "objective": "Run mypy on mechdsl-core and fix any new type errors from Sprint 3 code.",
+    "plan_file": "dev/plans/sprint3.md", "plan_lines": ["248"],
+    "plan_assets": [], "blocked_by": [], "blocks": ["P6-3"],
+    "scope": ["Run uv run mypy packages/mechdsl-core/src/mechdsl/", "Fix new type errors"],
+    "implementation_steps": ["Run mypy", "Fix any new type errors", "Verify clean pass"],
+    "deliverables": ["Clean mypy pass"],
+    "acceptance_criteria": ["uv run mypy packages/mechdsl-core/src/mechdsl/ exits 0"],
+    "verification_commands": [
+        "uv run mypy packages/mechdsl-core/src/mechdsl/",
+        "uv run pytest packages/mechdsl-core/tests/test_phase6_exit.py::TestTaskP6T2 -v"
+    ], "test_plan": {"tier": "unit", "cases": ["mypy check"]},
+    "test_artifacts": ["packages/mechdsl-core/tests/test_phase6_exit.py"], "risks": [
+        "Mypy can surface cross-module annotation drift in public APIs and IR helpers that were modified earlier in the sprint, not just in the last edited file.",
+        "Type-fix changes near frontend or codegen boundaries can cascade into tests, examples, and helper factories if late-phase signatures drifted."
+    ],
+    "status": "done", "completion_date": "2026-04-12",
+    "test_completion": {"passed": 2, "total": 2, "pass_rate": 100, "commands": [
+        {"command": "uv run mypy packages/mechdsl-core/src/mechdsl/", "passed": 1, "total": 1},
+        {"command": "uv run pytest packages/mechdsl-core/tests/test_phase6_exit.py::TestTaskP6T2 -v", "passed": 1, "total": 1}
+    ]},
+    "review_score": 9, "review_breakdown": {"minor": 1, "medium": 0, "high": 0, "critical": 0}, "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/phase6-exec", "completion_notes": ["Added explicit ndarray casts in the verification helpers so strict mypy passes without changing numerical behavior."],
+    "github_issue": {"phase_issue": 20, "task_issue": 45, "repo": "SOSOVSKI/MechDSL"}
+}

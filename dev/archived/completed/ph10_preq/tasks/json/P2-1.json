@@ -1,0 +1,104 @@
+{
+  "task_id": "P2-1",
+  "title": "TL J2 benchmark solver baseline",
+  "phase": "2",
+  "objective": "Add a benchmark-local TL J2 assembly and solve baseline that matches the existing plastic reference behavior.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "171",
+    "207"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E4 TL/UL J2 solver layer scope and acceptance criteria.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 171,
+      "Plan_file_end_line": 207
+    }
+  ],
+  "blocked_by": [
+    "P1-2"
+  ],
+  "blocks": [
+    "P2-2"
+  ],
+  "scope": [
+    "Add benchmark-local TL J2 history storage and assembly helpers.",
+    "Use existing J2 return-mapping behavior as the material contract.",
+    "Validate against existing plastic reference results before adding UL behavior."
+  ],
+  "implementation_steps": [
+    "Run GitNexus impact for any edited existing J2 or reference helper symbols.",
+    "Define internal history-field storage for element/quadrature state.",
+    "Implement TL internal force and tangent application helpers for Hex8.",
+    "Add TL reference-agreement tests against the existing plastic path.",
+    "Run targeted tests and static checks."
+  ],
+  "deliverables": [
+    "Internal TL J2 benchmark solver helpers.",
+    "History update tests.",
+    "TL reference-agreement tests."
+  ],
+  "acceptance_criteria": [
+    "TL Hex8 matches the existing plastic reference within tolerance.",
+    "History commit/rollback behavior is deterministic.",
+    "J2 constitutive semantics are unchanged."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_j2_solver.py::TestTaskP2_1 -v",
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_mesh_utils.py packages/mechdsl-core/tests/test_phase10_j2_solver.py -v",
+    "uv run ruff check packages/mechdsl-core/src/mechdsl/verify/benchmarks/_meshes.py packages/mechdsl-core/src/mechdsl/verify/benchmarks/_j2_solver.py packages/mechdsl-core/tests/test_phase10_mesh_utils.py packages/mechdsl-core/tests/test_phase10_j2_solver.py",
+    "uv run mypy packages/mechdsl-core/src/mechdsl/verify/benchmarks/_meshes.py packages/mechdsl-core/src/mechdsl/verify/benchmarks/_j2_solver.py"
+  ],
+  "test_plan": {
+    "tier": "integration",
+    "cases": [
+      "TL J2 elastic step",
+      "TL J2 plastic step",
+      "history commit and rollback",
+      "reference Hex8 agreement"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/src/mechdsl/verify/benchmarks/_j2_solver.py",
+    "packages/mechdsl-core/tests/test_phase10_j2_solver.py",
+    "packages/mechdsl-core/tests/test_phase10_mesh_utils.py"
+  ],
+  "risks": [
+    "A benchmark-local solver can drift from the tested reference kernel; mitigate with direct numerical comparison tests before downstream benchmarks consume it."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-25",
+  "test_completion": {
+    "passed": 2,
+    "total": 2,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_j2_solver.py::TestTaskP2_1 -v",
+        "passed": 2,
+        "total": 2
+      }
+    ]
+  },
+  "review_score": 100,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e4-j2-solver",
+  "completion_notes": [
+    "Added benchmark-local TL J2 element/internal force helpers and `J2BenchmarkHistory`.",
+    "Validated TL Hex8 element force and alpha update against the existing handwritten plastic reference.",
+    "Gate C evidence: `uv run pytest packages/mechdsl-core/tests/test_phase10_j2_solver.py -v` -> 5/5 passed; combined Phase 1+2 tests -> 15/15 passed; ruff and mypy clean.",
+    "GitHub issue updates were skipped because `gh auth status` reported an invalid token."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

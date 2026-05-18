@@ -1,0 +1,90 @@
+{
+    "task_id": "P3-4",
+    "title": "Define a stable `ProblemIR` minimal subset for the MVP-stable contract.",
+    "phase": "3",
+    "objective": "Define a stable `ProblemIR` minimal subset for the MVP-stable contract.",
+    "plan_file": "dev/plans/recovery_plan_latex_contract.md",
+    "plan_lines": [
+        "197",
+        "197"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Action-item row P3-4 (R2.4) in Phase 3 table",
+            "asset_type": "table",
+            "Plan_file_start_line": 197,
+            "Plan_file_end_line": 197
+        }
+    ],
+    "blocked_by": [
+        "P3-1"
+    ],
+    "blocks": [],
+    "scope": [
+        "Define a stable `ProblemIR` minimal subset for the MVP-stable contract.",
+        "Touched surfaces (per recovery plan): IR docs, tests"
+    ],
+    "implementation_steps": [
+        "Read the recovery plan section for Phase 3 (Enrich `ProblemIR` into the semantic center again (R2)) and the task's row in the action-item table to scope the change.",
+        "Apply the action: Define a stable `ProblemIR` minimal subset for the MVP-stable contract.",
+        "Touch only the listed surfaces: IR docs, tests.",
+        "Verify: Tests explicitly validate the stable subset and reject unsupported combinations cleanly.",
+        "Update the task JSON status to done after Gate C passes."
+    ],
+    "deliverables": [
+        "Changes to IR docs",
+        "Changes to tests"
+    ],
+    "acceptance_criteria": [
+        "Tests explicitly validate the stable subset and reject unsupported combinations cleanly.",
+        "All deliverables for P3-4 are in place at the surfaces listed.",
+        "No regressions on the existing test suite."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p3_4.py -v -m unit"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "P3-4-c1: Tests explicitly validate the stable subset and reject unsupported combinations cleanly.",
+            "P3-4-c2: deliverables present at the listed surfaces"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p3_4.py"
+    ],
+    "risks": [
+        "No specific risk attributed in the plan; standard care applies."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-27",
+    "test_completion": {
+        "passed": 21,
+        "total": 21,
+        "pass_rate": 1.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p3_4.py -v -m unit",
+                "passed": 21,
+                "total": 21
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Added MVP_STABLE_SUBSET descriptor (frozen MvpStableSubset dataclass) plus assert_mvp_stable() / is_mvp_stable() methods on ProblemIR. MvpSubsetViolation subclasses UnsupportedError so the broader rule still catches it. Documented contract in packages/mechdsl-core/src/mechdsl/ir/ARCHITECTURE.md (dev/design_docs/ is hook-protected). 21/21 tests pass; full plan_tests sweep stays green (159 pass, 6 expected stub skips for P3-2/P3-3/P3-5)."
+    ],
+    "github_issue": {
+        "phase_issue": 143,
+        "task_issue": 161,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

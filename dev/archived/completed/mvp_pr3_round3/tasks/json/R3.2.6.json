@@ -1,0 +1,77 @@
+{
+    "task_id": "R3.2.6",
+    "title": "Add boundary codegen zero-area and axis guards (H7+H8)",
+    "phase": "2",
+    "objective": "Add guards for zero-area faces, empty face node sets, and invalid axis names in compile_neumann; add structured-mesh-only note to docstring",
+    "plan_file": "dev/plans/mvp_pr3_round3.md",
+    "plan_lines": ["206", "233"],
+    "plan_assets": [
+        {
+            "asset_description": "Code snippet: face guards",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 209,
+            "Plan_file_end_line": 220
+        },
+        {
+            "asset_description": "Code snippet: axis validation",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 225,
+            "Plan_file_end_line": 231
+        }
+    ],
+    "blocked_by": [],
+    "blocks": ["R3.5.4"],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/codegen/boundary_codegen.py lines 89, 124-138"
+    ],
+    "implementation_steps": [
+        "After face area computation (~line 137): add guard for face_area < 1e-30",
+        "Add guard for n_face_nodes == 0",
+        "After axis = face_name[0] at line 130: validate axis in ('x','y','z')",
+        "Add CM6 note to compile_neumann docstring about structured meshes"
+    ],
+    "deliverables": [
+        "Modified boundary_codegen.py: 3 guards + docstring update"
+    ],
+    "acceptance_criteria": [
+        "Zero-area face raises ValueError",
+        "Empty face nodes raises ValueError",
+        "Invalid axis raises ValueError",
+        "Docstring notes structured-mesh-only"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_phase2_error_handling.py::TestR326BoundaryCodegenGuards -v --tb=short",
+        "uv run pytest packages/mechdsl-core/tests/test_boundary_codegen.py -v --tb=short"
+    ],
+    "test_plan": {
+        "tier": "new",
+        "cases": [
+            "T4 in Phase 5 tests invalid face name path"
+        ]
+    },
+    "test_artifacts": ["packages/mechdsl-core/tests/test_phase2_error_handling.py", "packages/mechdsl-core/tests/test_boundary_codegen.py"],
+    "risks": [],
+    "status": "not_started",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

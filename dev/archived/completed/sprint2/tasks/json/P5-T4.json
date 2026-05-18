@@ -1,0 +1,33 @@
+{
+    "task_id": "P5-T4",
+    "title": "Create verification matrix",
+    "phase": "5",
+    "objective": "Create dev/tracking/verification_matrix.md mapping all 37 test IDs from 08-VERIFICATION.md §2 to their test file, test function, and status (pass/fail/deferred).",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["248", "252"],
+    "plan_assets": [],
+    "blocked_by": ["P5-T1", "P5-T2", "P5-T3"],
+    "blocks": [],
+    "scope": ["dev/tracking/verification_matrix.md"],
+    "implementation_steps": [
+        "Create verification_matrix.md with table: test ID | test file | test function | status",
+        "Populate from P5-T1, P5-T2, P5-T3 audit results",
+        "Mark each as pass/fail/deferred",
+        "Add links to test files"
+    ],
+    "deliverables": ["dev/tracking/verification_matrix.md"],
+    "acceptance_criteria": ["All 37 test IDs listed", "Each has file, function, status", "Deferred items have justification"],
+    "verification_commands": [],
+    "test_plan": {"tier": "documentation", "cases": ["Matrix completeness check"]},
+    "test_artifacts": ["dev/tracking/verification_matrix.md"],
+    "risks": ["Risk: Matrix may become stale if test files are renamed or restructured. Mitigation: use test IDs as primary keys and relative paths."],
+    "status": "done",
+    "completion_date": "2026-04-05",
+    "test_completion": {"passed": 45, "total": 47, "pass_rate": 95.7, "commands": ["manual audit — 45 pass, 2 deferred (P3/P4)"]},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "sprint2_phase-5",
+    "completion_notes": ["47 test IDs across 9 categories mapped", "45 passing, 2 deferred (P3/P4 — parser not implemented)", "Coverage rate: 95.7%", "Gap-filling tests: 17 new tests in test_verification_gaps_p5t2.py and test_verification_gaps_p5t3.py"],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

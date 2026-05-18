@@ -1,0 +1,40 @@
+{
+    "task_id": "P3-T4",
+    "title": "Implement run_patch_test() and run_rigid_body_test()",
+    "phase": "3",
+    "objective": "Implement run_patch_test() and run_rigid_body_test() in verify/patch_test.py. Patch test compares generated solver output against analytical.patch_test_reference() (error < 1e-12). Rigid body test asserts internal force norm < 1e-12.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["137", "146"],
+    "plan_assets": [],
+    "blocked_by": ["P2-T1", "P2-T2"],
+    "blocks": ["P3-T5"],
+    "scope": ["packages/mechdsl-core/src/mechdsl/verify/patch_test.py"],
+    "implementation_steps": [
+        "Define PatchTestResult and RigidBodyResult dataclasses",
+        "Implement run_patch_test: compile solver, set constant-strain BCs, run, compare vs analytical",
+        "Implement run_rigid_body_test: compile solver, set rigid body BCs, run, check internal force norm",
+        "Handle mesh generation for irregular Hex8 (perturbed nodes)"
+    ],
+    "deliverables": ["packages/mechdsl-core/src/mechdsl/verify/patch_test.py — run_patch_test() + run_rigid_body_test() (~120 lines)"],
+    "acceptance_criteria": ["Patch test passes for SVK on regular mesh (error < 1e-12)", "Rigid body test passes (force norm < 1e-12)", "Works with generated solver from compile()"],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_patch_test.py::TestTaskP3T4 -v",
+        "uv run pytest packages/mechdsl-core/tests/test_benchmarks.py::TestPatchTest packages/mechdsl-core/tests/test_benchmarks.py::TestRigidBodyMotion -v"
+    ],
+    "test_plan": {"tier": "integration", "cases": ["Patch test on regular mesh", "Patch test on irregular mesh", "Rigid body identity", "Rigid body rotation"]},
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_patch_test.py::TestTaskP3T4",
+        "packages/mechdsl-core/tests/test_benchmarks.py::TestPatchTest",
+        "packages/mechdsl-core/tests/test_benchmarks.py::TestRigidBodyMotion"
+    ],
+    "risks": ["Risk: generated solver requires external BC enforcement (Sprint 1 gap). Mitigation: use same _newton_with_bc() pattern from test_e2e_taichi.py."],
+    "status": "done",
+    "completion_date": "2026-04-05",
+    "test_completion": {"passed": 12, "total": 12, "pass_rate": 100, "commands": ["uv run pytest packages/mechdsl-core/tests/test_patch_test.py::TestTaskP3T4 packages/mechdsl-core/tests/test_patch_test.py::TestPatchTestFailureRoutes -v"]},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "",
+    "implementation_branch": "sprint2_phase-3",
+    "completion_notes": [],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

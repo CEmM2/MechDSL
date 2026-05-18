@@ -1,0 +1,111 @@
+{
+  "task_id": "P9-1",
+  "title": "Benchmark registry and local baselines",
+  "phase": "9",
+  "objective": "Create the benchmark registry and local baseline artifacts needed before wiring nightly CI.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "350",
+    "385"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E9 performance registry and baseline scope.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 350,
+      "Plan_file_end_line": 385
+    }
+  ],
+  "blocked_by": [
+    "P3-1",
+    "P3-2",
+    "P5-2",
+    "P6-2",
+    "P8-2"
+  ],
+  "blocks": [
+    "P9-2"
+  ],
+  "scope": [
+    "Add a registry over public benchmark runners.",
+    "Capture wall time, solver iteration counts where available, and benchmark metrics.",
+    "Add checked-in smoke/local baseline artifacts."
+  ],
+  "implementation_steps": [
+    "Confirm all prerequisite benchmark tasks are active before starting.",
+    "Add a registry that references public benchmark runners only.",
+    "Add metric capture and local smoke baseline comparison.",
+    "Add tests for registry completeness and baseline delta reporting.",
+    "Run targeted tests and static checks."
+  ],
+  "deliverables": [
+    "Benchmark registry.",
+    "Local baseline artifact.",
+    "Baseline comparison tests."
+  ],
+  "acceptance_criteria": [
+    "P10-1 through P10-9 are represented in the registry.",
+    "Local performance test uses smoke settings.",
+    "Baseline comparison reports clear per-benchmark deltas."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_benchmark_registry.py -v",
+    "uv run pytest packages/mechdsl-core/tests/test_phase10_taylor_benchmark.py packages/mechdsl-core/tests/test_phase10_taylor_runtime.py packages/mechdsl-core/tests/test_phase10_taylor_state.py -v"
+  ],
+  "test_plan": {
+    "tier": "regression",
+    "cases": [
+      "registry includes all benchmark runners",
+      "smoke baseline load",
+      "metric delta reporting"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_phase10_benchmark_registry.py",
+    "packages/mechdsl-core/tests/golden/perf/baseline_smoke.json"
+  ],
+  "risks": [
+    "A registry created before upstream benchmark tasks are complete can encode missing semantics; mitigate by blocking this task on all active benchmark closures."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-26",
+  "test_completion": {
+    "passed": 25,
+    "total": 25,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_benchmark_registry.py -v",
+        "passed": 3,
+        "total": 3
+      },
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_phase10_taylor_benchmark.py packages/mechdsl-core/tests/test_phase10_taylor_runtime.py packages/mechdsl-core/tests/test_phase10_taylor_state.py -v",
+        "passed": 22,
+        "total": 22
+      }
+    ]
+  },
+  "review_score": 0,
+  "review_breakdown": {
+    "minor": 2,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e9-perf-harness",
+  "completion_notes": [
+    "New mechdsl.verify.perf package: BenchmarkSpec, BenchmarkRegistry.default() (9 P10-1..P10-9 specs), run_smoke_registry, load_smoke_baseline, compare_to_baseline, ComparisonReport (JSON round-trip).",
+    "Committed smoke baseline at packages/mechdsl-core/tests/golden/perf/baseline_smoke.json + regen recipe in sibling README.md. Total smoke run wallclock ~12s on the dev laptop.",
+    "Phase 8 P8-2 carry-forward honored: P10-7 Taylor uses smoke() only (no nightly() — it overruns JC return-map iter budget; PEEQ unphysical at long horizons). P10-1 MMS restricted to Hex8 SVK with coarse mesh levels (4, 6, 8) for fast local execution.",
+    "Two minor cleanup items fixed by orchestrator before commit: (1) stripped Taichi import-banner noise from baseline JSON; (2) moved Callable/Iterator imports into TYPE_CHECKING block (TC003).",
+    "Implementer subagent shipped the modules + baseline but did not flesh out the test stubs; orchestrator completed the TDD step.",
+    "Commit f539cdf on branch work/phase10-e9-perf-harness."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

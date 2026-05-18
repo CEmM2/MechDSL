@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Taichi
+*.tcb
+ti_cache/
+
+# Artifacts
+*.artifact.json
+*.artifact.yaml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Claude Code
+.claude/settings.local.json
+
+# Claude CoWork
+/MechDsl/
+*.npz
+# Golden-file regression snapshots must be tracked
+!packages/mechdsl-core/tests/golden/*.npz
+.gitnexus
+
+# Local working artifacts (orchestra runtime, plan-edit backups)
+.orchestra/
+**/.orchestra/
+*.original.md
+*.original.[0-9].md
+.claude/worktrees/ line
+.sesskey

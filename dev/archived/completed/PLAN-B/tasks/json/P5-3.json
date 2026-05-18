@@ -1,0 +1,76 @@
+{
+    "task_id": "P5-3",
+    "title": "Hex20 element (20-node serendipity, 3x3x3 quadrature)",
+    "phase": "5",
+    "objective": "Add the Hex20 serendipity element: 20 nodes (8 corners + 12 edge midpoints, no face or interior nodes), quadratic serendipity shape functions, 3x3x3 = 27 Gauss points.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["173", "173"],
+    "plan_assets": [
+        {
+            "asset_description": "B5.1 Hex20 description.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 173,
+            "Plan_file_end_line": 173
+        }
+    ],
+    "blocked_by": ["P1-1"],
+    "blocks": ["P5-6", "P5-7", "P10-2", "P10-5"],
+    "scope": [
+        "Add `HEX20` to the `ElementType` enum.",
+        "Derive the 20 serendipity shape functions following the standard recipe (Bathe §4).",
+        "Use 3x3x3 Gauss quadrature (27 points).",
+        "Emit hex20_tables.py.",
+        "Extend codegen dispatch."
+    ],
+    "implementation_steps": [
+        "Derive the 20 shape functions for the natural-coordinate (xi, eta, zeta) reference cube.",
+        "Enumerate the 3x3x3 Gauss points and weights.",
+        "Unit-test partition of unity, quadratic-field exactness, and positive Jacobian on a regular hex.",
+        "Cross-check against a published table."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/codegen/hex20_tables.py`",
+        "`packages/mechdsl-core/src/mechdsl/ir/element_ir.py` — hex20_basis + hex20_quadrature",
+        "`packages/mechdsl-core/tests/test_hex20_basis.py`"
+    ],
+    "acceptance_criteria": [
+        "Partition of unity at all 27 quadrature points.",
+        "Quadratic field exactness.",
+        "Jacobian positive on a regular hex.",
+        "ElementType.HEX20 round-trips through ProblemIR."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_hex20_basis.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Hex20 partition of unity",
+            "Hex20 quadratic exactness",
+            "Hex20 Jacobian on regular hex",
+            "ElementType.HEX20 in IR"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_hex20_basis.py"
+    ],
+    "risks": [
+        "27-point quadrature with 20 nodes inflates the JIT budget. Mitigation: check the budget counter explicitly and restructure into sub-functions if it exceeds 512 lines per `@ti.func`."
+    ],
+    "status": "completed",
+    "completion_date": "2026-04-17",
+    "test_completion": {"passed": 4, "total": 4, "pass_rate": 100, "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_hex20_basis.py -v", "passed": 4, "total": 4}]},
+    "review_score": 95,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "pass",
+    "implementation_branch": "plan-b_phase-5",
+    "completion_notes": [
+        "Added ElementType.HEX20 + hex20 basis/quadrature + hex20_tables.py (20-node serendipity, 3x3x3 = 27 Gauss pts).",
+        "Widened ElementIR/ProblemIR supported sets to {hex8, tet4, tet10, hex20}; Hex27+ still rejected with Plan B phase B5 pointer.",
+        "Partition-of-unity error at 27 Gauss pts: 1.11e-16 (machine epsilon).",
+        "JIT-budget caveat documented (20x27=540 near 512 ceiling; future codegen must split across helpers).",
+        "Swapped 'hex20' -> 'hex27' in 5 obsolete guard tests.",
+        "Full fast suite: 1175 passed + 23 skipped + 1 expected TODO fail."
+    ],
+    "github_issue": {"phase_issue": 60, "task_issue": 91, "repo": "SOSOVSKI/MechDSL"}
+}

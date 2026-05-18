@@ -1,0 +1,74 @@
+{
+    "task_id": "P1-7",
+    "title": "TL/UL equivalence + rigid rotation tests",
+    "phase": "1",
+    "objective": "End-to-end verification that the UL path is numerically consistent: on a cantilever beam benchmark, TL and UL must produce identical converged displacements within 1e-8; on a rigid rotation test, the Cauchy stress rate must be zero to machine precision under all three objective rates.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["70", "72"],
+    "plan_assets": [
+        {
+            "asset_description": "B1 exit criterion — UL solver produces identical results to TL on shared benchmarks, objective rates verified via rigid rotation test.",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 70,
+            "Plan_file_end_line": 72
+        }
+    ],
+    "blocked_by": ["P1-5", "P1-6"],
+    "blocks": ["P10-2", "P10-3", "P10-7"],
+    "scope": [
+        "Add a handwritten UL reference solver under `tests/ref/ref_hex8_ul.py` mirroring `ref_hex8_elastic.py` but with the UL residual and tangent.",
+        "Parametrize an existing cantilever benchmark (or add a dedicated one) so it runs both TL and UL and asserts |u_TL - u_UL| < 1e-8.",
+        "Add a rigid-rotation regression test: apply a 30-degree rotation, assert the Cauchy stress rate vanishes to 1e-12 under Jaumann (and 1e-10 under the others)."
+    ],
+    "implementation_steps": [
+        "Copy `ref_hex8_elastic.py` to `ref_hex8_ul.py` and replace the TL residual/tangent with their UL counterparts.",
+        "Add `test_ul_equivalence.py` under `tests/` with TL-vs-UL cantilever and rigid rotation tests.",
+        "Mark the TL-vs-UL test as `@pytest.mark.slow` (Newton solve on a 4x4x4 cantilever takes O(1s)).",
+        "Add a FAST unit test covering the rigid-rotation stress-rate invariant."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/tests/ref/ref_hex8_ul.py`",
+        "`packages/mechdsl-core/tests/test_ul_equivalence.py`"
+    ],
+    "acceptance_criteria": [
+        "TL and UL converged displacements agree within 1e-8 on the cantilever test (slow).",
+        "Rigid-rotation Cauchy-rate test passes for all three objective rates (fast).",
+        "Both tests are marked correctly (slow vs fast) and collected by pytest."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_ul_equivalence.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_ul_equivalence.py::TestTaskP1_7 -m 'not slow' -v",
+        "uv run pytest packages/mechdsl-core/tests/test_ul_equivalence.py::TestTaskP1_7::test_tl_vs_ul_cantilever_equivalence -m slow -v"
+    ],
+    "test_plan": {
+        "tier": "integration",
+        "cases": [
+            "TL vs UL cantilever equivalence (slow)",
+            "Rigid rotation Jaumann (fast)",
+            "Rigid rotation Truesdell (fast)",
+            "Rigid rotation Green-Naghdi (fast)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_ul_equivalence.py",
+        "packages/mechdsl-core/tests/ref/ref_hex8_ul.py",
+        "packages/mechdsl-core/tests/test_ref_elastic.py"
+    ],
+    "risks": [
+        "The cantilever test may not converge under UL if the Newton preconditioner / step size is wrong. Mitigation: start from the known-converged TL displacement as an initial guess for UL.",
+        "Numerical noise near machine epsilon can make the 1e-8 tolerance too tight. Mitigation: loosen to 1e-6 if needed and document in the test docstring."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-16",
+    "test_completion": {"passed": 1031, "total": 1031, "pass_rate": 100.0, "commands": [
+        {"command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -q", "passed": 1031, "total": 1031},
+        {"command": "uv run pytest packages/mechdsl-core/tests/test_ul_equivalence.py -v", "passed": 4, "total": 4},
+        {"command": "uv run pytest packages/mechdsl-core/tests/test_taichi_printer_ul.py::TestTaskP1_4TangentMatvec::test_ul_tangent_matches_handwritten_reference -v", "passed": 1, "total": 1}
+    ]},
+    "review_score": 10,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "plan-b_phase-1-p1-4",
+    "completion_notes": ["Handwritten UL reference solver (ref_hex8_ul.py) with Truesdell tangent + standard geometric stiffness. 4x2x1 cantilever: TL/UL displacements agree within 1e-8. Rigid rotation: all three objective rates vanish to 1e-12 (Jaumann) / 1e-10 (Truesdell, GN). Resolved P1-4 deferred tangent FD stub. Phase 1 exit criterion met — zero remaining skips."],
+    "github_issue": {"phase_issue": 56, "task_issue": 72, "repo": "SOSOVSKI/MechDSL"}
+}

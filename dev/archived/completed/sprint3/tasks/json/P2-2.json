@@ -1,0 +1,54 @@
+{
+    "task_id": "P2-2",
+    "title": "Test trapezoidal mesh geometry",
+    "phase": "2",
+    "objective": "Add unit tests for generate_cook_membrane_mesh verifying correct trapezoidal geometry, boundary tags, and node/element counts.",
+    "plan_file": "dev/plans/sprint3.md",
+    "plan_lines": ["78"],
+    "plan_assets": [],
+    "blocked_by": ["P2-1"],
+    "blocks": ["P2-3"],
+    "scope": [
+        "Add test_cook_membrane_mesh_geometry to test_mesh_io.py",
+        "Verify corner coordinates, boundary tags, node count"
+    ],
+    "implementation_steps": [
+        "Read existing test_mesh_io.py for test patterns",
+        "Add test class or function for Cook's membrane mesh",
+        "Test corner coordinates match expected trapezoidal geometry",
+        "Test boundary tags are correct",
+        "Test node count = (nx+1)*(ny+1)*(nz+1)"
+    ],
+    "deliverables": [
+        "Test function(s) for Cook's membrane mesh in test_mesh_io.py"
+    ],
+    "acceptance_criteria": [
+        "All corner coordinates verified against expected values",
+        "Boundary tags correctly identify fixed (x0) and loaded (x1) faces"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_mesh_io.py::TestCookMembraneGeometry -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": ["test_cook_membrane_mesh_geometry"]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_mesh_io.py::TestCookMembraneGeometry"
+    ],
+    "risks": [
+        "P2-2 is blocked by P2-1 (mesh generator). Test stubs skip until implementation exists."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-09",
+    "test_completion": {
+        "passed": 8, "total": 8, "pass_rate": 100,
+        "commands": [{"command": "uv run pytest packages/mechdsl-core/tests/test_mesh_io.py::TestCookMembraneGeometry -v", "passed": 8, "total": 8}]
+    },
+    "review_score": 10,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "sprint3_phase-2",
+    "completion_notes": ["6 test stubs already fleshed out by P2-1. Added parametrized multi-density test (1x1x1 and 8x8x2) for robustness."],
+    "github_issue": {"phase_issue": 16, "task_issue": 26, "repo": "SOSOVSKI/MechDSL"}
+}

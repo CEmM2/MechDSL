@@ -1,0 +1,56 @@
+{
+    "task_id": "P1-T2",
+    "title": "Implement convected coordinate functions",
+    "phase": "1",
+    "objective": "Implement three functions in symbolic/convected.py: compute_reference_metric (returns δ_IJ for Cartesian), compute_convected_metric (returns g_IJ = F^T F), and green_lagrange_convected (returns E = 0.5*(g - G)). Raise UnsupportedError for non-Cartesian coordinates.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["27", "32"],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": ["P1-T3", "P1-T4"],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/symbolic/convected.py"
+    ],
+    "implementation_steps": [
+        "Read existing kinematics.py to understand how g = C is already computed",
+        "Implement compute_reference_metric(coords='cartesian') → returns sp.eye(3), raises UnsupportedError for other values with Plan B pointer",
+        "Implement compute_convected_metric(F) → returns F.T @ F (= C_IJ)",
+        "Implement green_lagrange_convected(g, G) → returns sp.Rational(1,2) * (g - G)",
+        "Add module docstring referencing 07-CONVENTIONS.md and 06-CODEGEN.md §8"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/src/mechdsl/symbolic/convected.py — 3 functions (~50 lines)"
+    ],
+    "acceptance_criteria": [
+        "compute_reference_metric('cartesian') returns 3x3 identity SymPy Matrix",
+        "compute_reference_metric('curvilinear') raises UnsupportedError with Plan B phase B2 pointer",
+        "compute_convected_metric(F) returns F^T @ F for any 3x3 F",
+        "green_lagrange_convected(g, G) returns 0.5*(g - G)",
+        "At F=I: g = G = I, E = 0"
+    ],
+    "verification_commands": [
+        "uv run python -c \"from mechdsl.symbolic.convected import compute_reference_metric; print(compute_reference_metric())\"",
+        "uv run pytest packages/mechdsl-core/tests/test_convected.py -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "F=I → g = G = I, E = 0",
+            "Known simple shear → g = C (hand calc)",
+            "Non-Cartesian → UnsupportedError"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_convected.py"
+    ],
+    "risks": ["Low risk: trivial implementation wrapping existing SymPy operations. No numerical integration or Taichi kernels involved."],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {"passed": 0, "total": 0, "pass_rate": 0, "commands": []},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "",
+    "implementation_branch": "sprint2_phase-1",
+    "completion_notes": [],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

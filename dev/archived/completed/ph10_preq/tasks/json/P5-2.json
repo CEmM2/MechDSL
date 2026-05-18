@@ -1,0 +1,99 @@
+{
+  "task_id": "P5-2",
+  "title": "Cantilever matrix test activation",
+  "phase": "5",
+  "objective": "Replace the cantilever benchmark stub with active original-scope matrix tests.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "137",
+    "169"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E3 matrix coverage and acceptance criteria.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 137,
+      "Plan_file_end_line": 169
+    }
+  ],
+  "blocked_by": [
+    "P5-1"
+  ],
+  "blocks": [
+    "P9-1"
+  ],
+  "scope": [
+    "Activate TL/UL x SVK/Neo-Hookean x Hex8/Tet10/Hex20 cantilever tests.",
+    "Use smoke settings locally and preserve nightly/full settings.",
+    "Assert tip displacement against beam theory tolerance."
+  ],
+  "implementation_steps": [
+    "Replace pytest.skip coverage in the cantilever matrix test.",
+    "Parametrize the original 12-cell matrix.",
+    "Use public cantilever runner with smoke/nightly configuration split.",
+    "Record any nightly-only full mesh settings in the test comments or fixtures.",
+    "Run cantilever and related benchmark tests."
+  ],
+  "deliverables": [
+    "Active cantilever matrix test.",
+    "Smoke/nightly fixture split.",
+    "Updated task/gate artifacts after execution."
+  ],
+  "acceptance_criteria": [
+    "Full original cantilever matrix is represented by active tests.",
+    "Tip displacement stays within planned tolerance against beam theory.",
+    "Existing Phase 10 benchmark tests still pass."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_benchmarks_cantilever_matrix.py -v",
+    "uv run ruff check packages/mechdsl-core/src/mechdsl/verify/benchmarks/cantilever.py packages/mechdsl-core/src/mechdsl/verify/benchmarks/__init__.py packages/mechdsl-core/tests/test_benchmarks_cantilever_matrix.py",
+    "uv run mypy packages/mechdsl-core/src/mechdsl/verify/benchmarks/cantilever.py"
+  ],
+  "test_plan": {
+    "tier": "regression",
+    "cases": [
+      "TL/UL x SVK x Hex8/Tet10/Hex20",
+      "TL/UL x Neo-Hookean x Hex8/Tet10/Hex20",
+      "beam-theory tip displacement tolerance"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_benchmarks_cantilever_matrix.py"
+  ],
+  "risks": [
+    "The full 12-cell matrix may be too expensive for local execution; mitigate with smoke settings and nightly-only full settings."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-25",
+  "test_completion": {
+    "passed": 15,
+    "total": 15,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_benchmarks_cantilever_matrix.py -v",
+        "passed": 15,
+        "total": 15
+      }
+    ]
+  },
+  "review_score": 0,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e3-public-cantilever",
+  "completion_notes": [
+    "Activated the TL/UL x SVK/Neo-Hookean x Hex8/Tet10/Hex20 matrix test.",
+    "The matrix uses local smoke mesh settings and asserts tip displacement against the Euler-Bernoulli target.",
+    "CantileverParameters.nightly() records the full 40x8x4 mesh settings for future nightly harness use."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

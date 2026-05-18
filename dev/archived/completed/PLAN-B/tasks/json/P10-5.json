@@ -1,0 +1,96 @@
+{
+  "task_id": "P10-5",
+  "title": "Plate with hole benchmark (TL × SVK × Hex8/Hex20)",
+  "phase": "10",
+  "objective": "Run the classical plate-with-hole benchmark and confirm the stress concentration factor K_t at the hole edge matches the Kirsch analytical solution (K_t = 3 for a circular hole in a large plate under uniaxial tension).",
+  "plan_file": "dev/design_docs/PLAN-B.md",
+  "plan_lines": [
+    "267",
+    "267"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "B9.2 plate-with-hole row with Kirsch K_t = 3 reference.",
+      "asset_type": "table",
+      "Plan_file_start_line": 267,
+      "Plan_file_end_line": 267
+    }
+  ],
+  "blocked_by": [
+    "P5-3"
+  ],
+  "blocks": [
+    "P10-10"
+  ],
+  "scope": [
+    "Build a quarter-plate mesh with a circular hole (symmetry on two faces, uniform traction on one far face).",
+    "Hole radius << plate half-width (> 10x) for the Kirsch formula to apply.",
+    "Run with Hex8 and Hex20.",
+    "Extract the peak sigma_xx at the hole edge and compare to K_t * sigma_applied.",
+    "Assert K_t computed is within 5% of 3.0 for Hex20, within 15% for Hex8 (coarse)."
+  ],
+  "implementation_steps": [
+    "Generate the quarter-plate mesh.",
+    "Apply symmetry and traction BCs.",
+    "Solve and extract stress.",
+    "Assertion per element type."
+  ],
+  "deliverables": [
+    "`packages/mechdsl-core/tests/test_plate_with_hole.py`"
+  ],
+  "acceptance_criteria": [
+    "Hex20 K_t within 5% of 3.0.",
+    "Hex8 K_t within 15% of 3.0 (documented expected lower accuracy)."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_plate_with_hole.py -v"
+  ],
+  "test_plan": {
+    "tier": "regression",
+    "cases": [
+      "Plate with hole Hex20 K_t",
+      "Plate with hole Hex8 K_t (coarse baseline)"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_plate_with_hole.py"
+  ],
+  "risks": [
+    "Stress extraction at the hole edge is sensitive to the quadrature-point location. Mitigation: use nodal extrapolation of the stress tensor rather than per-QP values."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-23",
+  "test_completion": {
+    "passed": 2,
+    "total": 2,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_plate_with_hole.py -v",
+        "passed": 2,
+        "total": 2
+      }
+    ]
+  },
+  "review_score": 100,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "main",
+  "completion_notes": [
+    "Implemented `mechdsl.verify.benchmarks.plate_with_hole` with a quarter-plate mesh generator, ElementFactory-based TL-SVK benchmark solver for Hex8/Hex20, right-face traction loading, and nodal `sigma_xx` extrapolation at the hole edge.",
+    "The benchmark stays within the original task scope: Hex20 reaches K_t ~= 3.1103 (3.68% high vs Kirsch), and Hex8 reaches K_t ~= 2.6621 (11.26% low vs Kirsch coarse-element allowance).",
+    "Task-scoped verification passed: `uv run pytest packages/mechdsl-core/tests/test_plate_with_hole.py -v` -> 2/2 passed.",
+    "Additional verification passed: `uv run pytest packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py -v` -> 2/2 passed; `uv run pytest packages/mechdsl-core/tests/test_phase6_exit.py -v` -> 9/9 passed; `uv run mypy packages/mechdsl-core/src/mechdsl/verify/benchmarks` -> success; `uv run ruff check packages/mechdsl-core/src/mechdsl/verify/benchmarks packages/mechdsl-core/tests/test_plate_with_hole.py` -> clean.",
+    "GitHub issue updates were skipped because `gh auth status` still reports an invalid token for the default account."
+  ],
+  "github_issue": {
+    "phase_issue": 65,
+    "task_issue": 112,
+    "repo": "SOSOVSKI/MechDSL"
+  }
+}

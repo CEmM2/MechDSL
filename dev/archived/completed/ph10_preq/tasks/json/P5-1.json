@@ -1,0 +1,99 @@
+{
+  "task_id": "P5-1",
+  "title": "Public cantilever benchmark API",
+  "phase": "5",
+  "objective": "Expose the public cantilever benchmark parameter object and runner after the elastic solver layer is proven.",
+  "plan_file": "dev/plans/ph10_preq.md",
+  "plan_lines": [
+    "137",
+    "169"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "Phase E3 public cantilever benchmark scope.",
+      "asset_type": "markdown_section",
+      "Plan_file_start_line": 137,
+      "Plan_file_end_line": 169
+    }
+  ],
+  "blocked_by": [
+    "P4-2"
+  ],
+  "blocks": [
+    "P5-2"
+  ],
+  "scope": [
+    "Add CantileverParameters.",
+    "Add run_cantilever_benchmark to the benchmark package.",
+    "Keep mesh sizes configurable for smoke and nightly modes."
+  ],
+  "implementation_steps": [
+    "Run GitNexus impact before editing benchmark package exports.",
+    "Add the public cantilever benchmark module and parameter dataclass.",
+    "Wire the runner to the internal elastic solver layer.",
+    "Export the public API from the benchmarks package.",
+    "Add API-level smoke tests without the full matrix."
+  ],
+  "deliverables": [
+    "Public cantilever benchmark module.",
+    "Benchmark package exports.",
+    "API smoke tests."
+  ],
+  "acceptance_criteria": [
+    "run_cantilever_benchmark is importable from mechdsl.verify.benchmarks.",
+    "CantileverParameters supports configurable smoke and nightly mesh sizes.",
+    "No shared BenchmarkResult schema change is required."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_benchmarks_cantilever_matrix.py -v",
+    "uv run ruff check packages/mechdsl-core/src/mechdsl/verify/benchmarks/cantilever.py packages/mechdsl-core/src/mechdsl/verify/benchmarks/__init__.py packages/mechdsl-core/tests/test_benchmarks_cantilever_matrix.py",
+    "uv run mypy packages/mechdsl-core/src/mechdsl/verify/benchmarks/cantilever.py"
+  ],
+  "test_plan": {
+    "tier": "integration",
+    "cases": [
+      "public import",
+      "smoke-sized Hex8 run",
+      "parameter validation"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/tests/test_benchmarks_cantilever_matrix.py"
+  ],
+  "risks": [
+    "Adding exports can affect import contracts; mitigate with direct public import tests and GitNexus impact on benchmark __init__ exports."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-25",
+  "test_completion": {
+    "passed": 15,
+    "total": 15,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_benchmarks_cantilever_matrix.py -v",
+        "passed": 15,
+        "total": 15
+      }
+    ]
+  },
+  "review_score": 0,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "work/phase10-e3-public-cantilever",
+  "completion_notes": [
+    "Added public CantileverParameters and run_cantilever_benchmark.",
+    "Exported the public cantilever API from mechdsl.verify.benchmarks.",
+    "Kept BenchmarkResult unchanged and separated smoke/nightly mesh sizing."
+  ],
+  "github_issue": {
+    "phase_issue": null,
+    "task_issue": null,
+    "repo": ""
+  }
+}

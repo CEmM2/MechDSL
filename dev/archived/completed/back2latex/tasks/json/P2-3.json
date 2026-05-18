@@ -1,0 +1,101 @@
+{
+    "task_id": "P2-3",
+    "title": "Spot-check three generated task JSONs (P1-4, P2-1, P3-1 in recovery namespace)",
+    "phase": "2",
+    "objective": "Inspect three high-signal task JSONs produced by Plan-2-Tasks against the amended recovery plan to confirm the structural amendments translated into correct downstream artifacts (status vocab, deliverables list, ProblemIR serialization).",
+    "plan_file": "dev/plans/back2latex.md",
+    "plan_lines": [
+        "232",
+        "235"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Per-task spot-check criteria for P1-4, P2-1, and P3-1 in the recovery-plan namespace",
+            "asset_type": "constraint",
+            "Plan_file_start_line": 232,
+            "Plan_file_end_line": 235
+        }
+    ],
+    "blocked_by": [
+        "P2-2"
+    ],
+    "blocks": [
+        "P2-4"
+    ],
+    "scope": [
+        "Open three specific JSON files under dev/tasks/recovery_plan_latex_contract/json/",
+        "Verify content matches the spot-check criteria from amendment verification step 3"
+    ],
+    "implementation_steps": [
+        "Open dev/tasks/recovery_plan_latex_contract/json/P1-4.json",
+        "Confirm implementation_steps or acceptance_criteria mention all four status values: done, deferred, implemented-via-substitute, not_started",
+        "Open dev/tasks/recovery_plan_latex_contract/json/P2-1.json",
+        "Confirm deliverables lists mechdsl/__init__.py and frontend/__init__.py",
+        "Confirm acceptance_criteria mentions a LaTeX-string entry test",
+        "Open dev/tasks/recovery_plan_latex_contract/json/P3-1.json",
+        "Confirm deliverables lists mechdsl/ir/mechanics_ir.py",
+        "Confirm implementation_steps include adding to_dict()/from_dict() to ProblemIR itself",
+        "Document any deltas; if any spot-check fails, treat it as a Plan-2-Tasks input gap and revisit Phase 1 amendments"
+    ],
+    "deliverables": [
+        "Spot-check report (in conversation or as a brief gates entry) covering all three JSONs",
+        "List of any required fixes if a spot-check fails"
+    ],
+    "acceptance_criteria": [
+        "P1-4.json contains the four status vocabulary values",
+        "P2-1.json deliverables include mechdsl/__init__.py and frontend/__init__.py",
+        "P2-1.json acceptance_criteria mention LaTeX-string entry test",
+        "P3-1.json deliverables include mechdsl/ir/mechanics_ir.py",
+        "P3-1.json implementation_steps explicitly add to_dict/from_dict to ProblemIR itself"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p2_3.py -v -m audit"
+    ],
+    "test_plan": {
+        "tier": "manual",
+        "cases": [
+            "P1-4 status vocab present",
+            "P2-1 init exports listed",
+            "P2-1 LaTeX-string acceptance present",
+            "P3-1 mechanics_ir target listed",
+            "P3-1 ProblemIR-level serialization step present"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/test_p2_3.py"
+    ],
+    "risks": [
+        "If Plan-2-Tasks decomposes the recovery plan into a different shape (more or fewer Phase-3 tasks), P3-1 may not be the ProblemIR enrichment task \u2014 mitigated by spot-checking by content, not just by ID"
+    ],
+    "status": "done",
+    "completion_date": "2026-04-26",
+    "test_completion": {
+        "passed": 3,
+        "total": 3,
+        "pass_rate": 100.0,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/test_p2_3.py -v -m audit",
+                "passed": 3,
+                "total": 3
+            }
+        ]
+    },
+    "review_score": 100,
+    "review_breakdown": {
+        "minor": 2,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "SOSOVSKI/back2latex",
+    "completion_notes": [
+        "Spot-check found two gaps in the generic-parser output: P2-1 (fa\u00e7ade) needed frontend/__init__.py + LaTeX-string acceptance; P3-1 (ProblemIR) needed explicit to_dict/from_dict step. Both enriched in place; test_p2_3 passes 3/3."
+    ],
+    "github_issue": {
+        "phase_issue": 126,
+        "task_issue": 138,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

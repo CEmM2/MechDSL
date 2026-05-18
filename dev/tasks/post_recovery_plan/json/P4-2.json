@@ -1,0 +1,99 @@
+{
+    "task_id": "P4-2",
+    "title": "symbolic/bridge.py adapter \u2014 nrpylatex AST \u2192 mechdsl symbolic",
+    "phase": "4",
+    "objective": "Implement (or extend) the bridge that converts the normalized nrpylatex AST into mechdsl symbolic expression types so downstream layers consume it transparently.",
+    "plan_file": "dev/plans/post_recovery_plan.md",
+    "plan_lines": [
+        "200",
+        "202"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "Bridge module location: packages/mechdsl-core/src/mechdsl/symbolic/bridge.py \u2014 extend if exists",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 200,
+            "Plan_file_end_line": 202
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [
+        "P4-3"
+    ],
+    "scope": [
+        "New or extended packages/mechdsl-core/src/mechdsl/symbolic/bridge.py",
+        "Map nrpylatex AST nodes \u2192 mechdsl symbolic nodes (F, C, E, J, scalar ops, log)",
+        "Document supported subset; raise on unsupported with Phase-4 pointer",
+        "No symbolic type changes \u2014 bridge consumes existing symbolic API"
+    ],
+    "implementation_steps": [
+        "Inventory nrpylatex AST node types relevant to constitutive expressions",
+        "Implement convert(nrpy_ast) -> SymbolicExpr",
+        "Cover unary/binary ops, tensor refs, contractions, log, det",
+        "Add unsupported-node sentinel raising NotImplementedError pointing to Phase 4",
+        "Unit-test conversion against a small set of expressions"
+    ],
+    "deliverables": [
+        "symbolic/bridge.py with convert(...)",
+        "Supported subset listed in module docstring",
+        "Unit tests covering F, J, log(J), and a contraction"
+    ],
+    "acceptance_criteria": [
+        "convert() handles SVK PK1 expression end-to-end",
+        "Unsupported nodes raise with Phase-4 pointer",
+        "No mutation of existing symbolic types"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_2.py -v",
+        "uv run python -c \"from mechdsl.symbolic.bridge import convert; print('import ok')\""
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Convert F_{iI} reference (missing)",
+            "Convert log(J) (missing)",
+            "Unsupported node raises with phase pointer (missing)",
+            "No mutation of existing symbolic types (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_2.py"
+    ],
+    "risks": [
+        "Subset gap surfaces only on full SVK expression \u2014 mitigation: round-trip test in P4-4 catches it"
+    ],
+    "status": "done",
+    "completion_date": "2026-05-01",
+    "test_completion": {
+        "passed": 6,
+        "total": 6,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/plan_tests/post_recovery_plan/test_p4_2.py -v",
+                "passed": 6,
+                "total": 6
+            }
+        ]
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "approved",
+    "implementation_branch": "post-recovery-plan_phase-4",
+    "completion_notes": [
+        "symbolic/bridge.py: convert(name, indexed_symbol, classification) -> SymbolicNode and convert_namespace(...) bulk variant.",
+        "Constants detected via _is_constant helper (handles both raw Function('Constant')(...) and IndexedSymbol-wrapped variants).",
+        "Supported shapes: rank 0 (constant or scalar), rank 2 (tensor2 with IndexClassification). Rank-3+ raises BridgeError with Phase-4 pointer.",
+        "Verified via attribute snapshot that mechdsl.symbolic.{kinematics,constitutive,convected} are not mutated."
+    ],
+    "github_issue": {
+        "phase_issue": 203,
+        "task_issue": 223,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}

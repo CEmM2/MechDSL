@@ -1,0 +1,77 @@
+{
+    "task_id": "P4-1",
+    "title": "Neo-Hookean hyperelastic model",
+    "phase": "4",
+    "objective": "Add a neo-Hookean constitutive model with strain energy Psi = (mu/2)(I1_bar - 3) + (kappa/2)(J - 1)^2, following the same interface (pk2_stress, material_tangent) used by SVK.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["152", "152"],
+    "plan_assets": [
+        {
+            "asset_description": "B4.1 Neo-Hookean strain energy.",
+            "asset_type": "equation",
+            "Plan_file_start_line": 152,
+            "Plan_file_end_line": 152
+        }
+    ],
+    "blocked_by": ["P1-1"],
+    "blocks": ["P4-5", "P10-2"],
+    "scope": [
+        "Add `mechdsl.symbolic.models.neo_hookean` with `NeoHookeanMaterial(mu, kappa)` dataclass.",
+        "Derive the PK2 stress and material tangent by differentiating Psi analytically (isochoric-volumetric split).",
+        "Expose as `material_type='neo_hookean'` in `build_context`.",
+        "Match the SVK module shape so the codegen dispatch table can add it with one entry."
+    ],
+    "implementation_steps": [
+        "Read `svk.py` to pick up the module shape.",
+        "Derive S_IJ = 2 dPsi/dC analytically using the invariant decomposition.",
+        "Derive C_IJKL = 4 d²Psi/dC dC.",
+        "Unit-test: at F = I, S = 0. Under pure dilation F = lambda I, check volumetric response matches hand calc."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/symbolic/models/neo_hookean.py`",
+        "`packages/mechdsl-core/tests/test_neo_hookean.py`"
+    ],
+    "acceptance_criteria": [
+        "At F = I, S = 0 and C matches the linear elastic 4th-order tangent (with mu, kappa).",
+        "Pure dilation test: S is hydrostatic and matches hand calc.",
+        "AD oracle (deferred to P4-5) will verify the full derivative chain."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_neo_hookean.py::TestTaskP4_1NeoHookean -v"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "F = I gives zero stress",
+            "Pure dilation gives hydrostatic stress",
+            "Simple shear stress matches hand calc"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_neo_hookean.py"
+    ],
+    "risks": [
+        "The isochoric-volumetric split has several equivalent forms (modified Cauchy-Green, etc.). Mitigation: pick one form and document it in the module docstring."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-17",
+    "test_completion": {
+        "passed": 9,
+        "total": 9,
+        "pass_rate": 100,
+        "commands": [
+            {"command": "uv run pytest packages/mechdsl-core/tests/test_neo_hookean.py::TestTaskP4_1NeoHookean -v", "passed": 9, "total": 9}
+        ]
+    },
+    "review_score": 95,
+    "review_breakdown": {"minor": 0, "medium": 1, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "plan-b_phase-4",
+    "completion_notes": [
+        "Closed-form PK2 + 4th-order tangent derived by hand from Psi = (mu/2)(I1_bar - 3) + (kappa/2)(J - 1)^2",
+        "NeoHookeanMaterial dataclass with from_E_nu constructor + NeoHookeanModel ABC wrapper",
+        "Gate A attempt 1 flagged missing build_context registration (scope item 3); fixed in attempt 2",
+        "Cheap FD-tangent oracle (3 states) included; full 100-state AD oracle deferred to P4-5"
+    ],
+    "github_issue": {"phase_issue": 59, "task_issue": 84, "repo": "SOSOVSKI/MechDSL"}
+}

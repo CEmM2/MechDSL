@@ -1,0 +1,100 @@
+{
+  "task_id": "P10-3",
+  "title": "Cook's membrane benchmark (TL × J2 × Hex8)",
+  "phase": "10",
+  "objective": "Run the Cook's membrane benchmark on the existing TL + J2 + Hex8 reference path and assert the mean tip displacement stays within 2% of the committed Hex8 regression value for the de Souza Neto load case.",
+  "plan_file": "dev/design_docs/PLAN-B.md",
+  "plan_lines": [
+    "265",
+    "265"
+  ],
+  "plan_assets": [
+    {
+      "asset_description": "B9.2 Cook's membrane row.",
+      "asset_type": "table",
+      "Plan_file_start_line": 265,
+      "Plan_file_end_line": 265
+    }
+  ],
+  "blocked_by": [],
+  "blocks": [
+    "P10-10"
+  ],
+  "scope": [
+    "Wrap the existing TL + J2 + Hex8 Cook's membrane regression in `mechdsl.verify.benchmarks.run_cook_membrane_benchmark`.",
+    "Use the de Souza Neto load case on the locked 2x2x1 Hex8 mesh and compare the mean tip displacement against the committed reference.",
+    "Assert Newton convergence at every load step and preserve the legacy Cook regression path."
+  ],
+  "implementation_steps": [
+    "Add a reusable Cook's membrane harness under `packages/mechdsl-core/src/mechdsl/verify/benchmarks/` with dependency injection for the handwritten plastic solver.",
+    "Replace the stubbed task test with a TL + J2 + Hex8 benchmark test that reaches the new public harness.",
+    "Keep the existing legacy benchmark in `tests/test_benchmarks.py` passing so the new harness does not fork the reference behavior."
+  ],
+  "deliverables": [
+    "`packages/mechdsl-core/src/mechdsl/verify/benchmarks/cook_membrane.py`",
+    "`packages/mechdsl-core/src/mechdsl/verify/benchmarks/__init__.py`",
+    "`packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py`"
+  ],
+  "acceptance_criteria": [
+    "TL + J2 + Hex8 mean tip displacement matches the committed Cook reference within 2%.",
+    "Newton-Raphson converges at every load step on the locked Cook benchmark setup."
+  ],
+  "verification_commands": [
+    "uv run pytest packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py -v",
+    "uv run pytest packages/mechdsl-core/tests/test_benchmarks.py -k cook -v"
+  ],
+  "test_plan": {
+    "tier": "regression",
+    "cases": [
+      "TL J2 Hex8 benchmark through `run_cook_membrane_benchmark`",
+      "Legacy Cook regression in `tests/test_benchmarks.py` remains green"
+    ]
+  },
+  "test_artifacts": [
+    "packages/mechdsl-core/src/mechdsl/verify/benchmarks/cook_membrane.py",
+    "packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py",
+    "packages/mechdsl-core/tests/test_benchmarks.py"
+  ],
+  "risks": [
+    "Cook's membrane is mesh-sensitive. Mitigation: lock the regression to the existing 2x2x1 Hex8 mesh, total shear 100 N, and 10 load steps used by the committed reference value."
+  ],
+  "status": "done",
+  "completion_date": "2026-04-23",
+  "test_completion": {
+    "passed": 6,
+    "total": 6,
+    "pass_rate": 1.0,
+    "commands": [
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py -v",
+        "passed": 2,
+        "total": 2
+      },
+      {
+        "command": "uv run pytest packages/mechdsl-core/tests/test_benchmarks.py -k cook -v",
+        "passed": 4,
+        "total": 4
+      }
+    ]
+  },
+  "review_score": 100,
+  "review_breakdown": {
+    "minor": 0,
+    "medium": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "review_status": "approved",
+  "implementation_branch": "main",
+  "completion_notes": [
+    "User approved a rescope from the original 4-cell matrix (TL/UL x Hex8/Tet10) to the executable TL + J2 + Hex8 benchmark slice.",
+    "Added `run_cook_membrane_benchmark` and `CookMembraneParameters` to the public benchmark harness surface, following the same dependency-injection pattern as the other Phase 10 benchmarks.",
+    "Replaced the task stub file with two real regression tests: 2/2 passed through the new public harness, and the legacy Cook benchmark stayed green at 4/4 passed.",
+    "Additional verification: `uv run pytest packages/mechdsl-core/tests/test_phase6_exit.py -v` -> 9/9 passed; `uv run mypy packages/mechdsl-core/src/mechdsl/verify/benchmarks` -> success; `uv run ruff check packages/mechdsl-core/src/mechdsl/verify/benchmarks packages/mechdsl-core/tests/test_benchmarks_cook_membrane_matrix.py` -> clean."
+  ],
+  "github_issue": {
+    "phase_issue": 65,
+    "task_issue": 110,
+    "repo": "SOSOVSKI/MechDSL"
+  }
+}

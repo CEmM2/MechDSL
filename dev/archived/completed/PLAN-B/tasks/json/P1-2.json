@@ -1,0 +1,93 @@
+{
+    "task_id": "P1-2",
+    "title": "UL kinematics (spatial shape gradients and current Jacobian)",
+    "phase": "1",
+    "objective": "Implement Updated-Lagrangian kinematics in the symbolic layer: the current-configuration Jacobian j = sum_a (dN_a/dxi) x_ai and the spatial shape-function gradients dN_a/dx_i = (dN_a/dxi_j) j^{-1}_{ji}, so the UL residual emitter (P1-3) can integrate over the deformed configuration.",
+    "plan_file": "dev/design_docs/PLAN-B.md",
+    "plan_lines": ["25", "37"],
+    "plan_assets": [
+        {
+            "asset_description": "B1.1 residual integrand (defines Jacobian with respect to current coordinates and spatial shape gradient formula).",
+            "asset_type": "equation",
+            "Plan_file_start_line": 29,
+            "Plan_file_end_line": 36
+        }
+    ],
+    "blocked_by": ["P1-1"],
+    "blocks": ["P1-3", "P1-4"],
+    "scope": [
+        "Add `current_jacobian` and `spatial_shape_gradient` helpers alongside the existing reference-configuration helpers in `mechdsl.symbolic.kinematics` and `mechdsl.lib.tensor_ops`.",
+        "Store the computed j and dN/dx on `ElementIR` under CURRENT configuration slots (populated only when `ConfigurationIR.configuration == CURRENT`).",
+        "Cover: single element at identity (j = J0, dN/dx = dN/dX), at known simple shear, and at known rigid rotation (j = R @ J0, dN/dx transforms correctly)."
+    ],
+    "implementation_steps": [
+        "Add `current_jacobian(dN_dxi, x_elem)` returning j = x_elem.T @ dN_dxi.",
+        "Add `spatial_shape_gradient(dN_dxi, j)` returning dN/dx = dN_dxi @ inv(j).",
+        "Wire the helpers into `ElementIR` population: when the IR `configuration` is CURRENT, populate `geometry.j_current` and `geometry.spatial_shape_gradients`.",
+        "Add symbolic-layer tests verifying identity, pure shear, and pure rotation.",
+        "Run fast suite to confirm no regressions."
+    ],
+    "deliverables": [
+        "`packages/mechdsl-core/src/mechdsl/symbolic/kinematics.py` — spatial kinematics helpers",
+        "`packages/mechdsl-core/src/mechdsl/ir/element_ir.py` — CURRENT geometry slots populated",
+        "`packages/mechdsl-core/tests/test_kinematics_ul.py` — unit tests"
+    ],
+    "acceptance_criteria": [
+        "For `F = I`, j equals the reference Jacobian J0 at every quadrature point.",
+        "For a known simple-shear deformation, j matches the hand calculation.",
+        "For a rigid body rotation, the spatial shape gradients satisfy dN/dx = R @ (dN/dX).",
+        "No regressions in the 998 existing fast tests."
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_kinematics_ul.py -v",
+        "uv run pytest packages/mechdsl-core/tests/test_kinematics.py -v",
+        "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu' -q"
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "current_jacobian identity at F=I",
+            "current_jacobian simple shear",
+            "spatial_shape_gradient rigid rotation",
+            "ElementIR CURRENT geometry slots populated"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_kinematics_ul.py",
+        "packages/mechdsl-core/tests/test_kinematics.py"
+    ],
+    "risks": [
+        "inv(j) is undefined when det(j) <= 0. Mitigation: add a positive-determinant guard with the same tolerance as the existing J0 guard (1e-15).",
+        "Python-level operations may diverge slightly from the generator's Taichi implementation. Mitigation: keep the helpers numpy-only and let P1-3 mirror the exact same closed form."
+    ],
+    "status": "done",
+    "completion_date": "2026-04-15",
+    "test_completion": {
+        "passed": 1009,
+        "total": 1009,
+        "pass_rate": 100,
+        "commands": [
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/ -m 'not slow and not gpu'",
+                "passed": 1009,
+                "total": 1009
+            },
+            {
+                "command": "uv run pytest packages/mechdsl-core/tests/test_kinematics_ul.py -v",
+                "passed": 4,
+                "total": 4
+            }
+        ]
+    },
+    "review_score": 9,
+    "review_breakdown": {"minor": 1, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "claude/modest-johnson_phase-1",
+    "completion_notes": [
+        "Added current_jacobian(dN_dxi, x_elem) and spatial_shape_gradient(dN_dxi, j) as Mat33 primitives in mechdsl/lib/tensor_ops.py — shape-generic NumPy helpers, sit alongside deformation_gradient/det_33/inv_33.",
+        "Added current_gradient_at_physical(X_elem, x_elem, q) in mechdsl/codegen/hex8_tables.py as the per-QP mirror of reference_gradient_at_physical. Returns (dN/dx, det(j)) with a non-positive-determinant guard carrying an element-inversion diagnostic. X_elem is kept in the signature for API symmetry so P1-4 can compute both J0 and j in a single call when it emits the Jaumann-material + geometric-stiffness two-term tangent.",
+        "Interpretive deviation (Gate B, acknowledged): scope called for storing j and dN/dx on ElementIR under CURRENT geometry slots. The existing codebase computes the reference counterpart on-demand via reference_gradient_at_physical — ElementIR stores no J0 slot either. Adding UL-only storage slots would create an asymmetric design. Followed the existing on-demand pattern; the per-QP helper is the on-demand equivalent of the storage slot. The 4th test case was rewritten accordingly to assert the helper's shape/contract.",
+        "Minor (Gate B m1): current_gradient_at_physical keeps X_elem in the signature for P1-4 API symmetry but currently del's it. Low-impact — removing later is strictly cheaper than re-adding. Flagged for P1-4 implementer to verify actual consumption."
+    ],
+    "github_issue": {"phase_issue": 56, "task_issue": 68, "repo": "SOSOVSKI/MechDSL"}
+}

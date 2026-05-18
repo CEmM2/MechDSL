@@ -1,0 +1,43 @@
+{
+    "task_id": "P4-T4",
+    "title": "Verify numerical safeguards",
+    "phase": "4",
+    "objective": "Check emitted J2 code for numerical safeguards: J > 1e-15, σ_eq > tol before flow direction, Δλ ≥ 0, hardening derivative guard α^(n-1) with 1e-30 floor. Cross-reference with 07-CONVENTIONS.md §6.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["187", "193"],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": ["P4-T5"],
+    "scope": ["packages/mechdsl-core/src/mechdsl/codegen/taichi_printer.py"],
+    "implementation_steps": [
+        "Read emitted J2 constitutive code in golden file",
+        "Check for J > 1e-15 guard",
+        "Check for σ_eq > tol guard before n = S_dev/σ_eq",
+        "Check for Δλ ≥ 0 guard",
+        "Check for hardening derivative guard (1e-30 floor on alpha^(n-1))",
+        "Cross-reference with 07-CONVENTIONS.md §6",
+        "Add missing safeguards if any"
+    ],
+    "deliverables": ["Safeguard audit report (in completion_notes)", "Any fixes to taichi_printer.py"],
+    "acceptance_criteria": ["All 4 safeguards present in emitted code", "Safeguards match 07-CONVENTIONS.md §6"],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_plastic_emission.py -v -k 'guard or safeguard'",
+        "uv run pytest packages/mechdsl-core/tests/test_plastic_emission.py::TestTaskP4T4Safeguards -v",
+        "uv run pytest packages/mechdsl-core/tests/test_phase1_codegen_fixes.py -v -k dl_clamp"
+    ],
+    "test_plan": {"tier": "unit", "cases": ["J guard present", "σ_eq guard present (covered: TestVonMisesGuard)", "Δλ guard present (covered: TestH2DeltaLambdaClamp)", "Hardening derivative guard present"]},
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_plastic_emission.py",
+        "packages/mechdsl-core/tests/test_phase1_codegen_fixes.py"
+    ],
+    "risks": ["Risk: Missing safeguards in emitted Taichi code may cause silent NaN propagation or division by zero at runtime. Mitigation: add guards to emission code and verify via string matching in tests."],
+    "status": "done",
+    "completion_date": "2026-04-05",
+    "test_completion": {"passed": 5, "total": 5, "pass_rate": 100, "commands": ["uv run pytest packages/mechdsl-core/tests/test_plastic_emission.py::TestVonMisesGuard packages/mechdsl-core/tests/test_plastic_emission.py::TestTaskP4T4Safeguards packages/mechdsl-core/tests/test_phase1_codegen_fixes.py -k dl_clamp -v"]},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "approved",
+    "implementation_branch": "sprint2_phase-4",
+    "completion_notes": ["sigma_eq guard: PRESENT (1e-12 * sigma_y)", "delta_lambda guard: PRESENT (ti.max(dl, 0.0))", "Hardening derivative guard: PRESENT (alpha_trial > 1e-30 else 0.0)", "J guard: WAS MISSING — added detJ0 > 1e-15 guard to emit_internal_force_kernel", "Both golden files regenerated to reflect the new guard"],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

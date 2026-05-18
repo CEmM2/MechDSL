@@ -1,0 +1,33 @@
+{
+    "task_id": "P3-T1",
+    "title": "Implement check_convergence_rate()",
+    "phase": "3",
+    "objective": "Implement check_convergence_rate(errors, mesh_sizes, expected_rate, tol) -> ConvergenceResult in verify/convergence.py. Fit log-log slope of error vs h and assert rate ≥ expected - tol.",
+    "plan_file": "dev/plans/sprint2.md",
+    "plan_lines": ["116", "120"],
+    "plan_assets": [],
+    "blocked_by": [],
+    "blocks": ["P3-T3"],
+    "scope": ["packages/mechdsl-core/src/mechdsl/verify/convergence.py"],
+    "implementation_steps": [
+        "Define ConvergenceResult dataclass: measured_rate, expected_rate, passed, errors, mesh_sizes",
+        "Implement check_convergence_rate: compute log-log slope via np.polyfit(np.log(h), np.log(e), 1)",
+        "Compare slope against expected_rate with tolerance",
+        "Return ConvergenceResult"
+    ],
+    "deliverables": ["packages/mechdsl-core/src/mechdsl/verify/convergence.py — check_convergence_rate() + ConvergenceResult"],
+    "acceptance_criteria": ["Correct rate extraction from known O(h^2) data", "Pass/fail logic with tolerance", "Handles minimum 3 data points"],
+    "verification_commands": ["uv run pytest packages/mechdsl-core/tests/test_convergence.py::TestTaskP3T1 -v"],
+    "test_plan": {"tier": "unit", "cases": ["Known O(h^2) data → rate ≈ 2.0", "Known O(h^1) data → rate ≈ 1.0", "Insufficient data → error"]},
+    "test_artifacts": ["packages/mechdsl-core/tests/test_convergence.py::TestTaskP3T1"],
+    "risks": ["Risk: log-log slope fitting may be imprecise with exactly 3 data points. Mitigation: require minimum 3 points, recommend 4+ for production use."],
+    "status": "done",
+    "completion_date": "2026-04-05",
+    "test_completion": {"passed": 12, "total": 12, "pass_rate": 100, "commands": ["uv run pytest packages/mechdsl-core/tests/test_convergence.py::TestTaskP3T1 -v"]},
+    "review_score": 0,
+    "review_breakdown": {"minor": 0, "medium": 0, "high": 0, "critical": 0},
+    "review_status": "",
+    "implementation_branch": "sprint2_phase-3",
+    "completion_notes": [],
+    "github_issue": {"phase_issue": null, "task_issue": null, "repo": "SOSOVSKI/MechDSL"}
+}

@@ -1,0 +1,98 @@
+{
+    "task_id": "P3-T1",
+    "title": "Implement newton_solve() with config, BC enforcement, history, exports",
+    "phase": "3",
+    "objective": "Implement the Newton-Raphson driver in solver/newton.py: NewtonConfig/NewtonResult dataclasses, newton_solve() function with Dirichlet enforcement, history commit/rollback, convergence diagnostics, and load_stepping compatibility. Update solver exports.",
+    "plan_file": ".claude/plans/serialized-booping-quokka.md",
+    "plan_lines": [
+        "120",
+        "184"
+    ],
+    "plan_assets": [
+        {
+            "asset_description": "NewtonConfig, NewtonResult dataclasses and newton_solve signature",
+            "asset_type": "code_snippet",
+            "Plan_file_start_line": 124,
+            "Plan_file_end_line": 146
+        }
+    ],
+    "blocked_by": [],
+    "blocks": [
+        "P3-T2",
+        "P3-T3"
+    ],
+    "scope": [
+        "packages/mechdsl-core/src/mechdsl/solver/newton.py",
+        "packages/mechdsl-core/src/mechdsl/solver/__init__.py"
+    ],
+    "implementation_steps": [
+        "Read ref_hex8_elastic.py:solve_elastic (lines 364-466) as the reference pattern",
+        "Read ref_hex8_plastic.py as the pattern for history integration",
+        "Read load_stepping.py callback signature: newton_solve_fn(load_factor) -> (converged, n_iters, residual_history)",
+        "Read import_adapter.py for LinearSolverInterface contract",
+        "Implement NewtonConfig dataclass with tol, max_iter, cg_tol, cg_max_iter fields",
+        "Implement NewtonResult dataclass with converged, n_iterations, residual_history fields",
+        "Implement newton_solve() following the ref_hex8_elastic pattern: residual assembly → BC zero → convergence check → CG solve → BC zero increment → update",
+        "Add Dirichlet enforcement: R[bc_mask]=0, du[bc_mask]=0, Kv[bc_mask]=v[bc_mask] (identity row)",
+        "Add optional history: history.commit() on convergence, history.rollback() on failure",
+        "Add convergence diagnostics via Python logging module",
+        "Default linear solver to CGSolver() if none provided",
+        "Ensure NewtonResult fields are compatible with adaptive_load_stepping callback contract",
+        "Update solver/__init__.py to export newton_solve, NewtonConfig, NewtonResult"
+    ],
+    "deliverables": [
+        "packages/mechdsl-core/src/mechdsl/solver/newton.py — full implementation (~200 lines)",
+        "packages/mechdsl-core/src/mechdsl/solver/__init__.py — updated exports"
+    ],
+    "acceptance_criteria": [
+        "newton_solve is importable from mechdsl.solver",
+        "Callback-based: accepts assemble_residual and tangent_matvec callables",
+        "Dirichlet enforcement: constrained DOFs zeroed in residual and increment",
+        "Matvec wrapper applies identity row for constrained DOFs",
+        "History commit/rollback when history parameter provided",
+        "Returns NewtonResult with converged, n_iterations, residual_history",
+        "NewtonResult compatible with load_stepping callback contract",
+        "All 687 pre-existing tests still pass"
+    ],
+    "verification_commands": [
+        "uv run pytest packages/mechdsl-core/tests/test_smoke.py -v",
+        "uv run python -c \"from mechdsl.solver import newton_solve, NewtonConfig, NewtonResult; print('OK')\""
+    ],
+    "test_plan": {
+        "tier": "unit",
+        "cases": [
+            "Import succeeds (missing)",
+            "NewtonConfig defaults are sensible (missing)",
+            "NewtonResult has expected fields (missing)"
+        ]
+    },
+    "test_artifacts": [
+        "packages/mechdsl-core/tests/test_newton.py"
+    ],
+    "risks": [
+        "newton.py callbacks don't match reference solver patterns. Mitigation: Design callbacks to exactly match the patterns in ref_hex8_elastic.py::solve_elastic (assemble_residual=lambda u: f_ext - assemble_internal_force(u, ...), tangent_matvec=lambda u,v: apply_tangent_matvec(u, v, ...)). Write integration test (P3-T3) that uses the reference solver's assembly functions as callbacks."
+    ],
+    "status": "pending",
+    "completion_date": "",
+    "test_completion": {
+        "passed": 0,
+        "total": 0,
+        "pass_rate": 0,
+        "commands": []
+    },
+    "review_score": 0,
+    "review_breakdown": {
+        "minor": 0,
+        "medium": 0,
+        "high": 0,
+        "critical": 0
+    },
+    "review_status": "",
+    "implementation_branch": "SOSOVSKI/sprint1-core-loop",
+    "completion_notes": [],
+    "github_issue": {
+        "phase_issue": null,
+        "task_issue": null,
+        "repo": "SOSOVSKI/MechDSL"
+    }
+}
