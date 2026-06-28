@@ -19,9 +19,16 @@ rank-0 + Function('Constant')  ``constant``  Material parameters (μ, λ).
 rank-0 (Symbol)   ``scalar``    Free scalars (e.g. J, trace contractions).
 rank-2 (UU/DD)    ``tensor2``   Carries axis classification produced by
                                 :func:`mechdsl.frontend.math_parser.enforce_index_convention`.
+rank-4 (UUUU/…)  ``tensor4``   Tangent moduli C_IJKL. Accepted by the
+                                bridge; emission is gated by the JIT
+                                budget counter in
+                                :mod:`mechdsl.codegen.einsum_optimizer`
+                                (≤ 512 unrolled lines per ``@ti.func``).
+                                Full Taichi emission is wired in P3-3.
 ================  ============  =========================================
 
-Anything else raises :class:`BridgeError` with a Phase-4 pointer.
+Rank-1, rank-3, and rank > 4 raise :class:`BridgeError` with a
+phase-pointer message.
 
 The bridge does **not** mutate or extend any existing symbolic type;
 it only constructs new dataclass nodes that downstream code can reason
@@ -35,7 +42,7 @@ from typing import Any
 
 import nrpylatex
 
-from mechdsl.frontend.math_parser import IndexClassification
+from mechdsl.frontend.math_parser import EquationSemantics, IndexClassification
 
 
 class BridgeError(RuntimeError):
@@ -61,6 +68,19 @@ class SymbolicNode:
     suffix: str
     classification: IndexClassification | None
     raw: Any  # the underlying nrpylatex.IndexedSymbol (or sympy Constant Function)
+
+
+@dataclass(frozen=True)
+class SymbolicEquation:
+    """Expression-preserving equation descriptor for downstream IR phases."""
+
+    lhs: str
+    rhs: str
+    free_indices: tuple[str, ...]
+    contracted_indices: tuple[str, ...]
+    source_line: int
+    role: str | None
+    raw: EquationSemantics
 
 
 def _is_constant(symbol: Any) -> bool:
@@ -135,11 +155,26 @@ def convert(
             raw=indexed_symbol,
         )
 
+    if rank == 4:
+        # Rank-4 tangent moduli C_IJKL are accepted by the bridge (P3-2).
+        # JIT budget enforcement (≤ 512 unrolled lines per @ti.func) must be
+        # applied before any unrolled Taichi emission — use
+        # mechdsl.codegen.einsum_optimizer.optimize_contraction to gate emission.
+        # Full Taichi emission for rank-4 nodes is wired in P3-3.
+        return SymbolicNode(
+            name=name,
+            kind="tensor4",
+            rank=4,
+            suffix=suffix,
+            classification=classification,
+            raw=indexed_symbol,
+        )
+
     raise BridgeError(
-        f"convert: rank-{rank} tensor {name!r} not supported. The bridge "
-        "currently maps rank-0 (constant or scalar) and rank-2 tensors. "
-        "Higher ranks (e.g. rank-4 tangent moduli) are deferred — "
-        "post_recovery_plan Phase 4."
+        f"convert: rank-{rank} tensor {name!r} is not supported. The bridge "
+        "maps rank-0 (constant or scalar), rank-2 tensors, and rank-4 tangent "
+        "moduli. Ranks 1, 3, and > 4 are not part of the mechdsl supported "
+        "subset — post_recovery_plan Phase 4."
     )
 
 
@@ -160,9 +195,41 @@ def convert_namespace(
     return out
 
 
+def convert_equation(equation: EquationSemantics) -> SymbolicEquation:
+    """Convert one preserved parser equation into bridge-owned semantics."""
+    if not isinstance(equation, EquationSemantics):
+        raise BridgeError(
+            f"convert_equation expected EquationSemantics, got "
+            f"{type(equation).__name__}. Unsupported bridge node; "
+            "full grammar lowering is deferred to post_recovery_plan Phase 4."
+        )
+    if not equation.lhs or not equation.rhs:
+        raise BridgeError(
+            "convert_equation requires assignment equations with both LHS and RHS. "
+            "Full grammar relation nodes are deferred to post_recovery_plan Phase 4."
+        )
+    return SymbolicEquation(
+        lhs=equation.lhs,
+        rhs=equation.rhs,
+        free_indices=equation.free_indices,
+        contracted_indices=equation.contracted_indices,
+        source_line=equation.source_line,
+        role=equation.role,
+        raw=equation,
+    )
+
+
+def convert_equations(equations: tuple[EquationSemantics, ...]) -> tuple[SymbolicEquation, ...]:
+    """Bulk variant of :func:`convert_equation` for parser results."""
+    return tuple(convert_equation(equation) for equation in equations)
+
+
 __all__ = [
     "BridgeError",
+    "SymbolicEquation",
     "SymbolicNode",
     "convert",
+    "convert_equation",
+    "convert_equations",
     "convert_namespace",
 ]

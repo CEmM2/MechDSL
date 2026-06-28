@@ -33,7 +33,9 @@ class J2BenchmarkHistory:
     alpha_old: NDArray[np.float64]
 
     @classmethod
-    def zeros_for_mesh(cls, mesh: BenchmarkMesh, element: ElementIR | None = None) -> J2BenchmarkHistory:
+    def zeros_for_mesh(
+        cls, mesh: BenchmarkMesh, element: ElementIR | None = None
+    ) -> J2BenchmarkHistory:
         elem = element or ElementFactory.create(mesh.element_type)
         shape = (mesh.n_elements, elem.quadrature.n_points)
         alpha_current = np.zeros(shape, dtype=np.float64)
@@ -179,6 +181,5 @@ def _validate_history(
 def _validate_formulation(formulation: str) -> None:
     if formulation not in ("total_lagrangian", "updated_lagrangian"):
         raise ValueError(
-            "formulation must be 'total_lagrangian' or 'updated_lagrangian', "
-            f"got {formulation!r}"
+            f"formulation must be 'total_lagrangian' or 'updated_lagrangian', got {formulation!r}"
         )

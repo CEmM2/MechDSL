@@ -3,6 +3,11 @@
 Computes F, C, E, J, F_inv, F_invT, and the convected metric g from
 displacement gradient symbols. All results are SymPy symbolic matrices.
 
+Isochoric quantities (F_bar, C_bar, Ibar1, Ibar2) and principal stretches are
+exposed as lazy cached properties; they are computed on first access and memoised
+for subsequent calls. The underlying math is sourced exclusively from
+``mechdsl.symbolic.invariants`` — no duplication.
+
 Convention reminders (from 07-CONVENTIONS.md):
     - Spatial indices:  lowercase i, j, k, l
     - Material indices: uppercase I, J, K, L
@@ -15,15 +20,27 @@ Convention reminders (from 07-CONVENTIONS.md):
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 
 import sympy as sp
+
+from mechdsl.symbolic.invariants import i1, i2, isochoric_split
+from mechdsl.symbolic.invariants import principal_stretches as _principal_stretches
 
 _MVP_DIM = 3
 
 
 @dataclass(frozen=True)
 class KinematicsResult:
-    """Immutable container for all kinematic quantities derived from F."""
+    """Immutable container for all kinematic quantities derived from F.
+
+    Core fields (always computed, stored at construction time):
+        F, C, J, E, F_inv, F_invT, g
+
+    Isochoric / spectral quantities (lazy cached properties, computed on first
+    access from ``invariants.py`` — no duplicated math):
+        F_bar, C_bar, Ibar1, Ibar2, principal_stretches
+    """
 
     F: sp.Matrix  # Deformation gradient (3x3)
     C: sp.Matrix  # Right Cauchy-Green: C = F^T F
@@ -32,6 +49,44 @@ class KinematicsResult:
     F_inv: sp.Matrix  # Inverse of F
     F_invT: sp.Matrix  # Inverse transpose of F
     g: sp.Matrix  # Convected metric: g = C
+
+    # ------------------------------------------------------------------
+    # Isochoric / spectral quantities — lazy, sourced from invariants.py
+    # ------------------------------------------------------------------
+
+    @cached_property
+    def _isochoric(self) -> dict[str, sp.Expr | sp.Matrix]:
+        """Internal cache: calls invariants.isochoric_split once."""
+        return isochoric_split(self.F)
+
+    @cached_property
+    def F_bar(self) -> sp.Matrix:
+        """Isochoric deformation gradient: F_bar = J^{-1/3} F, det(F_bar) = 1."""
+        return self._isochoric["F_bar"]  # type: ignore[return-value]
+
+    @cached_property
+    def C_bar(self) -> sp.Matrix:
+        """Isochoric right Cauchy-Green tensor: C_bar = F_bar^T F_bar."""
+        return self._isochoric["C_bar"]  # type: ignore[return-value]
+
+    @cached_property
+    def Ibar1(self) -> sp.Expr:
+        """First isochoric invariant: Ibar1 = tr(C_bar) = i1(C_bar)."""
+        return i1(self.C_bar)
+
+    @cached_property
+    def Ibar2(self) -> sp.Expr:
+        """Second isochoric invariant: Ibar2 = i2(C_bar)."""
+        return i2(self.C_bar)
+
+    @cached_property
+    def principal_stretches(self) -> list[sp.Expr]:
+        """Principal stretches lambda_i = sqrt(eig_i(C)), sourced from invariants.py.
+
+        Always three entries (one per spatial dimension, repeats included) in a
+        deterministic order — the contract the spectral models (Ogden, P4-2) need.
+        """
+        return _principal_stretches(self.F)
 
 
 def _kinematic_quantities(F: sp.Matrix) -> KinematicsResult:

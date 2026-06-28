@@ -1,87 +1,111 @@
-"""nrpylatex → mechdsl symbolic round-trip tests.
-
-post_recovery_plan Phase 4 (P4-4). The round trip exercised here is
-the **import chain**:
-
-    LaTeX-math source
-        → mechdsl.frontend.math_parser.parse_math (nrpylatex AST)
-        → mechdsl.symbolic.bridge.convert_namespace (SymbolicNode)
-        → mechdsl.frontend.parse_with_math (frontend integration)
-
-Three case families are pinned: a SVK-flavoured rank-2 contraction
-surrogate, a J2 yield-style scalar contraction, and a two-point
-``F^{iI}`` index-distinction case.
-
-The plan's stronger acceptance criterion ("Round-trip test verifies
-emitted Taichi residual matches handwritten reference within
-tolerance") is **deferred** at this layer: nrpylatex 1.4.0's grammar
-does not register ``\\det`` or ``\\log{}`` as known intrinsic functions,
-so SVK PK1 / J2 yield in their full closed form do not parse without
-a surrogate. Each test below documents the surrogate it uses and
-points at the deferral.
-"""
+"""NRPyLaTeX -> mechdsl symbolic round-trip tests for equation semantics."""
 
 from __future__ import annotations
 
 import pytest
 
 from mechdsl.frontend import parse_with_math
-from mechdsl.frontend.math_parser import parse_math
-from mechdsl.symbolic.bridge import SymbolicNode, convert_namespace
-
-_SVK_LIKE = "% declare FUU --dim 3\n% declare AUU --dim 3\nA^{i j} = F^{i j}\n"
-"""SVK-PK1 surrogate: rank-2 tensor copy. Stands in for
-``P^{ij} = 2μ ε^{ij} + λ ε^{kk} δ^{ij}`` until \\det / \\log
-intrinsics are registered (deferred to a later post-recovery phase)."""
-
-_J2_YIELD_LIKE = (
-    "% declare sigmaUU --dim 3\n% declare sigmaDD --dim 3\nf = \\sigma^{i j} \\sigma_{i j}\n"
+from mechdsl.frontend.math_parser import MathParseError, parse_math
+from mechdsl.symbolic.bridge import (
+    SymbolicEquation,
+    SymbolicNode,
+    convert_equations,
+    convert_namespace,
 )
-"""J2 yield surrogate: scalar contraction
-``f = σ^{ij} σ_{ij}`` (norm-squared). Stands in for the closed-form
-``f = sqrt(3/2 s:s) - σ_y`` until \\sqrt over a full deviator is
-parseable."""
+
+_FINITE_DEFORMATION = r"""
+% declare FDD --dim 3
+% declare GDD --dim 3
+% declare CDD --dim 3
+% declare SDD --dim 3
+% declare PDD --dim 3
+% declare \mu \lambda --const
+F_{i I} = G_{i I}
+C_{I J} = F_{i I} F_{i J}
+J = \det{F}
+\Psi = \frac{\lambda}{2} (\log{J})^2 - \mu \log{J} + \frac{\mu}{2}(C_{I I} - 3)
+S_{I J} = \lambda \log{J} C_{I J}^{-1} + \mu C_{I J}
+P_{i I} = F_{i J} S_{J I}
+"""
+
+_J2_YIELD = r"""
+% declare sUU --dim 3
+% declare sDD --dim 3
+% declare sigmaY --const
+f = \sqrt{\frac{3}{2} s^{i j} s_{i j}} - sigmaY
+"""
 
 _TWO_POINT = "% declare FUU --dim 3\n% declare AUU --dim 3\nA^{i I} = F^{i I}\n"
-"""Two-point F^{iI} index distinction case."""
+
+
+def _equation_by_lhs(equations: tuple[SymbolicEquation, ...], lhs: str) -> SymbolicEquation:
+    for equation in equations:
+        if equation.lhs == lhs:
+            return equation
+    raise AssertionError(f"missing equation with LHS {lhs!r}")
 
 
 @pytest.mark.docs
 @pytest.mark.integration
-def test_round_trip_svk_pk1_rank2_copy() -> None:
-    """SVK-PK1 surrogate parses + bridges. Rank-2 tensors land as
-    SymbolicNode kind='tensor2' on both sides of the assignment."""
-    result = parse_math(_SVK_LIKE)
+def test_round_trip_finite_deformation_equations_are_preserved() -> None:
+    """Finite-deformation MVP equations preserve source-level semantics."""
+    result = parse_math(_FINITE_DEFORMATION)
     nodes = convert_namespace(result.tensors, result.classifications)
-    assert nodes["FUU"].kind == "tensor2"
-    assert nodes["AUU"].kind == "tensor2"
-    assert nodes["FUU"].rank == 2
-    assert nodes["AUU"].rank == 2
+    equations = convert_equations(result.equations)
+
+    assert nodes["FDD"].kind == "tensor2"
+    assert nodes["CDD"].kind == "tensor2"
+
+    c_eq = _equation_by_lhs(equations, "C_{I J}")
+    assert c_eq.free_indices == ("I", "J")
+    assert c_eq.contracted_indices == ("i",)
+    assert c_eq.role == "auxiliary_definition"
+
+    j_eq = _equation_by_lhs(equations, "J")
+    assert j_eq.rhs == r"\det{F}"
+    assert j_eq.free_indices == ()
+
+    psi_eq = _equation_by_lhs(equations, r"\Psi")
+    assert r"\log{J}" in psi_eq.rhs
+    assert psi_eq.role == "strain_energy"
+
+    s_eq = _equation_by_lhs(equations, "S_{I J}")
+    assert s_eq.free_indices == ("I", "J")
+    assert s_eq.role == "stress_measure"
+
+    p_eq = _equation_by_lhs(equations, "P_{i I}")
+    assert p_eq.free_indices == ("I", "i")
+    assert p_eq.contracted_indices == ("J",)
+    assert p_eq.role == "stress_measure"
 
 
 @pytest.mark.docs
 @pytest.mark.integration
-def test_round_trip_j2_yield_norm_contraction() -> None:
-    """J2-yield surrogate: σ^{ij} σ_{ij} is a scalar (rank 0) result.
-    Both σUU and σDD round-trip to tensor2 nodes; ``f`` is the
-    contracted scalar.
-    """
-    result = parse_math(_J2_YIELD_LIKE)
+def test_round_trip_j2_yield_scalar_expression_is_preserved() -> None:
+    """J2 scalar yield expression keeps sqrt/contraction semantics."""
+    result = parse_math(_J2_YIELD)
     nodes = convert_namespace(result.tensors, result.classifications)
-    assert nodes["sigmaUU"].kind == "tensor2"
-    assert nodes["sigmaDD"].kind == "tensor2"
-    assert nodes["f"].kind == "scalar"
-    assert nodes["f"].rank == 0
+    equations = convert_equations(result.equations)
+
+    assert nodes["sUU"].kind == "tensor2"
+    assert nodes["sDD"].kind == "tensor2"
+    assert nodes["sigmaY"].kind == "constant"
+
+    f_eq = _equation_by_lhs(equations, "f")
+    assert f_eq.role == "yield_function"
+    assert f_eq.free_indices == ()
+    assert f_eq.contracted_indices == ("i", "j")
+    assert r"\sqrt" in f_eq.rhs
 
 
 @pytest.mark.docs
 @pytest.mark.integration
 def test_round_trip_two_point_F_iI_preserves_indices() -> None:
-    """``A^{iI} = F^{iI}`` round-trips with axis 0 spatial,
-    axis 1 material on both tensors.
-    """
+    """``A^{iI} = F^{iI}`` round-trips with spatial/material axes."""
     result = parse_math(_TWO_POINT)
     nodes = convert_namespace(result.tensors, result.classifications)
+    equations = convert_equations(result.equations)
+
     f = nodes["FUU"]
     a = nodes["AUU"]
     assert f.classification is not None
@@ -91,14 +115,35 @@ def test_round_trip_two_point_F_iI_preserves_indices() -> None:
     assert 0 in a.classification.spatial_axes
     assert 1 in a.classification.material_axes
 
+    equation = _equation_by_lhs(equations, "A^{i I}")
+    assert equation.free_indices == ("I", "i")
+    assert equation.contracted_indices == ()
+
+
+@pytest.mark.docs
+@pytest.mark.integration
+def test_invalid_spatial_material_tensor_fails_before_lowering() -> None:
+    """Known spatial tensors may not carry material indices."""
+    bad = "% declare sigmaDD --dim 3\n% declare FDD --dim 3\n\\sigma_{i I} = F_{i I}\n"
+    with pytest.raises(MathParseError, match="spatial tensor"):
+        parse_math(bad)
+
+
+@pytest.mark.docs
+@pytest.mark.integration
+def test_unsupported_full_grammar_node_fails_with_phase_pointer() -> None:
+    """Non-MVP functions are explicit full-grammar deferrals."""
+    unsupported = "% declare a --const\nb = \\sin{a}\n"
+    with pytest.raises(MathParseError) as excinfo:
+        parse_math(unsupported)
+    assert "full-grammar phase" in str(excinfo.value)
+    assert "post_recovery_plan Phase 4" in str(excinfo.value)
+
 
 @pytest.mark.docs
 @pytest.mark.integration
 def test_round_trip_through_frontend_pipeline() -> None:
-    """End-to-end: a directive-bearing source with a ``$...$`` math
-    block flows through ``parse_with_math`` and produces a
-    ``context['math']['tensors']`` map with SymbolicNode entries.
-    """
+    """Existing frontend integration remains backward compatible."""
     src = (
         "% mechanics dim 3\n"
         "% mechanics cell hex8\n"

@@ -1,6 +1,6 @@
 [project]
 name = "mechdsl-workspace"
-version = "0.1.0"
+version = "0.2.0"
 description = "MechDSL monorepo — LaTeX-to-FEM compiler + algorithm transpiler"
 requires-python = ">=3.12,<3.13"
 dependencies = [
@@ -31,6 +31,9 @@ dev = [
     "pre-commit>=3.5",
 ]
 verify = ["torch>=2.0"]
+docs = [
+    "mkdocs-material>=9.5",
+]
 
 # ---------- shared tool config ----------
 
@@ -38,6 +41,7 @@ verify = ["torch>=2.0"]
 testpaths = [
     "packages/mechdsl-core/tests",
     "packages/algo2code/tests",
+    "packages/ti-runtime/tests",
 ]
 cache_dir = ".pytest_cache"
 addopts = [
@@ -69,11 +73,15 @@ line-length = 100
 src = [
     "packages/mechdsl-core/src",
     "packages/algo2code/src",
+    "packages/ti-runtime/src",
 ]
 exclude = [
     "packages/algo2code/prototypes",
     ".claude/worktrees",
     "mvp_concept_demo",
+    # Generated FEM solver artifacts — emitted by the codegen pipeline, not
+    # hand-maintained source. Linting/formatting them would fight the printer.
+    "dev/examples/_output",
 ]
 
 [tool.ruff.lint]
@@ -101,8 +109,15 @@ ignore = [
     "E741",    # ambiguous variable name (collides with index convention)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# FastHTML's public API is exposed exclusively through a star import
+# (`from fasthtml.common import *`) — `fast_app`, `Div`, `Button`, `serve`,
+# etc. are all re-exported this way. Explicit imports would fight the
+# framework's intended usage, so scope the star-import warnings to this script.
+"scripts/report.py" = ["F403", "F405"]
+
 [tool.ruff.lint.isort]
-known-first-party = ["mechdsl", "algo2code"]
+known-first-party = ["mechdsl", "algo2code", "ti_runtime"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -111,11 +126,18 @@ warn_unused_configs = true
 disallow_untyped_defs = false
 check_untyped_defs = true
 ignore_missing_imports = true
-mypy_path = "packages/mechdsl-core/src:packages/algo2code/src"
+mypy_path = "packages/mechdsl-core/src:packages/algo2code/src:packages/ti-runtime/src"
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+# ti-runtime is Taichi DSL code: `@ti.kernel`/`@ti.func` signatures use runtime
+# markers (`ti.template()`, `ti.f64`) and Taichi-typed matrix/vector ops that are
+# not statically checkable by mypy — Taichi's own compiler verifies them at JIT.
+[[tool.mypy.overrides]]
+module = ["ti_runtime", "ti_runtime.*"]
+ignore_errors = true
 
 # Physics numerics: numpy operations propagate as Any through ndarray-typed
 # returns, tripping warn_return_any with no actionable bug. Suppress for the

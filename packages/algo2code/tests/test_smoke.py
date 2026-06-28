@@ -13,7 +13,7 @@ SUBPACKAGES = [
 def test_version():
     import algo2code
 
-    assert algo2code.__version__ == "0.1.0"
+    assert algo2code.__version__ == "0.2.0"
 
 
 @pytest.mark.parametrize("pkg", SUBPACKAGES)

@@ -66,7 +66,7 @@ from mechdsl.codegen.hex8_tables import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from mechdsl.codegen.artifact import ArtifactBundle
+    from mechdsl.codegen.artifact import ArtifactBundle, ContractionPlan
 
 _logger = logging.getLogger(__name__)
 
@@ -240,6 +240,99 @@ def _is_plastic_material(model: str) -> bool:
 def _is_damage_material(model: str) -> bool:
     """Return True when *model* carries scalar damage and element deletion."""
     return model == "lemaitre"
+
+
+def _emits_generated_tangent_matvec(bundle: ArtifactBundle) -> bool:
+    """True when the generated matrix-free tangent matvec ``@ti.kernel`` is emitted.
+
+    The runtime-q kernels (PlanJune14 WI-1) from
+    :func:`emit_svk_tangent_matvec_kernel` / :func:`emit_j2_tangent_matvec_kernel`
+    are the SOLE consumers of the device-resident quadrature fields
+    ``_GRAD_AT_QUAD_F`` / ``_QUAD_WEIGHTS_F``. They are emitted only for the
+    SVK or J2 / Total-Lagrangian / reference / non-derived path (see the dispatch
+    in :func:`emit`, ~L3239/3247). Gating the quad-field emission on this same
+    predicate keeps every other golden (Lemaitre, UL, derived, explicit)
+    byte-identical — otherwise dead quad-field declarations leak into formulations
+    that never use them (the WI-1 regression the UL golden test caught).
+    """
+    model = bundle.problem_ir_dict.get("material", {}).get("model", "svk")
+    configuration = bundle.problem_ir_dict.get("configuration", "reference")
+    # The matvec kernel is emitted ONLY in the static (implicit Newton) branch
+    # (see :func:`emit`, ~L3275): the EXPLICIT central-difference driver skips it.
+    # Explicit dynamics also declares its own fields (``v``, ``M_lumped``) placed
+    # in ``allocate_explicit_fields`` (not the shared ``allocate_fields``), so
+    # emitting the quad-field ``from_numpy`` here would force materialisation
+    # while those are still unplaced — a "field(s) not placed" RuntimeError.
+    dynamics_mode = bundle.problem_ir_dict.get("dynamics_mode", "static")
+    return (
+        model in ("svk", "j2_power_law")
+        and bundle.derived_energy is None
+        and configuration != "current"
+        and dynamics_mode != "explicit"
+    )
+
+
+def _derived_params(bundle: ArtifactBundle) -> list[str] | None:
+    """Ordered material-parameter names for a LaTeX-derived bundle, or ``None``.
+
+    When a bundle carries a ``derived_energy`` model, the whole generated solver
+    is parameterised on this list (the union of the parameters in the derived
+    stress and tangent) instead of the hard-coded SVK/J2 ``(lam, mu)`` names.
+    Returning ``None`` selects the unchanged named-model emission path.
+    """
+    if bundle.derived_energy is None:
+        return None
+    from mechdsl.symbolic.anisotropic_energy import AnisotropicEnergyModel
+    from mechdsl.symbolic.spectral_energy import SpectralEnergyModel
+
+    de = bundle.derived_energy
+    # Each model class names its own parameter vocabulary; the closed-form
+    # invariant path scans the rank-4 tangent, the spectral / fiber paths carry
+    # their parameter symbols directly (their tangent is FD, not symbolic).
+    if isinstance(de, SpectralEnergyModel):
+        from mechdsl.codegen.spectral_emitter import spectral_param_names
+
+        names = spectral_param_names(de)
+    elif isinstance(de, AnisotropicEnergyModel):
+        from mechdsl.codegen.anisotropic_emitter import anisotropic_param_names
+
+        names = anisotropic_param_names(de)
+    else:
+        from mechdsl.codegen.energy_emitter import derived_param_names
+
+        names = derived_param_names(de)
+    if not names:
+        # A derived energy with zero material parameters is degenerate: the
+        # solver would be parameterised on nothing, and the constitutive_update
+        # / tangent_matvec / newton_solve signatures would emit malformed
+        # (empty-argument) Python. Fail fast at this boundary rather than
+        # generating broken code downstream.
+        raise ValueError(
+            "LaTeX-derived constitutive model exposes no material parameters; "
+            "a strain-energy function must depend on at least one material "
+            "constant (e.g. mu, kappa) to generate a runnable solver."
+        )
+    return names
+
+
+def _fiber_family0(bundle: ArtifactBundle) -> tuple[float, float, float] | None:
+    """The single declared fiber-direction family, or ``None`` if no fiber field.
+
+    Read from the serialised fiber-field carry (``FiberFieldSpec.to_dict`` ->
+    ``{"families": [[x, y, z], ...]}``), which the codegen layer now consumes for
+    anisotropic (HGO) models. Only the first family is used — the MVP
+    perfectly-aligned single-family case; per-element heterogeneous fiber fields
+    (a placed ``ti.Vector.field`` gathered as ``fiber_dir[e]``) are a future
+    extension for when the IR carries per-element fiber data.
+    """
+    fiber_field = bundle.problem_ir_dict.get("fiber_field")
+    if not fiber_field:
+        return None
+    families = fiber_field.get("families") or []
+    if not families:
+        return None
+    a = families[0]
+    return (float(a[0]), float(a[1]), float(a[2]))
 
 
 # ---------------------------------------------------------------------------
@@ -609,6 +702,16 @@ def emit_field_declarations(ctx: EmissionContext, bundle: ArtifactBundle) -> Non
     ctx.emit("du = ti.Vector.field(3, dtype=ti.f64)           # displacement increment")
     ctx.emit("Kv = ti.Vector.field(3, dtype=ti.f64)           # tangent matvec result")
     ctx.emit("elem_nodes = ti.field(dtype=ti.i32)             # connectivity")
+    if _emits_generated_tangent_matvec(bundle):
+        ctx.emit("")
+        ctx.emit("# Quadrature tables as ti.fields (PlanJune14 WI-1): the matrix-free")
+        ctx.emit("# tangent matvec kernels run the q-loop at RUNTIME (the ÷8 JIT-budget")
+        ctx.emit("# lever), so they cannot index the Python-list constants GRAD_AT_QUAD /")
+        ctx.emit("# QUAD_WEIGHTS by a runtime q. These device-resident copies are filled")
+        ctx.emit("# from those constants in allocate_fields(). The Python lists are kept")
+        ctx.emit("# for the ti.static-q residual kernel and the host-NumPy paths.")
+        ctx.emit("_GRAD_AT_QUAD_F = ti.field(dtype=ti.f64)         # (N_QP, N_NODES, DIM)")
+        ctx.emit("_QUAD_WEIGHTS_F = ti.field(dtype=ti.f64)         # (N_QP,)")
 
     if _is_plastic_material(material_model):
         if _is_damage_material(material_model):
@@ -619,6 +722,14 @@ def emit_field_declarations(ctx: EmissionContext, bundle: ArtifactBundle) -> Non
             "alpha = ti.field(dtype=ti.f64)                    "
             "# accumulated plastic strain (n_elem x N_QP)"
         )
+        # Committed (step-start) history mirror. The Newton driver snapshots the
+        # committed history into these fields once per step and restores from
+        # them each iteration via on-device copy_from (no host round-trip).
+        # Populated at runtime by copy_from, so they need NO from_numpy fill.
+        ctx.emit(
+            "_alpha_committed = ti.field(dtype=ti.f64)         "
+            "# committed alpha snapshot (n_elem x N_QP)"
+        )
         if _is_damage_material(material_model):
             ctx.emit(
                 "damage_D = ti.field(dtype=ti.f64)                 # scalar damage (n_elem x N_QP)"
@@ -626,6 +737,14 @@ def emit_field_declarations(ctx: EmissionContext, bundle: ArtifactBundle) -> Non
             ctx.emit(
                 "is_deleted = ti.field(dtype=ti.i32)               "
                 "# per-element deletion flag (n_elem,)"
+            )
+            ctx.emit(
+                "_damage_D_committed = ti.field(dtype=ti.f64)      "
+                "# committed damage snapshot (n_elem x N_QP)"
+            )
+            ctx.emit(
+                "_is_deleted_committed = ti.field(dtype=ti.i32)    "
+                "# committed deletion snapshot (n_elem,)"
             )
 
     ctx.emit("")
@@ -640,11 +759,32 @@ def emit_field_declarations(ctx: EmissionContext, bundle: ArtifactBundle) -> Non
             "ti.root.dense(ti.i, n_nodes).place(x_ref, x_cur, u, f_int, f_ext, residual, du, Kv)"
         )
         ctx.emit("ti.root.dense(ti.ij, (n_elem, N_NODES)).place(elem_nodes)")
+        emits_matvec = _emits_generated_tangent_matvec(bundle)
+        if emits_matvec:
+            # Quadrature tables (PlanJune14 WI-1): mesh-independent, but placed +
+            # filled here because allocate_fields() is guaranteed (by the seam
+            # contract) to run after the caller's ti.init and before any kernel
+            # launch — so the fill never races Taichi materialisation. The runtime-q
+            # tangent matvec kernels read these device copies.
+            ctx.emit("ti.root.dense(ti.ijk, (N_QP, N_NODES, DIM)).place(_GRAD_AT_QUAD_F)")
+            ctx.emit("ti.root.dense(ti.i, N_QP).place(_QUAD_WEIGHTS_F)")
         if _is_plastic_material(material_model):
             ctx.emit("ti.root.dense(ti.ij, (n_elem, N_QP)).place(alpha)")
+            # Committed-history mirror (same shape as alpha); filled at runtime
+            # by copy_from in newton_solve, so no from_numpy fill is needed here.
+            ctx.emit("ti.root.dense(ti.ij, (n_elem, N_QP)).place(_alpha_committed)")
         if _is_damage_material(material_model):
             ctx.emit("ti.root.dense(ti.ij, (n_elem, N_QP)).place(damage_D)")
             ctx.emit("ti.root.dense(ti.i, n_elem).place(is_deleted)")
+            ctx.emit("ti.root.dense(ti.ij, (n_elem, N_QP)).place(_damage_D_committed)")
+            ctx.emit("ti.root.dense(ti.i, n_elem).place(_is_deleted_committed)")
+        if emits_matvec:
+            # Fill the quad tables LAST: .from_numpy forces field materialisation, so
+            # every field above must be placed first (else Taichi sees an unplaced
+            # field — e.g. alpha — and raises). Values come from the kept Python-list
+            # constants GRAD_AT_QUAD / QUAD_WEIGHTS.
+            ctx.emit("_GRAD_AT_QUAD_F.from_numpy(np.asarray(GRAD_AT_QUAD, dtype=np.float64))")
+            ctx.emit("_QUAD_WEIGHTS_F.from_numpy(np.asarray(QUAD_WEIGHTS, dtype=np.float64))")
     ctx.emit("")
 
 
@@ -656,6 +796,68 @@ def emit_constitutive_update(ctx: EmissionContext, bundle: ArtifactBundle) -> No
     """
     material_model = bundle.problem_ir_dict.get("material", {}).get("model", "svk")
     material_params = bundle.problem_ir_dict.get("material", {}).get("params", {})
+
+    # P3-1: when the bundle carries a LaTeX-derived energy model, emit the
+    # constitutive ``@ti.func`` from the derived PK2 stress (via the proven
+    # energy_emitter path) instead of the hard-coded named-model switch. This
+    # replaces the advisory-only LatexSemantics path: the derived energy now
+    # reaches codegen through the real ProblemIR -> ArtifactBundle channel.
+    # The named-model dispatch below stays the fallback for IRs built without
+    # a derived energy (svk / j2_power_law / lemaitre), so their emission is
+    # byte-identical.
+    if bundle.derived_energy is not None:
+        from mechdsl.symbolic.anisotropic_energy import AnisotropicEnergyModel
+        from mechdsl.symbolic.spectral_energy import SpectralEnergyModel
+
+        de = bundle.derived_energy
+        params = _derived_params(bundle)
+
+        ctx.emit("# " + "=" * 70)
+        ctx.emit(f"# Constitutive model: {material_model} (derived from LaTeX energy)")
+        ctx.emit("# " + "=" * 70)
+        ctx.emit("")
+
+        def _emit_block(src: str) -> None:
+            for line in src.splitlines():
+                ctx.emit(line)
+
+        # The constitutive ``@ti.func`` shape depends on the derivation path. All
+        # three force the signature to the unified derived-parameter vocabulary so
+        # the ``constitutive_update(F, ...)`` call site in compute_internal_force
+        # matches (a tangent-only parameter rides along as an unused argument).
+        if isinstance(de, SpectralEnergyModel):
+            # Ogden: emit the symmetric eigensolver once, then the spectral
+            # constitutive func (device) + its host-NumPy twin for the FD tangent.
+            from mechdsl.codegen.spectral_emitter import (
+                SYM_EIG_3X3_SOURCE,
+                emit_spectral_constitutive_func,
+                emit_spectral_pk2_numpy_source,
+            )
+
+            _emit_block(SYM_EIG_3X3_SOURCE)
+            ctx.emit("")
+            _emit_block(emit_spectral_constitutive_func(de, param_names=params))
+            ctx.emit("")
+            _emit_block(emit_spectral_pk2_numpy_source(de, param_names=params))
+        elif isinstance(de, AnisotropicEnergyModel):
+            # HGO: emit the fiber-gated constitutive func (device, takes the
+            # gathered fiber direction `a`) + its host-NumPy twin for the FD
+            # tangent. The call site (compute_internal_force / tangent_matvec)
+            # supplies `a` from the declared fiber family (_fiber_family0).
+            from mechdsl.codegen.anisotropic_emitter import (
+                emit_anisotropic_constitutive_func,
+                emit_anisotropic_pk2_numpy_source,
+            )
+
+            _emit_block(emit_anisotropic_constitutive_func(de, param_names=params))
+            ctx.emit("")
+            _emit_block(emit_anisotropic_pk2_numpy_source(de, param_names=params))
+        else:
+            from mechdsl.codegen.energy_emitter import emit_constitutive_func
+
+            _emit_block(emit_constitutive_func(de, param_names=params))
+        ctx.emit("")
+        return
 
     ctx.emit("# " + "=" * 70)
     ctx.emit(f"# Constitutive model: {material_model}")
@@ -766,33 +968,46 @@ def _emit_j2_constitutive(ctx: EmissionContext, params: dict[str, object]) -> No
         with ctx.indent_block():
             ctx.emit("# 6. Radial return: Newton iteration for delta_lambda")
             ctx.emit("dl = ti.f64(0.0)")
+            ctx.emit("# Stress-scaled tolerance: f has units of stress (MPa), so an")
+            ctx.emit("# absolute tol is unreachable at steel-scale sigma. Mirrors the")
+            ctx.emit("# reference radial_return (j2_power_law.py) with tol=1e-12.")
+            ctx.emit("stress_ref = ti.max(ti.max(ti.abs(sigma_eq), sigma_y), 1.0)")
+            ctx.emit("effective_tol = ti.max(1e-12, 1e-12 * stress_ref)")
+            ctx.emit("converged = 0")
             ctx.emit("for _it in range(20):")
             with ctx.indent_block():
                 ctx.emit("alpha_trial = alpha_old + dl")
                 ctx.emit("sy = sigma_y0 + K_hard * ti.pow(alpha_trial, n_hard)")
                 ctx.emit("f = sigma_eq - 3.0 * mu * dl - sy")
-                ctx.emit("if ti.abs(f) < 1e-12:  # tol per 07-CONVENTIONS.md §6")
+                ctx.emit("if ti.abs(f) < effective_tol:  # tol per 07-CONVENTIONS.md §6")
                 with ctx.indent_block():
+                    ctx.emit("converged = 1")
                     ctx.emit("break")
                 ctx.emit(
                     "H_prime = K_hard * n_hard * ti.pow(alpha_trial, n_hard - 1.0) "
-                    "if alpha_trial > 1e-30 else 0.0"
+                    "if alpha_trial > 1e-12 else 0.0"
                 )
                 ctx.emit("df = -3.0 * mu - H_prime")
                 ctx.emit("dl -= f / df")
             ctx.emit("")
-            ctx.emit("# Guard: check Newton convergence for return mapping")
-            ctx.emit(
-                "f_final = sigma_eq - 3.0 * mu * dl"
-                " - (sigma_y0 + K_hard * ti.pow(alpha_old + dl, n_hard))"
-            )
-            ctx.emit("if ti.abs(f_final) > 1e-8:")
+            ctx.emit("# Guard: flag ANY non-convergence of the return-map Newton loop.")
+            ctx.emit("# COUPLING: the converged flag is set by the in-loop check, which")
+            ctx.emit("# keys off effective_tol (change one -> revisit the other). Using an")
+            ctx.emit("# explicit flag (vs a post-loop residual-magnitude test) closes the")
+            ctx.emit("# band gap where a result in (effective_tol, 1e3*effective_tol] would")
+            ctx.emit("# be silently accepted; the reference raises on loop exhaustion.")
+            ctx.emit("if converged == 0:")
             with ctx.indent_block():
                 ctx.emit("# Non-converged: set NaN flag (propagates to Newton driver)")
                 ctx.emit("dl = ti.f64(float('nan'))")
-            ctx.emit("")
-            ctx.emit("# Clamp dl >= 0 (negative plastic multiplier is non-physical)")
-            ctx.emit("dl = ti.max(dl, 0.0)")
+            ctx.emit("else:")
+            with ctx.indent_block():
+                ctx.emit("# Converged: clamp dl >= 0 (negative plastic multiplier is")
+                ctx.emit("# non-physical). Gated under else: so the NaN sentinel on the")
+                ctx.emit("# non-converged branch survives -- a GPU fmax(NaN, 0.0) -> 0.0")
+                ctx.emit("# would erase it and let Newton silently accept a return map")
+                ctx.emit("# that never converged.")
+                ctx.emit("dl = ti.max(dl, 0.0)")
             ctx.emit("")
             ctx.emit("# 7. Update stress and hardening variable")
             ctx.emit("factor = 1.0 - 3.0 * mu * dl / sigma_eq")
@@ -1048,6 +1263,13 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
     is_plastic = _is_plastic_material(material_model)
     is_damage = _is_damage_material(material_model)
     configuration = bundle.problem_ir_dict.get("configuration", "reference")
+    derived = _derived_params(bundle)
+    if derived is not None and configuration == "current":
+        raise NotImplementedError(
+            "LaTeX-derived constitutive models are only wired for Total Lagrangian "
+            "(reference configuration); Updated Lagrangian push-forward of a derived "
+            "tangent is planned for a later phase."
+        )
 
     ctx.emit("# " + "=" * 70)
     ctx.emit("# Internal force kernel")
@@ -1081,6 +1303,10 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
         ctx.emit("def compute_internal_force(lam: ti.f64, mu: ti.f64,")
         ctx.emit("                           sigma_y0: ti.f64, K_hard: ti.f64,")
         ctx.emit("                           n_hard: ti.f64):")
+    elif derived is not None:
+        ctx.emit("@ti.kernel")
+        sig = ", ".join(f"{name}: ti.f64" for name in derived)
+        ctx.emit(f"def compute_internal_force({sig}):")
     else:
         ctx.emit("@ti.kernel")
         ctx.emit("def compute_internal_force(lam: ti.f64, mu: ti.f64):")
@@ -1191,6 +1417,22 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
                                 "F, lam, mu, sigma_y0, K_hard, n_hard, alpha_old)"
                             )
                             ctx.emit("alpha[e, q] = alpha_new")
+                        elif derived is not None:
+                            fiber = _fiber_family0(bundle)
+                            if fiber is not None:
+                                # Anisotropic (HGO): the constitutive func takes
+                                # the per-element fiber direction. Supply it from
+                                # the declared family (element-constant in the MVP).
+                                a0, a1, a2 = fiber
+                                ctx.emit(
+                                    f"a_fiber = ti.Vector([{a0!r}, {a1!r}, {a2!r}])"
+                                    "  # fiber direction (family 0)"
+                                )
+                                call_args = ", ".join(["F", "a_fiber", *derived])
+                            else:
+                                call_args = ", ".join(["F", *derived])
+                            ctx.emit(f"# Constitutive update: S = constitutive_update({call_args})")
+                            ctx.emit(f"S = constitutive_update({call_args})")
                         else:
                             ctx.emit("# Constitutive update: S = constitutive_update(F, lam, mu)")
                             ctx.emit("S = constitutive_update(F, lam, mu)")
@@ -1246,11 +1488,18 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
     ctx.emit("")
 
 
-def _emit_tl_tangent_qp_body(ctx: EmissionContext, is_plastic: bool) -> None:
+def _emit_tl_tangent_qp_body(
+    ctx: EmissionContext,
+    is_plastic: bool,
+    derived_lines: list[str] | None = None,
+) -> None:
     """Emit the Total Lagrangian QP-inner body for the tangent matvec.
 
-    Unchanged from Plan A S_A7.5/S_A9.2.  Factored out of
-    ``emit_tangent_matvec_kernel`` by P1-4 to enable TL/UL dispatch.
+    Factored out of ``emit_tangent_matvec_kernel`` by P1-4 to enable TL/UL
+    dispatch. ``derived_lines`` (when given) replaces the SVK/J2 material branch
+    with the LaTeX-derived stress + ``dS = C_IJKL : dE`` lines from
+    :func:`energy_emitter.emit_derived_tangent_matvec_body`, so a derived bundle
+    linearises about its own tangent instead of the SVK closed form.
     """
     ctx.emit("J0 = X_elem.T @ dN_dxi")
     ctx.emit("detJ0 = float(np.linalg.det(J0))")
@@ -1270,10 +1519,16 @@ def _emit_tl_tangent_qp_body(ctx: EmissionContext, is_plastic: bool) -> None:
     ctx.emit("dE = 0.5 * (F.T @ grad_v + grad_v.T @ F)")
     ctx.emit("")
 
+    # A LaTeX-derived bundle linearises about its own rank-4 tangent: emit the
+    # derived PK2 stress and dS = C_IJKL : dE (host NumPy), skipping both the
+    # family dispatch and the SVK/J2 closed form.
+    if derived_lines is not None:
+        for line in derived_lines:
+            ctx.emit(line)
     # P9-2: family-emitter dispatch for MATERIAL_TANGENT_CONTRACTION
     # (einsum 'qaI,qiIjJ,qbJ->qaibj' — collapsed for SVK into the short
     # closed form). Legacy inline body below is the fallback.
-    if not _dispatch_family(Family.MATERIAL_TANGENT_CONTRACTION, ctx, is_plastic):
+    elif not _dispatch_family(Family.MATERIAL_TANGENT_CONTRACTION, ctx, is_plastic):
         if is_plastic:
             ctx.emit("# J2 algorithmic consistent tangent: re-run the return map")
             ctx.emit("# with the stored alpha.  The result supplies both the")
@@ -1447,6 +1702,7 @@ def emit_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
     is_plastic = _is_plastic_material(material_model)
     is_damage = _is_damage_material(material_model)
     configuration = bundle.problem_ir_dict.get("configuration", "reference")
+    derived = _derived_params(bundle)
 
     ctx.emit("# " + "=" * 70)
     ctx.emit("# Tangent matvec (analytical consistent tangent)")
@@ -1457,6 +1713,9 @@ def emit_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
         ctx.emit("def tangent_matvec(v_flat: np.ndarray, lam: float, mu: float,")
         ctx.emit("                   sigma_y0: float, K_hard: float,")
         ctx.emit("                   n_hard: float) -> np.ndarray:")
+    elif derived is not None:
+        sig = ", ".join(f"{name}: float" for name in derived)
+        ctx.emit(f"def tangent_matvec(v_flat: np.ndarray, {sig}) -> np.ndarray:")
     else:
         ctx.emit("def tangent_matvec(v_flat: np.ndarray, lam: float, mu: float) -> np.ndarray:")
 
@@ -1467,8 +1726,12 @@ def emit_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
         ctx.emit("----------")
         ctx.emit("v_flat : np.ndarray, shape (n_nodes * 3,)")
         ctx.emit("    Direction vector.")
-        ctx.emit("lam, mu : float")
-        ctx.emit("    Lame parameters.")
+        if derived is not None:
+            ctx.emit(f"{', '.join(derived)} : float")
+            ctx.emit("    Material parameters of the LaTeX-derived strain energy.")
+        else:
+            ctx.emit("lam, mu : float")
+            ctx.emit("    Lame parameters.")
         if is_plastic:
             ctx.emit("sigma_y0, K_hard, n_hard : float")
             ctx.emit("    J2 plasticity parameters (used to reconstruct the")
@@ -1561,7 +1824,44 @@ def emit_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
                 if configuration == "current":
                     _emit_ul_tangent_qp_body(ctx, is_plastic)
                 else:
-                    _emit_tl_tangent_qp_body(ctx, is_plastic)
+                    derived_lines: list[str] | None = None
+                    if derived is not None:
+                        from mechdsl.symbolic.anisotropic_energy import AnisotropicEnergyModel
+                        from mechdsl.symbolic.spectral_energy import SpectralEnergyModel
+
+                        de = bundle.derived_energy
+                        assert de is not None  # implied by `derived`
+                        # Spectral / fiber models linearise about a
+                        # central-difference FD tangent (no stable closed form);
+                        # the invariant path uses its symbolic rank-4 C : dE.
+                        if isinstance(de, SpectralEnergyModel):
+                            from mechdsl.codegen.spectral_emitter import (
+                                emit_spectral_tangent_matvec_body,
+                            )
+
+                            derived_lines = emit_spectral_tangent_matvec_body(
+                                de, param_names=derived
+                            )
+                        elif isinstance(de, AnisotropicEnergyModel):
+                            from mechdsl.codegen.anisotropic_emitter import (
+                                emit_anisotropic_tangent_matvec_body,
+                            )
+
+                            fiber = _fiber_family0(bundle)
+                            assert fiber is not None  # HGO problems always declare a fiber
+                            fa0, fa1, fa2 = fiber
+                            derived_lines = [
+                                f"a_fiber = np.array([{fa0!r}, {fa1!r}, {fa2!r}], dtype=np.float64)"
+                                "  # fiber direction (family 0)",
+                                *emit_anisotropic_tangent_matvec_body(de, param_names=derived),
+                            ]
+                        else:
+                            from mechdsl.codegen.energy_emitter import (
+                                emit_derived_tangent_matvec_body,
+                            )
+
+                            derived_lines = emit_derived_tangent_matvec_body(de)
+                    _emit_tl_tangent_qp_body(ctx, is_plastic, derived_lines)
             ctx.emit("")
             ctx.emit("# Scatter element contribution to global tangent-vector product.")
             ctx.emit("for a in range(N_NODES):")
@@ -1569,6 +1869,676 @@ def emit_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
                 ctx.emit("Kv[nodes[a]] += Kv_e[a]")
         ctx.emit("")
         ctx.emit("return Kv.ravel()")
+    ctx.emit("")
+
+
+# ---------------------------------------------------------------------------
+# PlanJune14 P3-2 — generated @ti.kernel matrix-free SVK tangent operator
+#
+# The function above (``emit_tangent_matvec_kernel``) emits a host-NumPy
+# ``tangent_matvec`` consumed by the imported ``CGSolver`` in the emitted
+# Newton driver. P3-2 adds — *alongside* it, not replacing it — a generated
+# ``@ti.kernel`` that applies the SVK tangent ``K(u)·v`` **fully matrix-free**
+# (D-A: never store element tangents), routing the tangent contraction through
+# the Layer-4b einsum optimiser (the P3-1 ``ContractionPlan``) and calling the
+# Tier-1 ``ti_runtime`` ``@ti.func`` helpers. The kernel targets the
+# ``ti_runtime`` ``apply_A(out, x)`` seam (like the PJ-1 spike) so a generated
+# PCG / Newton driver can inject it.
+#
+# Why alongside, not in place: the host ``tangent_matvec`` name, its closed-form
+# ``dS = lam*tr(dE)*I + 2*mu*dE`` body, and the ``def tangent_matvec(`` signature
+# are pinned by ``test_taichi_printer.py`` / ``test_codegen.py`` and the three
+# ``*.py.golden`` snapshots, and the host function is wired into the emitted
+# Newton driver's ``CGSolver`` call. A wholesale swap would cascade through every
+# e2e/golden/J2/UL path. The smallest faithful P3-2 delivery is the generated
+# ``@ti.kernel`` SVK route plus its <1e-10 parity + JIT-budget gates; flipping
+# the default emission to it (and the J2 variant) are the explicitly-downstream
+# tasks P4-3 and P5-1.
+#
+# The A-formation. The P3-1 contraction ``qaI,qiIjJ,qbJ,bj->qai`` applies the
+# consistent **two-point** tangent ``A(i,I,j,J)`` such that
+# ``dP_{iI} = A_{iIjJ} (∂v_j/∂X_J)``. For SVK that A (matching the spike's
+# ``dP = grad_v·S + F·(C:dE)``) collapses to the closed form, per quadrature
+# point,
+#
+#     A_{iIjJ} = δ_{ij} S_{JI}                (geometric / initial-stress)
+#              + λ F_{iI} F_{jJ}
+#              + μ (F F^T)_{ij} δ_{IJ}
+#              + μ F_{iJ} F_{jI}              (material, F·(C:dE))
+#
+# (the constant SVK ``C_{KLMN} = λ δ_{KL}δ_{MN} + μ(δ_{KM}δ_{LN}+δ_{KN}δ_{LM})``
+# is folded analytically, so no rank-4 array is built in the hot loop). Verified
+# to machine precision vs ``tests/ref/ref_hex8_elastic.element_tangent_matvec``.
+# ---------------------------------------------------------------------------
+
+
+def _emit_svk_consistent_tangent_A(ctx: EmissionContext) -> None:
+    """Emit the per-QP consistent two-point SVK tangent ``A[i,I,j,J]``.
+
+    Forms the rank-4 array ``A`` (a 9×9 ``ti.Matrix`` flattened on the
+    ``(i,I)`` × ``(j,J)`` pairs) from the in-scope ``F`` (deformation
+    gradient) and ``S`` (PK2 stress). The SVK material tangent ``C`` is the
+    constant closed form, so the contraction ``F·(C:dE)`` collapses to the
+    closed form ``λ F_{iI}F_{jJ} + μ (FF^T)_{ij}δ_{IJ} + μ F_{iJ}F_{jI}`` — no
+    fourth-order ``C`` array is materialised. All four indices are physics
+    indices (range 3) and therefore ``ti.static``-unrolled per 07-CONVENTIONS;
+    81 cells × a handful of terms keeps the assembly comfortably inside the
+    ``@ti.kernel`` budget.
+
+    Assumes ``lam`` / ``mu`` and the 3×3 ``F`` / ``S`` matrices are already
+    in scope. Emits ``A`` as a ``ti.Matrix`` of shape (9, 9) with row index
+    ``i*DIM + I`` and column index ``j*DIM + J`` so the optimiser-path
+    contraction below can index it as ``A[i*DIM + I, j*DIM + J]``.
+    """
+    ctx.emit("# Consistent two-point SVK tangent A[i,I,j,J] such that")
+    ctx.emit("#   dP_{iI} = A_{iIjJ} * grad_v_{jJ}   (grad_v_{jJ} = sum_b v_{bj} dNdX_{bJ}).")
+    ctx.emit("# SVK closed form (no rank-4 C array; C:dE collapses analytically):")
+    ctx.emit("#   A_{iIjJ} = delta_{ij} S_{JI}        (geometric / initial stress)")
+    ctx.emit("#            + lam F_{iI} F_{jJ}")
+    ctx.emit("#            + mu (F F^T)_{ij} delta_{IJ}")
+    ctx.emit("#            + mu F_{iJ} F_{jI}          (material, F.(C:dE))")
+    ctx.emit("# Stored 9x9 on the (i,I)x(j,J) pairs (row i*DIM+I, col j*DIM+J).")
+    ctx.emit("FFt = F @ F.transpose()")
+    ctx.emit("A = ti.Matrix.zero(ti.f64, DIM * DIM, DIM * DIM)")
+    ctx.emit("for i in ti.static(range(DIM)):")
+    with ctx.indent_block():
+        ctx.emit("for I in ti.static(range(DIM)):")
+        with ctx.indent_block():
+            ctx.emit("for j in ti.static(range(DIM)):")
+            with ctx.indent_block():
+                ctx.emit("for J in ti.static(range(DIM)):")
+                with ctx.indent_block():
+                    ctx.emit("# material: lam F_{iI} F_{jJ} + mu F_{iJ} F_{jI}")
+                    ctx.emit("a_iIjJ = lam * F[i, I] * F[j, J] + mu * F[i, J] * F[j, I]")
+                    ctx.emit("# geometric: delta_{ij} S_{JI}")
+                    ctx.emit("if i == j:")
+                    with ctx.indent_block():
+                        ctx.emit("a_iIjJ += S[J, I]")
+                    ctx.emit("# material: mu (F F^T)_{ij} delta_{IJ}")
+                    ctx.emit("if I == J:")
+                    with ctx.indent_block():
+                        ctx.emit("a_iIjJ += mu * FFt[i, j]")
+                    ctx.emit("A[i * DIM + I, j * DIM + J] = a_iIjJ")
+
+
+def _emit_optimised_matvec_contraction(ctx: EmissionContext, plan: ContractionPlan) -> None:
+    """Emit the P3-1 optimiser-recorded matvec contraction as ``ti.static`` loops.
+
+    The matrix-free tangent contraction is ``qaI,qiIjJ,qbJ,bj->qai`` with the
+    operand order ``(dN, A, dN, v)``. We do **not** hand-roll a contraction
+    order: we consume ``plan.contraction_path`` (the opt_einsum path produced
+    by Layer-4b for this exact einsum) and realise the recorded pairwise steps.
+    For the SVK Hex8 matvec opt_einsum records the path
+    ``[(2, 3), (1, 2), (0, 1)]``, i.e. the three steps
+
+        step 1:  bj, qbJ -> jqJ        (grad_v_{jJ} = sum_b v_{bj} dNdX_{bJ})
+        step 2:  jqJ, qiIjJ -> qiI     (dP_{iI}    = grad_v_{jJ} A_{iIjJ})
+        step 3:  qiI, qaI -> qai       (Kv_{ai}    = dP_{iI} dNdX_{aI})
+
+    each emitted here as ``ti.static`` physics-index loops (i,I,j,J range 3)
+    with the node dummies ``b``/``a`` (range 8) as runtime gathers. The quad
+    index ``q`` is the kernel's enclosing ``ti.static`` quadrature loop, so it
+    is fixed in this block (the recorded ``q`` axis is a no-op per call). This
+    keeps the contraction optimiser-derived rather than hand-written, while
+    fitting the JIT budget (203 estimated lines, Tier 2).
+
+    Guard: P3-2's MVP path assumes the canonical 3-step SVK Hex8 path. If a
+    future ElementIR yields a different path the emitter fails loud rather than
+    silently emitting a mismatched contraction.
+    """
+    expected_path = [(2, 3), (1, 2), (0, 1)]
+    if list(plan.contraction_path) != expected_path:
+        raise NotImplementedError(
+            "P3-2 generated matrix-free SVK tangent expects the canonical "
+            f"opt_einsum path {expected_path} for '{plan.einsum_string}', got "
+            f"{plan.contraction_path}. A path-generic emitter is planned for a "
+            "later phase (multi-element support); for the Hex8 SVK MVP the "
+            "optimiser is deterministic, so this guard should never trip."
+        )
+
+    ctx.emit(f"# Optimiser-recorded contraction path {list(plan.contraction_path)} for")
+    ctx.emit(f"#   {plan.einsum_string}   operands (dNdX, A, dNdX, v).")
+    ctx.emit("# Realised as the three recorded pairwise steps; physics indices")
+    ctx.emit("# (i, I, j, J in range DIM) are ti.static, node dummies (a, b) runtime.")
+    ctx.emit("")
+    # Step 1: grad_v_{jJ} = sum_b v_{bj} dNdX_{bJ}  (path step (2, 3): v ⊗ dN over b)
+    ctx.emit("# step 1  (path (2, 3)):  bj, qbJ -> jJ    grad_v_{jJ}")
+    ctx.emit("grad_v = ti.Matrix.zero(ti.f64, DIM, DIM)")
+    ctx.emit("for b in range(N_NODES):")
+    with ctx.indent_block():
+        ctx.emit("nid_b = elem_nodes[e, b]")
+        ctx.emit("for j in ti.static(range(DIM)):")
+        with ctx.indent_block():
+            ctx.emit("for J in ti.static(range(DIM)):")
+            with ctx.indent_block():
+                ctx.emit("grad_v[j, J] += v[nid_b][j] * dNdX[b, J]")
+    ctx.emit("")
+    # Step 2: dP_{iI} = sum_{jJ} grad_v_{jJ} A_{iIjJ}  (path step (1, 2))
+    ctx.emit("# step 2  (path (1, 2)):  jJ, iIjJ -> iI    dP_{iI} = A_{iIjJ} grad_v_{jJ}")
+    ctx.emit("dP = ti.Matrix.zero(ti.f64, DIM, DIM)")
+    ctx.emit("for i in ti.static(range(DIM)):")
+    with ctx.indent_block():
+        ctx.emit("for I in ti.static(range(DIM)):")
+        with ctx.indent_block():
+            ctx.emit("acc = ti.f64(0.0)")
+            ctx.emit("for j in ti.static(range(DIM)):")
+            with ctx.indent_block():
+                ctx.emit("for J in ti.static(range(DIM)):")
+                with ctx.indent_block():
+                    ctx.emit("acc += A[i * DIM + I, j * DIM + J] * grad_v[j, J]")
+            ctx.emit("dP[i, I] = acc")
+    ctx.emit("")
+    # Step 3: Kv_{ai} = sum_I dP_{iI} dNdX_{aI}  (path step (0, 1)), scattered to nodes
+    ctx.emit("# step 3  (path (0, 1)):  iI, aI -> ai    Kv_{ai} = dP_{iI} dNdX_{aI}")
+    ctx.emit("# scattered to global nodes with the quadrature weight (atomic add).")
+    ctx.emit("for a in range(N_NODES):")
+    with ctx.indent_block():
+        ctx.emit("nid_a = elem_nodes[e, a]")
+        ctx.emit("for i in ti.static(range(DIM)):")
+        with ctx.indent_block():
+            ctx.emit("kv_ai = ti.f64(0.0)")
+            ctx.emit("for I in ti.static(range(DIM)):")
+            with ctx.indent_block():
+                ctx.emit("kv_ai += dP[i, I] * dNdX[a, I]")
+            ctx.emit("out[nid_a][i] += w_q * detJ0 * kv_ai")
+
+
+def emit_svk_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
+    """Emit the generated ``@ti.kernel`` matrix-free SVK tangent operator (P3-2).
+
+    Emits ``svk_tangent_matvec_apply(out, v, lam, mu)`` — a ``@ti.kernel``
+    that applies ``K(u)·v`` fully matrix-free over all elements. It recomputes
+    the tangent per matvec (locked decision D-A; element tangents are never
+    stored), forms the consistent two-point SVK tangent ``A(i,I,j,J)`` per
+    quadrature point from the Tier-1 ``ti_runtime`` kinematics helpers, and
+    applies it to ``v`` via the **P3-1 optimiser-recorded contraction path**
+    (consumed from :func:`build_tangent_matvec_plan`). The result scatters to
+    the global ``out`` field via atomic add, targeting the ``ti_runtime``
+    ``apply_A(out, x)`` injection seam.
+
+    Only emitted for the SVK / Total-Lagrangian / reference / named-model path
+    (see :func:`emit`). J2's algorithmic tangent (P5-1), the LaTeX-derived
+    tangent, and the Updated-Lagrangian push-forward stay on the host
+    ``tangent_matvec`` route for now.
+
+    The kernel reads the live displacement field ``u`` (so it always reflects
+    the current Newton iterate) and the mesh fields ``x_ref`` / ``elem_nodes``
+    declared by :func:`emit_field_declarations`; ``out`` and ``v`` are
+    ``ti.template()`` vector fields supplied by the caller (the seam binding).
+    """
+    from mechdsl.ir.element_ir import create_hex8_element_ir
+    from mechdsl.lowering.einsum_extract import build_tangent_matvec_plan
+
+    # Route the tangent contraction through Layer-4b: this is the P3-1
+    # ContractionPlan (opt_einsum path + JIT-budget-checked tier), not a
+    # hand-rolled einsum. The path drives the loop structure emitted below.
+    element_ir = create_hex8_element_ir(formulation="total_lagrangian", configuration="reference")
+    plan = build_tangent_matvec_plan(element_ir)
+
+    ctx.emit("# " + "=" * 70)
+    ctx.emit("# Generated matrix-free SVK tangent @ti.kernel (PlanJune14 P3-2)")
+    ctx.emit("#")
+    ctx.emit("# Applies K(u)·v fully matrix-free (D-A: element tangents never stored),")
+    ctx.emit("# recomputed per matvec. The tangent contraction rides the P3-1")
+    ctx.emit(
+        f"# opt_einsum ContractionPlan ('{plan.einsum_string}', path {list(plan.contraction_path)},"
+    )
+    ctx.emit(f"# tier {plan.tier}). Kinematics use the Tier-1 ti_runtime @ti.func")
+    ctx.emit("# helpers; the kernel targets the ti_runtime apply_A(out, x) seam.")
+    ctx.emit("# " + "=" * 70)
+    ctx.emit("")
+    ctx.emit("from ti_runtime import tensor_ti as _tt")
+    ctx.emit("")
+    ctx.emit("")
+    ctx.emit("@ti.kernel")
+    ctx.emit("def svk_tangent_matvec_apply(")
+    ctx.emit("    out: ti.template(),")
+    ctx.emit("    v: ti.template(),")
+    ctx.emit("    lam: ti.f64,")
+    ctx.emit("    mu: ti.f64,")
+    ctx.emit("):")
+    with ctx.indent_block():
+        ctx.emit('"""Matrix-free SVK tangent: out = K(u) · v, recomputed per call.')
+        ctx.emit("")
+        ctx.emit("D-A (06-CODEGEN §3.3): no element stiffness is ever formed or stored.")
+        ctx.emit("``out`` is zeroed here, then element contributions are scattered via")
+        ctx.emit("Taichi's implicit atomic add. ``u`` (current Newton iterate) and the")
+        ctx.emit("mesh fields ``x_ref`` / ``elem_nodes`` are read live.")
+        ctx.emit("")
+        ctx.emit("The tangent contraction is the P3-1 opt_einsum ContractionPlan for")
+        ctx.emit(f"``{plan.einsum_string}`` (operands dNdX, A, dNdX, v), realised as the")
+        ctx.emit(f"recorded path {list(plan.contraction_path)} (tier {plan.tier}, within")
+        ctx.emit("the 512-line @ti.func JIT budget).")
+        ctx.emit('"""')
+        ctx.emit("# Zero the output field (mesh loop — runtime).")
+        ctx.emit("for n in range(n_nodes):")
+        with ctx.indent_block():
+            ctx.emit("out[n] = ti.Vector([0.0, 0.0, 0.0], dt=ti.f64)")
+        ctx.emit("")
+        ctx.emit("# Loop over elements (runtime — mesh index).")
+        ctx.emit("for e in range(n_elem):")
+        with ctx.indent_block():
+            ctx.emit("# Gather element reference coordinates.")
+            ctx.emit("X_elem = ti.Matrix.zero(ti.f64, N_NODES, DIM)")
+            ctx.emit("for a in range(N_NODES):")
+            with ctx.indent_block():
+                ctx.emit("nid = elem_nodes[e, a]")
+                ctx.emit("for d in ti.static(range(DIM)):")
+                with ctx.indent_block():
+                    ctx.emit("X_elem[a, d] = x_ref[nid][d]")
+            ctx.emit("")
+            ctx.emit("# Quadrature loop (RUNTIME — PlanJune14 WI-1 JIT-budget lever).")
+            ctx.emit("# Runtime q divides the per-QP unroll by N_QP (8); physics indices")
+            ctx.emit("# i,I,j,J,a,d stay ti.static. The body can no longer index the")
+            ctx.emit("# Python-list quad constants by a runtime q, so it reads the")
+            ctx.emit("# device-resident _GRAD_AT_QUAD_F / _QUAD_WEIGHTS_F filled in")
+            ctx.emit("# allocate_fields() (codegen.md: runtime-q is convention-clean once")
+            ctx.emit("# the body no longer indexes Python-list constants).")
+            ctx.emit("for q in range(N_QP):")
+            with ctx.indent_block():
+                ctx.emit("w_q = _QUAD_WEIGHTS_F[q]")
+                ctx.emit("# Parametric shape gradients dN/dxi at this quad point.")
+                ctx.emit("dN_dxi = ti.Matrix.zero(ti.f64, N_NODES, DIM)")
+                ctx.emit("for a in ti.static(range(N_NODES)):")
+                with ctx.indent_block():
+                    ctx.emit("for d in ti.static(range(DIM)):")
+                    with ctx.indent_block():
+                        ctx.emit("dN_dxi[a, d] = _GRAD_AT_QUAD_F[q, a, d]")
+                ctx.emit("")
+                ctx.emit("# Reference Jacobian J0 = X^T @ dN/dxi and dNdX = dN/dxi @ J0^{-1}.")
+                ctx.emit("J0 = X_elem.transpose() @ dN_dxi")
+                ctx.emit("detJ0 = _tt.det3(J0)")
+                ctx.emit("# Degenerate-element guard (07-CONVENTIONS §6).")
+                ctx.emit("if detJ0 > 1e-15:")
+                with ctx.indent_block():
+                    ctx.emit("dNdX = dN_dxi @ _tt.inv3(J0)")
+                    ctx.emit("")
+                    ctx.emit("# Material displacement gradient grad_u = sum_a u_a (x) dNdX_a.")
+                    ctx.emit("grad_u = ti.Matrix.zero(ti.f64, DIM, DIM)")
+                    ctx.emit("for a in range(N_NODES):")
+                    with ctx.indent_block():
+                        ctx.emit("nid = elem_nodes[e, a]")
+                        ctx.emit("for i in ti.static(range(DIM)):")
+                        with ctx.indent_block():
+                            ctx.emit("for I in ti.static(range(DIM)):")
+                            with ctx.indent_block():
+                                ctx.emit("grad_u[i, I] += u[nid][i] * dNdX[a, I]")
+                    ctx.emit("")
+                    ctx.emit("# Kinematics + PK2 (SVK) via Tier-1 ti_runtime helpers.")
+                    ctx.emit("F = _tt.deformation_gradient(grad_u)")
+                    ctx.emit("E = _tt.green_lagrange(F)")
+                    ctx.emit("S = lam * _tt.trace3(E) * _tt.identity3() + 2.0 * mu * E")
+                    ctx.emit("")
+                    _emit_svk_consistent_tangent_A(ctx)
+                    ctx.emit("")
+                    _emit_optimised_matvec_contraction(ctx, plan)
+    ctx.emit("")
+
+
+# ---------------------------------------------------------------------------
+# PlanJune14 P5-1 — generated @ti.kernel matrix-free J2 algorithmic tangent
+#
+# The dissipative-model counterpart of ``emit_svk_tangent_matvec_kernel``
+# (P3-2). J2 plasticity is dissipative, so the tangent is the **algorithmic
+# consistent tangent** — the linearisation of the radial-return map, NOT
+# ∂²Ψ/∂E² (``.claude/rules/symbolic.md``). It is state-dependent: every matvec
+# re-runs the return map per quadrature point with the **on-device** history
+# field ``alpha[e, q]`` (read-only — the matvec never advances history) to
+# recover the current PK2 stress ``S`` and the rank-4 algorithmic tangent
+# ``C_ep``.
+#
+# The two-point tangent ``A(i,I,j,J)`` reuses the SVK structure (geometric +
+# material) but folds the J2 ``C_ep`` instead of the SVK closed form:
+#
+#     A_{iIjJ} = δ_{ij} S_{JI}                    (geometric / initial stress)
+#              + sum_{K,M} F_{iK} C_ep_{KIMJ} F_{jM}   (material, F·(C_ep:dE))
+#
+# (matching ``ref_hex8_plastic.element_tangent_matvec_plastic``:
+# ``dP = grad_v @ S + F @ (C_ep : dE)`` with ``dE = sym(F^T grad_v)``). Once
+# ``A`` is formed the matvec rides the **same** P3-1 opt_einsum ContractionPlan
+# (``qaI,qiIjJ,qbJ,bj->qai``) realised by ``_emit_optimised_matvec_contraction``
+# — the contraction is path-driven and JIT-budget-checked exactly as for SVK
+# (Tier 2, ~203 lines, primary PJ risk). The on-device ``C_ep`` assembly uses
+# the closed Simo & Hughes §3.4 Box 3.5 form, byte-for-byte the algebra of
+# ``j2_power_law.assemble_j2_like_tangent`` / ``elastic_tangent``, so the
+# generated operator matches the reference algorithmic tangent to f64 precision.
+# ---------------------------------------------------------------------------
+
+
+def _emit_j2_algorithmic_tangent_C(ctx: EmissionContext) -> None:
+    """Emit the on-device J2 PK2 stress ``S`` and algorithmic tangent ``C_ep``.
+
+    Recomputes the radial-return map from the in-scope deformation gradient
+    ``F``, Green-Lagrange strain ``E``, the stored history ``alpha_old``, and
+    the material parameters ``lam`` / ``mu`` / ``sigma_y0`` / ``K_hard`` /
+    ``n_hard``. Assigns two names into the kernel scope:
+
+    * ``S``    — current PK2 stress (3×3 ``ti.Matrix``), and
+    * ``C_ep`` — the rank-4 algorithmic consistent tangent stored as a 9×9
+      ``ti.Matrix`` flattened on the ``(K,I)`` × ``(M,J)`` index pairs
+      (row ``K*DIM + I``, column ``M*DIM + J``).
+
+    The tangent is the **algorithmic** consistent tangent (linearisation of the
+    return map), per the dissipative-model rule — NOT ∂²Ψ/∂E². The elastic
+    branch returns the isotropic elastic tangent
+    ``C_IJKL = λ δ_IJ δ_KL + μ(δ_IK δ_JL + δ_IL δ_JK)``; the plastic branch
+    returns the Simo & Hughes Box 3.5 form
+
+        C_ep = κ (I⊗I) + 2μθ P_dev + (9μ²dl/q − 9μ²/(3μ+H')) (n⊗n)
+
+    with κ = λ + 2μ/3, θ = 1 − 3μ dl/q, q = σ_eq^trial, n = S_dev^trial/q,
+    H' = K n_hard alpha_new^(n_hard−1). All indices are physics indices
+    (range 3) → ``ti.static`` per 07-CONVENTIONS; the return-map Newton loop
+    mirrors ``_emit_j2_constitutive`` (same tol/guards, 07-CONVENTIONS §6).
+    """
+    ctx.emit("# J2 algorithmic consistent tangent (dissipative model — this is the")
+    ctx.emit("# linearisation of the radial-return map, NOT d2Psi/dE2). Recomputed")
+    ctx.emit("# per matvec from the on-device history alpha[e, q] (read-only here).")
+    ctx.emit("I3 = _tt.identity3()")
+    ctx.emit("# Elastic trial PK2 stress S_trial = lam tr(E) I + 2 mu E.")
+    ctx.emit("tr_E = _tt.trace3(E)")
+    ctx.emit("S_trial = lam * tr_E * I3 + 2.0 * mu * E")
+    ctx.emit("# Deviatoric / volumetric split.")
+    ctx.emit("tr_S = _tt.trace3(S_trial)")
+    ctx.emit("S_vol = (tr_S / 3.0) * I3")
+    ctx.emit("S_dev_trial = S_trial - S_vol")
+    ctx.emit("# von Mises equivalent trial stress.")
+    ctx.emit("s_sq = ti.f64(0.0)")
+    ctx.emit("for i in ti.static(range(DIM)):")
+    with ctx.indent_block():
+        ctx.emit("for j in ti.static(range(DIM)):")
+        with ctx.indent_block():
+            ctx.emit("s_sq += S_dev_trial[i, j] * S_dev_trial[i, j]")
+    ctx.emit("sigma_eq = ti.sqrt(1.5 * s_sq)")
+    ctx.emit("")
+    ctx.emit("# Yield check against the stored hardening state.")
+    ctx.emit("sigma_y = sigma_y0 + K_hard * ti.pow(alpha_old, n_hard)")
+    ctx.emit("# Defaults: elastic step keeps the trial stress and the elastic tangent.")
+    ctx.emit("S = S_trial")
+    ctx.emit("dl = ti.f64(0.0)")
+    ctx.emit("is_plastic = 0")
+    ctx.emit("# Near-zero deviatoric guard (07-CONVENTIONS §6) folds into the yield test.")
+    ctx.emit("if sigma_eq > 1e-12 * sigma_y and sigma_eq > sigma_y:")
+    with ctx.indent_block():
+        ctx.emit("is_plastic = 1")
+        ctx.emit("# Radial return: Newton iteration for the plastic multiplier dl.")
+        ctx.emit("# Stress-scaled tolerance: f has units of stress (MPa), so an")
+        ctx.emit("# absolute tol is unreachable at steel-scale sigma. Mirrors the")
+        ctx.emit("# reference radial_return (j2_power_law.py) with tol=1e-12.")
+        ctx.emit("stress_ref = ti.max(ti.max(ti.abs(sigma_eq), sigma_y), 1.0)")
+        ctx.emit("effective_tol = ti.max(1e-12, 1e-12 * stress_ref)")
+        ctx.emit("converged = 0")
+        ctx.emit("for _it in range(20):")
+        with ctx.indent_block():
+            ctx.emit("alpha_trial = alpha_old + dl")
+            ctx.emit("sy = sigma_y0 + K_hard * ti.pow(alpha_trial, n_hard)")
+            ctx.emit("f = sigma_eq - 3.0 * mu * dl - sy")
+            ctx.emit("if ti.abs(f) < effective_tol:  # tol per 07-CONVENTIONS §6")
+            with ctx.indent_block():
+                ctx.emit("converged = 1")
+                ctx.emit("break")
+            ctx.emit(
+                "H_prime = K_hard * n_hard * ti.pow(alpha_trial, n_hard - 1.0) "
+                "if alpha_trial > 1e-12 else 0.0"
+            )
+            ctx.emit("df = -3.0 * mu - H_prime")
+            ctx.emit("dl -= f / df")
+        ctx.emit("# Guard: flag ANY non-convergence of the return map (parity with the")
+        ctx.emit("# host constitutive_update_plastic emitter) — a non-converged return")
+        ctx.emit("# map poisons the tangent with NaN rather than silently emitting a")
+        ctx.emit("# wrong C_ep; the NaN propagates through C_ep to the matvec output.")
+        ctx.emit("# COUPLING: the converged flag is set by the in-loop check, which keys")
+        ctx.emit("# off effective_tol (change one -> revisit the other). The explicit")
+        ctx.emit("# flag (vs a post-loop residual-magnitude test) closes the band gap")
+        ctx.emit("# where a result in (effective_tol, 1e3*effective_tol] would be")
+        ctx.emit("# silently accepted; the reference raises on loop exhaustion.")
+        ctx.emit("if converged == 0:")
+        with ctx.indent_block():
+            ctx.emit("# Non-converged: set NaN flag (propagates to the Newton driver).")
+            ctx.emit("dl = ti.f64(float('nan'))")
+        ctx.emit("else:")
+        with ctx.indent_block():
+            ctx.emit("# Converged: clamp dl >= 0 (negative plastic multiplier is")
+            ctx.emit("# non-physical). Gated under else: so the NaN sentinel on the")
+            ctx.emit("# non-converged branch survives -- a GPU fmax(NaN, 0.0) -> 0.0")
+            ctx.emit("# would erase it and silently poison the tangent.")
+            ctx.emit("dl = ti.max(dl, 0.0)")
+        ctx.emit("# Updated PK2 stress: radial scaling of the deviatoric trial.")
+        ctx.emit("factor = 1.0 - 3.0 * mu * dl / sigma_eq")
+        ctx.emit("S = S_vol + factor * S_dev_trial")
+    ctx.emit("")
+    ctx.emit("# Assemble the rank-4 tangent C_ep, stored 9x9 on the (K,I)x(M,J) pairs.")
+    ctx.emit("# Elastic: C_IJKL = lam dKL dMN + mu(dKM dLN + dKN dLM).")
+    ctx.emit("# Plastic (Simo & Hughes Box 3.5):")
+    ctx.emit("#   C_ep = kappa (I (x) I) + 2 mu theta P_dev")
+    ctx.emit("#        + (9 mu^2 dl / q - 9 mu^2 / (3 mu + H')) (n (x) n)")
+    ctx.emit("# with kappa = lam + 2 mu/3, theta = 1 - 3 mu dl / q, q = sigma_eq,")
+    ctx.emit("# n = S_dev_trial / q, H' = K n_hard alpha_new^(n_hard-1).")
+    ctx.emit("kappa = lam + 2.0 * mu / 3.0")
+    ctx.emit("theta = ti.f64(1.0)")
+    ctx.emit("nn_coeff = ti.f64(0.0)")
+    ctx.emit("n_flow = ti.Matrix.zero(ti.f64, DIM, DIM)")
+    ctx.emit("if is_plastic != 0:")
+    with ctx.indent_block():
+        ctx.emit("alpha_new = alpha_old + dl")
+        ctx.emit(
+            "H_prime_final = K_hard * n_hard * ti.pow(alpha_new, n_hard - 1.0) "
+            "if alpha_new > 1e-12 else 0.0"
+        )
+        ctx.emit("theta = 1.0 - 3.0 * mu * dl / sigma_eq")
+        ctx.emit(
+            "nn_coeff = 9.0 * mu * mu * dl / sigma_eq - 9.0 * mu * mu / (3.0 * mu + H_prime_final)"
+        )
+        ctx.emit("n_flow = S_dev_trial / sigma_eq")
+    ctx.emit("C_ep = ti.Matrix.zero(ti.f64, DIM * DIM, DIM * DIM)")
+    ctx.emit("for K in ti.static(range(DIM)):")
+    with ctx.indent_block():
+        ctx.emit("for I in ti.static(range(DIM)):")
+        with ctx.indent_block():
+            ctx.emit("for M in ti.static(range(DIM)):")
+            with ctx.indent_block():
+                ctx.emit("for J in ti.static(range(DIM)):")
+                with ctx.indent_block():
+                    ctx.emit("# Symmetric identity I4_sym and volumetric I (x) I terms.")
+                    ctx.emit("dKI = 1.0 if K == I else 0.0")
+                    ctx.emit("dMJ = 1.0 if M == J else 0.0")
+                    ctx.emit("dKM = 1.0 if K == M else 0.0")
+                    ctx.emit("dIJ = 1.0 if I == J else 0.0")
+                    ctx.emit("dKJ = 1.0 if K == J else 0.0")
+                    ctx.emit("dIM = 1.0 if I == M else 0.0")
+                    ctx.emit("i4_sym = 0.5 * (dKM * dIJ + dKJ * dIM)")
+                    ctx.emit("ixi = dKI * dMJ")
+                    ctx.emit("# P_dev = I4_sym - (1/3) I (x) I.")
+                    ctx.emit("p_dev = i4_sym - (1.0 / 3.0) * ixi")
+                    ctx.emit("c_val = kappa * ixi + 2.0 * mu * theta * p_dev")
+                    ctx.emit("c_val += nn_coeff * n_flow[K, I] * n_flow[M, J]")
+                    ctx.emit("C_ep[K * DIM + I, M * DIM + J] = c_val")
+
+
+def _emit_j2_consistent_tangent_A(ctx: EmissionContext) -> None:
+    """Emit the per-QP consistent two-point J2 tangent ``A[i,I,j,J]``.
+
+    Folds the in-scope rank-4 algorithmic tangent ``C_ep`` (9×9 on the
+    ``(K,I)`` × ``(M,J)`` pairs, from :func:`_emit_j2_algorithmic_tangent_C`)
+    and PK2 stress ``S`` into the same two-point structure the SVK path uses,
+    so the downstream optimiser-recorded contraction is identical::
+
+        A_{iIjJ} = δ_{ij} S_{JI}                     (geometric / initial stress)
+                 + sum_{K,M} F_{iK} C_ep_{KIMJ} F_{jM}   (material, F·(C_ep:dE))
+
+    matching ``ref_hex8_plastic`` (``dP = grad_v @ S + F @ (C_ep : dE)`` with
+    ``dE = sym(F^T grad_v)``; the symmetrisation is absorbed by the minor
+    symmetry of ``C_ep`` in ``(M,J)``). All six indices (i,I,j,J,K,M) are
+    physics indices (range 3) → ``ti.static`` per 07-CONVENTIONS; the result is
+    a 9×9 ``ti.Matrix`` indexed ``A[i*DIM + I, j*DIM + J]`` for the contraction
+    below.
+    """
+    ctx.emit("# Consistent two-point J2 tangent A[i,I,j,J] such that")
+    ctx.emit("#   dP_{iI} = A_{iIjJ} * grad_v_{jJ}   (grad_v_{jJ} = sum_b v_{bj} dNdX_{bJ}).")
+    ctx.emit("#   A_{iIjJ} = delta_{ij} S_{JI}                       (geometric / initial stress)")
+    ctx.emit("#            + sum_{K,M} F_{iK} C_ep_{KIMJ} F_{jM}     (material, F.(C_ep:dE))")
+    ctx.emit("# Stored 9x9 on the (i,I)x(j,J) pairs (row i*DIM+I, col j*DIM+J).")
+    ctx.emit("A = ti.Matrix.zero(ti.f64, DIM * DIM, DIM * DIM)")
+    ctx.emit("for i in ti.static(range(DIM)):")
+    with ctx.indent_block():
+        ctx.emit("for I in ti.static(range(DIM)):")
+        with ctx.indent_block():
+            ctx.emit("for j in ti.static(range(DIM)):")
+            with ctx.indent_block():
+                ctx.emit("for J in ti.static(range(DIM)):")
+                with ctx.indent_block():
+                    ctx.emit("# material: sum_{K,M} F_{iK} C_ep_{KIMJ} F_{jM}")
+                    ctx.emit("a_iIjJ = ti.f64(0.0)")
+                    ctx.emit("for K in ti.static(range(DIM)):")
+                    with ctx.indent_block():
+                        ctx.emit("for M in ti.static(range(DIM)):")
+                        with ctx.indent_block():
+                            ctx.emit("a_iIjJ += F[i, K] * C_ep[K * DIM + I, M * DIM + J] * F[j, M]")
+                    ctx.emit("# geometric: delta_{ij} S_{JI}")
+                    ctx.emit("if i == j:")
+                    with ctx.indent_block():
+                        ctx.emit("a_iIjJ += S[J, I]")
+                    ctx.emit("A[i * DIM + I, j * DIM + J] = a_iIjJ")
+
+
+def emit_j2_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
+    """Emit the generated ``@ti.kernel`` matrix-free J2 tangent operator (P5-1).
+
+    Emits ``j2_tangent_matvec_apply(out, v, lam, mu, sigma_y0, K_hard, n_hard)``
+    — a ``@ti.kernel`` that applies the **J2 algorithmic consistent tangent**
+    ``K(u)·v`` fully matrix-free over all elements, the dissipative-model
+    counterpart of :func:`emit_svk_tangent_matvec_kernel`.
+
+    Per quadrature point it re-runs the radial-return map with the **on-device**
+    history ``alpha[e, q]`` (read-only — history advances only in
+    ``compute_internal_force``, never in the matvec) to obtain the current PK2
+    stress ``S`` and the rank-4 algorithmic tangent ``C_ep``
+    (:func:`_emit_j2_algorithmic_tangent_C`), folds them into the consistent
+    two-point tangent ``A(i,I,j,J)`` (:func:`_emit_j2_consistent_tangent_A`),
+    and applies it to ``v`` via the **same** P3-1 optimiser-recorded contraction
+    path as SVK (:func:`_emit_optimised_matvec_contraction`). The result
+    scatters to the global ``out`` field via atomic add, targeting the
+    ``ti_runtime`` ``apply_A(out, x)`` injection seam.
+
+    No NumPy touches the operator: ``alpha`` is read from the device field, the
+    return map runs in the kernel, and the contraction is the same Tier-1
+    ``ti_runtime`` / ``ti.static`` path. Only emitted for the J2 /
+    Total-Lagrangian / reference path (see :func:`emit`).
+    """
+    from mechdsl.ir.element_ir import create_hex8_element_ir
+    from mechdsl.lowering.einsum_extract import build_tangent_matvec_plan
+
+    # Same Layer-4b ContractionPlan as the SVK generated kernel: the tangent
+    # contraction (qaI,qiIjJ,qbJ,bj->qai) is identical once A is formed; only
+    # the per-QP A-formation differs (J2 algorithmic tangent vs SVK closed form).
+    element_ir = create_hex8_element_ir(formulation="total_lagrangian", configuration="reference")
+    plan = build_tangent_matvec_plan(element_ir)
+
+    ctx.emit("# " + "=" * 70)
+    ctx.emit("# Generated matrix-free J2 algorithmic-tangent @ti.kernel (PlanJune14 P5-1)")
+    ctx.emit("#")
+    ctx.emit("# Applies the J2 ALGORITHMIC CONSISTENT TANGENT K(u)·v fully matrix-free")
+    ctx.emit("# (D-A: element tangents never stored), recomputed per matvec. The tangent")
+    ctx.emit("# is the linearisation of the radial-return map (NOT d2Psi/dE2 — J2 is")
+    ctx.emit("# dissipative; see .claude/rules/symbolic.md). History alpha[e, q] is read")
+    ctx.emit("# on-device (read-only); it advances only in compute_internal_force. The")
+    ctx.emit(f"# contraction rides the P3-1 opt_einsum ContractionPlan ('{plan.einsum_string}',")
+    ctx.emit(f"# path {list(plan.contraction_path)}, tier {plan.tier}) — the same path as the")
+    ctx.emit("# SVK kernel; kinematics use the Tier-1 ti_runtime @ti.func helpers.")
+    ctx.emit("# " + "=" * 70)
+    ctx.emit("")
+    ctx.emit("from ti_runtime import tensor_ti as _tt")
+    ctx.emit("")
+    ctx.emit("")
+    ctx.emit("@ti.kernel")
+    ctx.emit("def j2_tangent_matvec_apply(")
+    ctx.emit("    out: ti.template(),")
+    ctx.emit("    v: ti.template(),")
+    ctx.emit("    lam: ti.f64,")
+    ctx.emit("    mu: ti.f64,")
+    ctx.emit("    sigma_y0: ti.f64,")
+    ctx.emit("    K_hard: ti.f64,")
+    ctx.emit("    n_hard: ti.f64,")
+    ctx.emit("):")
+    with ctx.indent_block():
+        ctx.emit('"""Matrix-free J2 algorithmic tangent: out = K(u) · v, per call.')
+        ctx.emit("")
+        ctx.emit("D-A (06-CODEGEN §3.3): no element stiffness is ever formed or stored.")
+        ctx.emit("``out`` is zeroed here, then element contributions are scattered via")
+        ctx.emit("Taichi's implicit atomic add. ``u`` (current Newton iterate), the mesh")
+        ctx.emit("fields ``x_ref`` / ``elem_nodes``, and the history ``alpha`` are read")
+        ctx.emit("live; ``alpha`` is NOT written (history advances in compute_internal_force).")
+        ctx.emit("")
+        ctx.emit("The tangent is the J2 algorithmic consistent tangent (linearisation of")
+        ctx.emit("the radial-return map). The contraction is the P3-1 opt_einsum")
+        ctx.emit(f"ContractionPlan for ``{plan.einsum_string}`` (operands dNdX, A, dNdX, v),")
+        ctx.emit(f"realised as the recorded path {list(plan.contraction_path)} (tier {plan.tier}).")
+        ctx.emit('"""')
+        ctx.emit("# Zero the output field (mesh loop — runtime).")
+        ctx.emit("for n in range(n_nodes):")
+        with ctx.indent_block():
+            ctx.emit("out[n] = ti.Vector([0.0, 0.0, 0.0], dt=ti.f64)")
+        ctx.emit("")
+        ctx.emit("# Loop over elements (runtime — mesh index).")
+        ctx.emit("for e in range(n_elem):")
+        with ctx.indent_block():
+            ctx.emit("# Gather element reference coordinates.")
+            ctx.emit("X_elem = ti.Matrix.zero(ti.f64, N_NODES, DIM)")
+            ctx.emit("for a in range(N_NODES):")
+            with ctx.indent_block():
+                ctx.emit("nid = elem_nodes[e, a]")
+                ctx.emit("for d in ti.static(range(DIM)):")
+                with ctx.indent_block():
+                    ctx.emit("X_elem[a, d] = x_ref[nid][d]")
+            ctx.emit("")
+            ctx.emit("# Quadrature loop (RUNTIME — PlanJune14 WI-1 JIT-budget lever).")
+            ctx.emit("# Runtime q divides the per-QP unroll by N_QP (8); physics indices")
+            ctx.emit("# i,I,j,J,K,M,a,d stay ti.static. The body can no longer index the")
+            ctx.emit("# Python-list quad constants by a runtime q, so it reads the")
+            ctx.emit("# device-resident _GRAD_AT_QUAD_F / _QUAD_WEIGHTS_F filled in")
+            ctx.emit("# allocate_fields() (codegen.md: runtime-q is convention-clean once")
+            ctx.emit("# the body no longer indexes Python-list constants).")
+            ctx.emit("for q in range(N_QP):")
+            with ctx.indent_block():
+                ctx.emit("w_q = _QUAD_WEIGHTS_F[q]")
+                ctx.emit("# Parametric shape gradients dN/dxi at this quad point.")
+                ctx.emit("dN_dxi = ti.Matrix.zero(ti.f64, N_NODES, DIM)")
+                ctx.emit("for a in ti.static(range(N_NODES)):")
+                with ctx.indent_block():
+                    ctx.emit("for d in ti.static(range(DIM)):")
+                    with ctx.indent_block():
+                        ctx.emit("dN_dxi[a, d] = _GRAD_AT_QUAD_F[q, a, d]")
+                ctx.emit("")
+                ctx.emit("# Reference Jacobian J0 = X^T @ dN/dxi and dNdX = dN/dxi @ J0^{-1}.")
+                ctx.emit("J0 = X_elem.transpose() @ dN_dxi")
+                ctx.emit("detJ0 = _tt.det3(J0)")
+                ctx.emit("# Degenerate-element guard (07-CONVENTIONS §6).")
+                ctx.emit("if detJ0 > 1e-15:")
+                with ctx.indent_block():
+                    ctx.emit("dNdX = dN_dxi @ _tt.inv3(J0)")
+                    ctx.emit("")
+                    ctx.emit("# Material displacement gradient grad_u = sum_a u_a (x) dNdX_a.")
+                    ctx.emit("grad_u = ti.Matrix.zero(ti.f64, DIM, DIM)")
+                    ctx.emit("for a in range(N_NODES):")
+                    with ctx.indent_block():
+                        ctx.emit("nid = elem_nodes[e, a]")
+                        ctx.emit("for i in ti.static(range(DIM)):")
+                        with ctx.indent_block():
+                            ctx.emit("for I in ti.static(range(DIM)):")
+                            with ctx.indent_block():
+                                ctx.emit("grad_u[i, I] += u[nid][i] * dNdX[a, I]")
+                    ctx.emit("")
+                    ctx.emit("# Kinematics via Tier-1 ti_runtime helpers.")
+                    ctx.emit("F = _tt.deformation_gradient(grad_u)")
+                    ctx.emit("E = _tt.green_lagrange(F)")
+                    ctx.emit("# Read the stored history (on-device, read-only).")
+                    ctx.emit("alpha_old = alpha[e, q]")
+                    ctx.emit("")
+                    _emit_j2_algorithmic_tangent_C(ctx)
+                    ctx.emit("")
+                    _emit_j2_consistent_tangent_A(ctx)
+                    ctx.emit("")
+                    _emit_optimised_matvec_contraction(ctx, plan)
     ctx.emit("")
 
 
@@ -1588,6 +2558,7 @@ def emit_newton_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     material_model = bundle.problem_ir_dict.get("material", {}).get("model", "svk")
     is_plastic = _is_plastic_material(material_model)
     is_damage = _is_damage_material(material_model)
+    derived = _derived_params(bundle)
 
     ctx.emit("# " + "=" * 70)
     ctx.emit("# Newton-Raphson driver")
@@ -1595,7 +2566,15 @@ def emit_newton_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     ctx.emit("")
     ctx.emit("")
 
-    if is_damage:
+    if derived is not None:
+        sig = ", ".join(f"{name}: float" for name in derived)
+        ctx.emit(f"def newton_solve({sig},")
+        ctx.emit("                 bc_dofs: np.ndarray | None = None,")
+        ctx.emit("                 bc_values: np.ndarray | None = None,")
+        ctx.emit("                 max_iter: int = 20,")
+        ctx.emit("                 tol_abs: float = 1.0e-10,")
+        ctx.emit("                 tol_rel: float = 1.0e-8) -> int:")
+    elif is_damage:
         ctx.emit("def newton_solve(lam: float, mu: float,")
         ctx.emit("                 sigma_y0: float, K_hard: float, n_hard: float,")
         ctx.emit("                 S_d_val: float, s_d_val: float, eps_D_val: float,")
@@ -1629,8 +2608,12 @@ def emit_newton_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
         ctx.emit("")
         ctx.emit("Parameters")
         ctx.emit("----------")
-        ctx.emit("lam, mu : float")
-        ctx.emit("    Lame parameters.")
+        if derived is not None:
+            ctx.emit(f"{', '.join(derived)} : float")
+            ctx.emit("    Material parameters of the LaTeX-derived strain energy.")
+        else:
+            ctx.emit("lam, mu : float")
+            ctx.emit("    Lame parameters.")
         if is_plastic:
             ctx.emit("sigma_y0, K_hard, n_hard : float")
             ctx.emit("    J2 plasticity parameters.")
@@ -1669,8 +2652,64 @@ def emit_newton_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
             ctx.emit("u_arr[bc_dofs] = bc_values")
             ctx.emit("u.from_numpy(u_arr.reshape((-1, 3)))")
         ctx.emit("")
+        if is_plastic:
+            # Plastic history is held in a SINGLE `alpha` field that
+            # `compute_internal_force` mutates in place each call
+            # (alpha_old = alpha[e, q]; ...; alpha[e, q] = alpha_new). Newton
+            # iterations are *trial* states for one load step: every residual /
+            # tangent evaluation must read the COMMITTED (step-start) history as
+            # alpha_old, exactly like the reference solve_plastic, which keeps
+            # alpha_old/alpha_current separate and assembles each iteration from
+            # alpha_old. Without this, iteration k's return map would read
+            # iteration k-1's trial alpha as alpha_old, ratcheting plastic strain
+            # and stalling Newton. Snapshot the committed history here, restore it
+            # at the top of every iteration (below). After the converged
+            # iteration `alpha` holds the correct alpha_new (committed + Δλ at the
+            # converged u) — the commit is implicit/by-construction.
+            #
+            # PERF NOTE: the committed history is held in device-resident mirror
+            # fields (_alpha_committed, and _damage_D_committed / _is_deleted_committed
+            # for damage materials). Snapshot/restore/rollback are on-device
+            # ti.field.copy_from() calls — an O(field) device-to-device copy of the
+            # (n_elem, N_QP) history, with NO host round-trip per iteration. This
+            # replaces the earlier alpha.to_numpy() / from_numpy() compatibility
+            # path, which moved the history host<->device every Newton iteration.
+            ctx.emit("# Snapshot committed plastic history (see comment below).")
+            ctx.emit("_alpha_committed.copy_from(alpha)")
+            if is_damage:
+                # Damage materials (Lemaitre) carry two more mutable history
+                # fields that compute_internal_force advances in place each call:
+                # damage_D[e, q] (D_old -> D_new) and the one-way is_deleted[e].
+                # Both must follow the same committed/trial discipline as alpha —
+                # they are TRIAL state within a step (rolled back on a failed
+                # iteration; committed by construction once the step converges),
+                # matching the reference Lemaitre rollback-both (see
+                # tests/test_lemaitre_acceptance.py::_newton_step_lemaitre, which
+                # snapshots+restores alpha AND damage_D around every residual eval).
+                # Without this, damage_D / is_deleted would drift across Newton
+                # iterations exactly as alpha did before the WI-2 fix.
+                # copy_from is dtype-agnostic: it works for the f64 damage_D and
+                # the i32 is_deleted alike (raw same-shape field copy on device).
+                ctx.emit("_damage_D_committed.copy_from(damage_D)")
+                ctx.emit("_is_deleted_committed.copy_from(is_deleted)")
+            ctx.emit("")
         ctx.emit("for iteration in range(max_iter):")
         with ctx.indent_block():
+            if is_plastic:
+                ctx.emit("# Restore committed history so this iteration's return")
+                ctx.emit("# map reads the step-start alpha_old (not the previous")
+                ctx.emit("# iteration's trial). Matches ref solve_plastic, which")
+                ctx.emit("# assembles every iteration from the committed alpha_old.")
+                ctx.emit("# On-device copy_from — no host round-trip.")
+                ctx.emit("alpha.copy_from(_alpha_committed)")
+                if is_damage:
+                    ctx.emit("# Same trial-state discipline for the damage history:")
+                    ctx.emit("# restore committed damage_D and is_deleted so this")
+                    ctx.emit("# iteration's constitutive update advances them from the")
+                    ctx.emit("# step-start state, not the previous trial.")
+                    ctx.emit("damage_D.copy_from(_damage_D_committed)")
+                    ctx.emit("is_deleted.copy_from(_is_deleted_committed)")
+                ctx.emit("")
             ctx.emit("# Step 1: Compute internal force")
             if is_damage:
                 ctx.emit("compute_internal_force(lam, mu, sigma_y0, K_hard, n_hard,")
@@ -1678,6 +2717,8 @@ def emit_newton_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
                 ctx.emit("                       E_mod_val, nu_val, D_crit)")
             elif is_plastic:
                 ctx.emit("compute_internal_force(lam, mu, sigma_y0, K_hard, n_hard)")
+            elif derived is not None:
+                ctx.emit(f"compute_internal_force({', '.join(derived)})")
             else:
                 ctx.emit("compute_internal_force(lam, mu)")
             ctx.emit("")
@@ -1722,6 +2763,8 @@ def emit_newton_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
                     ctx.emit("v_bc[bc_dofs] = 0.0")
                 if is_plastic:
                     ctx.emit("Kv = tangent_matvec(v_bc, lam, mu, sigma_y0, K_hard, n_hard)")
+                elif derived is not None:
+                    ctx.emit(f"Kv = tangent_matvec(v_bc, {', '.join(derived)})")
                 else:
                     ctx.emit("Kv = tangent_matvec(v_bc, lam, mu)")
                 ctx.emit("if bc_dofs is not None:")
@@ -1745,6 +2788,21 @@ def emit_newton_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
             ctx.emit("u_arr = u.to_numpy()")
             ctx.emit("u.from_numpy(u_arr + du_arr)")
         ctx.emit("")
+        if is_plastic:
+            # Non-convergence: leave committed history intact (mirror the
+            # reference solve_plastic's history.rollback() before raising) — a
+            # failed step must not advance plastic strain.
+            ctx.emit("# Non-convergence: roll plastic history back to the committed")
+            ctx.emit("# state before raising (ref solve_plastic does history.rollback()).")
+            ctx.emit("# On-device copy_from — no host round-trip.")
+            ctx.emit("alpha.copy_from(_alpha_committed)")
+            if is_damage:
+                ctx.emit("# Roll the damage history back too (is_deleted is trial")
+                ctx.emit("# state within a step; a failed iteration must not commit a")
+                ctx.emit("# one-way element deletion). Mirrors the reference")
+                ctx.emit("# _newton_step_lemaitre rollback-both before raising.")
+                ctx.emit("damage_D.copy_from(_damage_D_committed)")
+                ctx.emit("is_deleted.copy_from(_is_deleted_committed)")
         ctx.emit(
             "raise RuntimeError("
             'f"Newton did not converge in {max_iter} iterations. '
@@ -2110,6 +3168,7 @@ def emit_main(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     is_damage = _is_damage_material(material_model)
     params = bundle.problem_ir_dict.get("material", {}).get("params", {})
     dynamics_mode = bundle.problem_ir_dict.get("dynamics_mode", "static")
+    derived = _derived_params(bundle)
 
     # Explicit-dynamics __main__: no Newton solve; the generated module exposes
     # advance_one_step(dt) so the user drives time stepping externally. We emit
@@ -2179,20 +3238,34 @@ def emit_main(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
         ctx.emit("")
         ctx.emit("# Material parameters")
 
-        # Compute Lamé parameters: use direct lam/mu if available, else derive from E/nu
-        if "lam" in params and "mu" in params:
-            lam = params["lam"]
-            mu = params["mu"]
-        elif "E" in params and "nu" in params:
-            E_val = params["E"]
-            nu_val = params["nu"]
-            lam = E_val * nu_val / ((1 + nu_val) * (1 - 2 * nu_val))
-            mu = E_val / (2 * (1 + nu_val))
+        if derived is not None:
+            # LaTeX-derived model: emit one ``<name>_val`` per derived parameter,
+            # sourced by name from the IR material params (fail loud if missing
+            # rather than defaulting to a silently-wrong zero).
+            missing = [name for name in derived if name not in params]
+            if missing:
+                raise ValueError(
+                    f"derived material parameters {missing} are absent from the IR "
+                    f"material params {sorted(params)}; the strain-energy LaTeX uses "
+                    "them, so they must be supplied via MaterialSpec(params={...})."
+                )
+            for name in derived:
+                ctx.emit(f"{name}_val = {_fmt_float(float(params[name]))}")
         else:
-            lam = params.get("lam", 0.0)
-            mu = params.get("mu", 0.0)
-        ctx.emit(f"lam_val = {_fmt_float(lam)}")
-        ctx.emit(f"mu_val = {_fmt_float(mu)}")
+            # Compute Lamé parameters: use direct lam/mu if available, else derive from E/nu
+            if "lam" in params and "mu" in params:
+                lam = params["lam"]
+                mu = params["mu"]
+            elif "E" in params and "nu" in params:
+                E_val = params["E"]
+                nu_val = params["nu"]
+                lam = E_val * nu_val / ((1 + nu_val) * (1 - 2 * nu_val))
+                mu = E_val / (2 * (1 + nu_val))
+            else:
+                lam = params.get("lam", 0.0)
+                mu = params.get("mu", 0.0)
+            ctx.emit(f"lam_val = {_fmt_float(lam)}")
+            ctx.emit(f"mu_val = {_fmt_float(mu)}")
 
         if is_plastic:
             ctx.emit(f"sigma_y0_val = {_fmt_float(params.get('sigma_y0', 0.0))}")
@@ -2256,6 +3329,9 @@ def emit_main(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
             ctx.emit("n_iters = newton_solve(lam_val, mu_val,")
             ctx.emit("                       sigma_y0_val, K_hard_val, n_hard_val,")
             ctx.emit("                       bc_dofs=bc_dofs)")
+        elif derived is not None:
+            vals = ", ".join(f"{name}_val" for name in derived)
+            ctx.emit(f"n_iters = newton_solve({vals}, bc_dofs=bc_dofs, bc_values=bc_values)")
         else:
             ctx.emit(
                 "n_iters = newton_solve(lam_val, mu_val, bc_dofs=bc_dofs, bc_values=bc_values)"
@@ -2299,9 +3375,17 @@ def emit(bundle: ArtifactBundle) -> str:
     """
     ctx = EmissionContext()
 
-    # Validate material model before emission
+    # Validate material model before emission. P3-1: a bundle carrying a
+    # LaTeX-derived energy model emits its constitutive @ti.func from that
+    # energy (see emit_constitutive_update), so the named-model allow-list
+    # does not gate it — any model whose law was derived from a strain-energy
+    # density (e.g. neo_hookean) is admissible through the derived branch.
     material_model = bundle.problem_ir_dict.get("material", {}).get("model", "svk")
-    if material_model not in ("svk", "j2_power_law", "lemaitre"):
+    if bundle.derived_energy is None and material_model not in (
+        "svk",
+        "j2_power_law",
+        "lemaitre",
+    ):
         raise ValueError(
             f"Unsupported material model '{material_model}' for Taichi codegen. "
             f"Supported for emission: svk, j2_power_law, lemaitre. "
@@ -2326,6 +3410,29 @@ def emit(bundle: ArtifactBundle) -> str:
         emit_explicit_driver(ctx, bundle)
     else:
         emit_tangent_matvec_kernel(ctx, bundle)
+        # PlanJune14 P3-2: emit the generated matrix-free SVK tangent @ti.kernel
+        # *alongside* the host tangent_matvec, for the SVK / Total-Lagrangian /
+        # reference / named-model path only. The host route stays the default
+        # the emitted Newton driver drives (flipping the default is P4-3); the
+        # generated @ti.kernel is the optimiser-routed, ti_runtime-seam operator
+        # that downstream tasks (P4-3, P5-1, P7-2) consume. Gating on this exact
+        # path keeps every other golden (Lemaitre, UL, derived, explicit)
+        # byte-identical.
+        configuration = bundle.problem_ir_dict.get("configuration", "reference")
+        if material_model == "svk" and bundle.derived_energy is None and configuration != "current":
+            emit_svk_tangent_matvec_kernel(ctx, bundle)
+        # PlanJune14 P5-1: J2's dissipative counterpart — the generated matrix-free
+        # *algorithmic consistent tangent* @ti.kernel, emitted alongside the host
+        # tangent_matvec for the J2 / Total-Lagrangian / reference path only (NOT
+        # Lemaitre, which layers damage and stays on the host route until a
+        # damage-aware tangent lands). Same opt_einsum contraction path as SVK;
+        # only the per-QP A-formation re-runs the return map on-device.
+        elif (
+            material_model == "j2_power_law"
+            and bundle.derived_energy is None
+            and configuration != "current"
+        ):
+            emit_j2_tangent_matvec_kernel(ctx, bundle)
         emit_validate_mesh(ctx)
         emit_newton_driver(ctx, bundle)
     emit_postprocess(ctx, bundle)
@@ -2441,6 +3548,14 @@ class TaichiCodegenFacade:
     def tangent_matvec_kernel(self, ctx: EmissionContext, bundle: ArtifactBundle) -> None:
         """Delegate to :func:`emit_tangent_matvec_kernel`."""
         return emit_tangent_matvec_kernel(ctx, bundle)
+
+    def svk_tangent_matvec_kernel(self, ctx: EmissionContext, bundle: ArtifactBundle) -> None:
+        """Delegate to :func:`emit_svk_tangent_matvec_kernel` (P3-2 generated kernel)."""
+        return emit_svk_tangent_matvec_kernel(ctx, bundle)
+
+    def j2_tangent_matvec_kernel(self, ctx: EmissionContext, bundle: ArtifactBundle) -> None:
+        """Delegate to :func:`emit_j2_tangent_matvec_kernel` (P5-1 generated kernel)."""
+        return emit_j2_tangent_matvec_kernel(ctx, bundle)
 
     def validate_mesh(self, ctx: EmissionContext) -> None:
         """Delegate to :func:`emit_validate_mesh`."""

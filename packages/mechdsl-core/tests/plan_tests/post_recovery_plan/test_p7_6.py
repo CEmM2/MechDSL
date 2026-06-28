@@ -89,8 +89,10 @@ class TestTaskP7_6:
                 "rather than failed."
             )
         data = json.loads(meta.read_text(encoding="utf-8"))
-        last_raw = data.get("lastIndexed") or data.get("last_indexed")
-        assert last_raw is not None, ".gitnexus/meta.json must record `lastIndexed` after refresh"
+        last_raw = data.get("lastIndexed") or data.get("last_indexed") or data.get("indexedAt")
+        assert last_raw is not None, (
+            ".gitnexus/meta.json must record `lastIndexed` or GitNexus `indexedAt` after refresh"
+        )
         last_indexed = _parse_last_indexed(str(last_raw))
         head_time = _head_commit_time()
         if head_time is None:

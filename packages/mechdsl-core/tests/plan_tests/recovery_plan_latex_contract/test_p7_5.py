@@ -35,12 +35,56 @@ PLANS_DIR = REPO_ROOT / "dev" / "plans"
 TASKS_DIR = REPO_ROOT / "dev" / "tasks"
 TRACKING_DIR = REPO_ROOT / "dev" / "tracking"
 
-# The single active execution source for the recovery effort.
-ACTIVE_PLAN_STEMS = {"recovery_plan_latex_contract"}
-ACTIVE_TASK_DIRS = {"recovery_plan_latex_contract", "post_recovery_plan"}
+# Active execution sources: completed recovery foundations plus the current
+# successor plans that explicitly continue after them. ``constitutive_latex``
+# is the current active plan (the LaTeX-derived constitutive pipeline — Phase 3
+# is merged on main, Phase 4 (Mooney-Rivlin + Ogden) is pending), so it is
+# authoritative, not superseded. ``akms_executable_bridge`` is the active
+# coupling plan (MechDSL as the AKMS-Learn executable_bridge — Phase 1 / Tier-1
+# integration surface is implemented; Phases 2-3 execute in the AKMS and
+# Logic-Loom repos), so it is authoritative, not superseded.
+# ``issue307`` is the active algo2code parser/codegen fix plan (issue #307);
+# workstreams W1–W6 are implemented in this PR (fail-loud foundation, SSA vector
+# lowering, transpose alias, PCG parity gate, deferral tests, and inclusive
+# for-loop lowering), so the plan remains authoritative pending merge/close, not
+# superseded.
+# ``PlanJune14`` is the active SVK/J2 all-Taichi-seam plan; ``pj14_fix`` (its
+# Codex-remediation child) and ``pj316_resolution`` (the active plan resolving
+# the PR #316 review findings) continue it, so all three are authoritative, not
+# superseded — allowlisted rather than bannered (the "still active" model).
+ACTIVE_PLAN_STEMS = {
+    "recovery_plan_latex_contract",
+    "fgram",
+    "constitutive_latex",
+    "akms_executable_bridge",
+    "issue307",
+    "PlanJune14",
+    "pj14_fix",
+    "pj316_resolution",
+    # ``PlanJune14_closure`` is the active closure record for PlanJune14 (PJ-7
+    # governance) — an authoritative governance artifact, not a superseded plan.
+    "PlanJune14_closure",
+    # ``june16`` is an active backlog/roadmap planning note (2026-06-16), not a
+    # superseded plan.
+    "june16",
+}
+ACTIVE_TASK_DIRS = {
+    "recovery_plan_latex_contract",
+    "post_recovery_plan",
+    "fgram",
+    "constitutive_latex",
+    "akms_executable_bridge",
+    # PlanJune14 is active (see ACTIVE_PLAN_STEMS) -> its task folder is too.
+    "PlanJune14",
+}
 ACTIVE_TRACKER_STEMS = {
     "tasks-tracker_recovery_plan_latex_contract",
     "tasks-tracker_post_recovery_plan",
+    "tasks-tracker_fgram",
+    "tasks-tracker_constitutive_latex",
+    "tasks-tracker_akms_executable_bridge",
+    # PlanJune14 is active (see ACTIVE_PLAN_STEMS) -> its tracker is too.
+    "tasks-tracker_PlanJune14",
 }
 
 # Trackers that are conventions / vocabulary, not plan execution sources.

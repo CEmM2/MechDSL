@@ -37,7 +37,6 @@ from mechdsl.verify.convergence import (
 )
 
 if TYPE_CHECKING:
-
     from mechdsl.ir.element_ir import ElementIR
 
 MMSElementType = Literal["hex8", "tet10", "hex20"]
@@ -118,7 +117,9 @@ def run_mms_convergence_matrix(
 
     matrix = tuple(cases) if cases is not None else default_mms_matrix_cases()
     _validate_mesh_levels(mesh_levels)
-    interpolation_cache: dict[MMSElementType, tuple[list[float], list[float], list[float], tuple[int, ...]]] = {}
+    interpolation_cache: dict[
+        MMSElementType, tuple[list[float], list[float], list[float], tuple[int, ...]]
+    ] = {}
     entries = tuple(
         _run_case(
             case,
@@ -140,7 +141,9 @@ def _run_case(
     L: float,
     A: float,
     tol: float,
-    interpolation_cache: dict[MMSElementType, tuple[list[float], list[float], list[float], tuple[int, ...]]],
+    interpolation_cache: dict[
+        MMSElementType, tuple[list[float], list[float], list[float], tuple[int, ...]]
+    ],
 ) -> MMSConvergenceEntry:
     _validate_case(case)
     if case.policy == "svk_full_solve":

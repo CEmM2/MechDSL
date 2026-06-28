@@ -135,8 +135,18 @@ residual = ti.Vector.field(3, dtype=ti.f64)     # residual = f_int - f_ext
 du = ti.Vector.field(3, dtype=ti.f64)           # displacement increment
 Kv = ti.Vector.field(3, dtype=ti.f64)           # tangent matvec result
 elem_nodes = ti.field(dtype=ti.i32)             # connectivity
+
+# Quadrature tables as ti.fields (PlanJune14 WI-1): the matrix-free
+# tangent matvec kernels run the q-loop at RUNTIME (the ÷8 JIT-budget
+# lever), so they cannot index the Python-list constants GRAD_AT_QUAD /
+# QUAD_WEIGHTS by a runtime q. These device-resident copies are filled
+# from those constants in allocate_fields(). The Python lists are kept
+# for the ti.static-q residual kernel and the host-NumPy paths.
+_GRAD_AT_QUAD_F = ti.field(dtype=ti.f64)         # (N_QP, N_NODES, DIM)
+_QUAD_WEIGHTS_F = ti.field(dtype=ti.f64)         # (N_QP,)
 # History fields for J2 plasticity
 alpha = ti.field(dtype=ti.f64)                    # accumulated plastic strain (n_elem x N_QP)
+_alpha_committed = ti.field(dtype=ti.f64)         # committed alpha snapshot (n_elem x N_QP)
 
 
 def allocate_fields(nn: int, ne: int) -> None:
@@ -146,7 +156,12 @@ def allocate_fields(nn: int, ne: int) -> None:
     n_elem = ne
     ti.root.dense(ti.i, n_nodes).place(x_ref, x_cur, u, f_int, f_ext, residual, du, Kv)
     ti.root.dense(ti.ij, (n_elem, N_NODES)).place(elem_nodes)
+    ti.root.dense(ti.ijk, (N_QP, N_NODES, DIM)).place(_GRAD_AT_QUAD_F)
+    ti.root.dense(ti.i, N_QP).place(_QUAD_WEIGHTS_F)
     ti.root.dense(ti.ij, (n_elem, N_QP)).place(alpha)
+    ti.root.dense(ti.ij, (n_elem, N_QP)).place(_alpha_committed)
+    _GRAD_AT_QUAD_F.from_numpy(np.asarray(GRAD_AT_QUAD, dtype=np.float64))
+    _QUAD_WEIGHTS_F.from_numpy(np.asarray(QUAD_WEIGHTS, dtype=np.float64))
 
 
 # ======================================================================
@@ -195,24 +210,39 @@ def constitutive_update_plastic(
     if sigma_eq > 1e-12 * sigma_y and sigma_eq > sigma_y:
         # 6. Radial return: Newton iteration for delta_lambda
         dl = ti.f64(0.0)
+        # Stress-scaled tolerance: f has units of stress (MPa), so an
+        # absolute tol is unreachable at steel-scale sigma. Mirrors the
+        # reference radial_return (j2_power_law.py) with tol=1e-12.
+        stress_ref = ti.max(ti.max(ti.abs(sigma_eq), sigma_y), 1.0)
+        effective_tol = ti.max(1e-12, 1e-12 * stress_ref)
+        converged = 0
         for _it in range(20):
             alpha_trial = alpha_old + dl
             sy = sigma_y0 + K_hard * ti.pow(alpha_trial, n_hard)
             f = sigma_eq - 3.0 * mu * dl - sy
-            if ti.abs(f) < 1e-12:  # tol per 07-CONVENTIONS.md §6
+            if ti.abs(f) < effective_tol:  # tol per 07-CONVENTIONS.md §6
+                converged = 1
                 break
-            H_prime = K_hard * n_hard * ti.pow(alpha_trial, n_hard - 1.0) if alpha_trial > 1e-30 else 0.0
+            H_prime = K_hard * n_hard * ti.pow(alpha_trial, n_hard - 1.0) if alpha_trial > 1e-12 else 0.0
             df = -3.0 * mu - H_prime
             dl -= f / df
 
-        # Guard: check Newton convergence for return mapping
-        f_final = sigma_eq - 3.0 * mu * dl - (sigma_y0 + K_hard * ti.pow(alpha_old + dl, n_hard))
-        if ti.abs(f_final) > 1e-8:
+        # Guard: flag ANY non-convergence of the return-map Newton loop.
+        # COUPLING: the converged flag is set by the in-loop check, which
+        # keys off effective_tol (change one -> revisit the other). Using an
+        # explicit flag (vs a post-loop residual-magnitude test) closes the
+        # band gap where a result in (effective_tol, 1e3*effective_tol] would
+        # be silently accepted; the reference raises on loop exhaustion.
+        if converged == 0:
             # Non-converged: set NaN flag (propagates to Newton driver)
             dl = ti.f64(float('nan'))
-
-        # Clamp dl >= 0 (negative plastic multiplier is non-physical)
-        dl = ti.max(dl, 0.0)
+        else:
+            # Converged: clamp dl >= 0 (negative plastic multiplier is
+            # non-physical). Gated under else: so the NaN sentinel on the
+            # non-converged branch survives -- a GPU fmax(NaN, 0.0) -> 0.0
+            # would erase it and let Newton silently accept a return map
+            # that never converged.
+            dl = ti.max(dl, 0.0)
 
         # 7. Update stress and hardening variable
         factor = 1.0 - 3.0 * mu * dl / sigma_eq
@@ -389,6 +419,250 @@ def tangent_matvec(v_flat: np.ndarray, lam: float, mu: float,
     return Kv.ravel()
 
 # ======================================================================
+# Generated matrix-free J2 algorithmic-tangent @ti.kernel (PlanJune14 P5-1)
+#
+# Applies the J2 ALGORITHMIC CONSISTENT TANGENT K(u)·v fully matrix-free
+# (D-A: element tangents never stored), recomputed per matvec. The tangent
+# is the linearisation of the radial-return map (NOT d2Psi/dE2 — J2 is
+# dissipative; see .claude/rules/symbolic.md). History alpha[e, q] is read
+# on-device (read-only); it advances only in compute_internal_force. The
+# contraction rides the P3-1 opt_einsum ContractionPlan ('qaI,qiIjJ,qbJ,bj->qai',
+# path [(2, 3), (1, 2), (0, 1)], tier 2) — the same path as the
+# SVK kernel; kinematics use the Tier-1 ti_runtime @ti.func helpers.
+# ======================================================================
+
+from ti_runtime import tensor_ti as _tt
+
+
+@ti.kernel
+def j2_tangent_matvec_apply(
+    out: ti.template(),
+    v: ti.template(),
+    lam: ti.f64,
+    mu: ti.f64,
+    sigma_y0: ti.f64,
+    K_hard: ti.f64,
+    n_hard: ti.f64,
+):
+    """Matrix-free J2 algorithmic tangent: out = K(u) · v, per call.
+
+    D-A (06-CODEGEN §3.3): no element stiffness is ever formed or stored.
+    ``out`` is zeroed here, then element contributions are scattered via
+    Taichi's implicit atomic add. ``u`` (current Newton iterate), the mesh
+    fields ``x_ref`` / ``elem_nodes``, and the history ``alpha`` are read
+    live; ``alpha`` is NOT written (history advances in compute_internal_force).
+
+    The tangent is the J2 algorithmic consistent tangent (linearisation of
+    the radial-return map). The contraction is the P3-1 opt_einsum
+    ContractionPlan for ``qaI,qiIjJ,qbJ,bj->qai`` (operands dNdX, A, dNdX, v),
+    realised as the recorded path [(2, 3), (1, 2), (0, 1)] (tier 2).
+    """
+    # Zero the output field (mesh loop — runtime).
+    for n in range(n_nodes):
+        out[n] = ti.Vector([0.0, 0.0, 0.0], dt=ti.f64)
+
+    # Loop over elements (runtime — mesh index).
+    for e in range(n_elem):
+        # Gather element reference coordinates.
+        X_elem = ti.Matrix.zero(ti.f64, N_NODES, DIM)
+        for a in range(N_NODES):
+            nid = elem_nodes[e, a]
+            for d in ti.static(range(DIM)):
+                X_elem[a, d] = x_ref[nid][d]
+
+        # Quadrature loop (RUNTIME — PlanJune14 WI-1 JIT-budget lever).
+        # Runtime q divides the per-QP unroll by N_QP (8); physics indices
+        # i,I,j,J,K,M,a,d stay ti.static. The body can no longer index the
+        # Python-list quad constants by a runtime q, so it reads the
+        # device-resident _GRAD_AT_QUAD_F / _QUAD_WEIGHTS_F filled in
+        # allocate_fields() (codegen.md: runtime-q is convention-clean once
+        # the body no longer indexes Python-list constants).
+        for q in range(N_QP):
+            w_q = _QUAD_WEIGHTS_F[q]
+            # Parametric shape gradients dN/dxi at this quad point.
+            dN_dxi = ti.Matrix.zero(ti.f64, N_NODES, DIM)
+            for a in ti.static(range(N_NODES)):
+                for d in ti.static(range(DIM)):
+                    dN_dxi[a, d] = _GRAD_AT_QUAD_F[q, a, d]
+
+            # Reference Jacobian J0 = X^T @ dN/dxi and dNdX = dN/dxi @ J0^{-1}.
+            J0 = X_elem.transpose() @ dN_dxi
+            detJ0 = _tt.det3(J0)
+            # Degenerate-element guard (07-CONVENTIONS §6).
+            if detJ0 > 1e-15:
+                dNdX = dN_dxi @ _tt.inv3(J0)
+
+                # Material displacement gradient grad_u = sum_a u_a (x) dNdX_a.
+                grad_u = ti.Matrix.zero(ti.f64, DIM, DIM)
+                for a in range(N_NODES):
+                    nid = elem_nodes[e, a]
+                    for i in ti.static(range(DIM)):
+                        for I in ti.static(range(DIM)):
+                            grad_u[i, I] += u[nid][i] * dNdX[a, I]
+
+                # Kinematics via Tier-1 ti_runtime helpers.
+                F = _tt.deformation_gradient(grad_u)
+                E = _tt.green_lagrange(F)
+                # Read the stored history (on-device, read-only).
+                alpha_old = alpha[e, q]
+
+                # J2 algorithmic consistent tangent (dissipative model — this is the
+                # linearisation of the radial-return map, NOT d2Psi/dE2). Recomputed
+                # per matvec from the on-device history alpha[e, q] (read-only here).
+                I3 = _tt.identity3()
+                # Elastic trial PK2 stress S_trial = lam tr(E) I + 2 mu E.
+                tr_E = _tt.trace3(E)
+                S_trial = lam * tr_E * I3 + 2.0 * mu * E
+                # Deviatoric / volumetric split.
+                tr_S = _tt.trace3(S_trial)
+                S_vol = (tr_S / 3.0) * I3
+                S_dev_trial = S_trial - S_vol
+                # von Mises equivalent trial stress.
+                s_sq = ti.f64(0.0)
+                for i in ti.static(range(DIM)):
+                    for j in ti.static(range(DIM)):
+                        s_sq += S_dev_trial[i, j] * S_dev_trial[i, j]
+                sigma_eq = ti.sqrt(1.5 * s_sq)
+
+                # Yield check against the stored hardening state.
+                sigma_y = sigma_y0 + K_hard * ti.pow(alpha_old, n_hard)
+                # Defaults: elastic step keeps the trial stress and the elastic tangent.
+                S = S_trial
+                dl = ti.f64(0.0)
+                is_plastic = 0
+                # Near-zero deviatoric guard (07-CONVENTIONS §6) folds into the yield test.
+                if sigma_eq > 1e-12 * sigma_y and sigma_eq > sigma_y:
+                    is_plastic = 1
+                    # Radial return: Newton iteration for the plastic multiplier dl.
+                    # Stress-scaled tolerance: f has units of stress (MPa), so an
+                    # absolute tol is unreachable at steel-scale sigma. Mirrors the
+                    # reference radial_return (j2_power_law.py) with tol=1e-12.
+                    stress_ref = ti.max(ti.max(ti.abs(sigma_eq), sigma_y), 1.0)
+                    effective_tol = ti.max(1e-12, 1e-12 * stress_ref)
+                    converged = 0
+                    for _it in range(20):
+                        alpha_trial = alpha_old + dl
+                        sy = sigma_y0 + K_hard * ti.pow(alpha_trial, n_hard)
+                        f = sigma_eq - 3.0 * mu * dl - sy
+                        if ti.abs(f) < effective_tol:  # tol per 07-CONVENTIONS §6
+                            converged = 1
+                            break
+                        H_prime = K_hard * n_hard * ti.pow(alpha_trial, n_hard - 1.0) if alpha_trial > 1e-12 else 0.0
+                        df = -3.0 * mu - H_prime
+                        dl -= f / df
+                    # Guard: flag ANY non-convergence of the return map (parity with the
+                    # host constitutive_update_plastic emitter) — a non-converged return
+                    # map poisons the tangent with NaN rather than silently emitting a
+                    # wrong C_ep; the NaN propagates through C_ep to the matvec output.
+                    # COUPLING: the converged flag is set by the in-loop check, which keys
+                    # off effective_tol (change one -> revisit the other). The explicit
+                    # flag (vs a post-loop residual-magnitude test) closes the band gap
+                    # where a result in (effective_tol, 1e3*effective_tol] would be
+                    # silently accepted; the reference raises on loop exhaustion.
+                    if converged == 0:
+                        # Non-converged: set NaN flag (propagates to the Newton driver).
+                        dl = ti.f64(float('nan'))
+                    else:
+                        # Converged: clamp dl >= 0 (negative plastic multiplier is
+                        # non-physical). Gated under else: so the NaN sentinel on the
+                        # non-converged branch survives -- a GPU fmax(NaN, 0.0) -> 0.0
+                        # would erase it and silently poison the tangent.
+                        dl = ti.max(dl, 0.0)
+                    # Updated PK2 stress: radial scaling of the deviatoric trial.
+                    factor = 1.0 - 3.0 * mu * dl / sigma_eq
+                    S = S_vol + factor * S_dev_trial
+
+                # Assemble the rank-4 tangent C_ep, stored 9x9 on the (K,I)x(M,J) pairs.
+                # Elastic: C_IJKL = lam dKL dMN + mu(dKM dLN + dKN dLM).
+                # Plastic (Simo & Hughes Box 3.5):
+                #   C_ep = kappa (I (x) I) + 2 mu theta P_dev
+                #        + (9 mu^2 dl / q - 9 mu^2 / (3 mu + H')) (n (x) n)
+                # with kappa = lam + 2 mu/3, theta = 1 - 3 mu dl / q, q = sigma_eq,
+                # n = S_dev_trial / q, H' = K n_hard alpha_new^(n_hard-1).
+                kappa = lam + 2.0 * mu / 3.0
+                theta = ti.f64(1.0)
+                nn_coeff = ti.f64(0.0)
+                n_flow = ti.Matrix.zero(ti.f64, DIM, DIM)
+                if is_plastic != 0:
+                    alpha_new = alpha_old + dl
+                    H_prime_final = K_hard * n_hard * ti.pow(alpha_new, n_hard - 1.0) if alpha_new > 1e-12 else 0.0
+                    theta = 1.0 - 3.0 * mu * dl / sigma_eq
+                    nn_coeff = 9.0 * mu * mu * dl / sigma_eq - 9.0 * mu * mu / (3.0 * mu + H_prime_final)
+                    n_flow = S_dev_trial / sigma_eq
+                C_ep = ti.Matrix.zero(ti.f64, DIM * DIM, DIM * DIM)
+                for K in ti.static(range(DIM)):
+                    for I in ti.static(range(DIM)):
+                        for M in ti.static(range(DIM)):
+                            for J in ti.static(range(DIM)):
+                                # Symmetric identity I4_sym and volumetric I (x) I terms.
+                                dKI = 1.0 if K == I else 0.0
+                                dMJ = 1.0 if M == J else 0.0
+                                dKM = 1.0 if K == M else 0.0
+                                dIJ = 1.0 if I == J else 0.0
+                                dKJ = 1.0 if K == J else 0.0
+                                dIM = 1.0 if I == M else 0.0
+                                i4_sym = 0.5 * (dKM * dIJ + dKJ * dIM)
+                                ixi = dKI * dMJ
+                                # P_dev = I4_sym - (1/3) I (x) I.
+                                p_dev = i4_sym - (1.0 / 3.0) * ixi
+                                c_val = kappa * ixi + 2.0 * mu * theta * p_dev
+                                c_val += nn_coeff * n_flow[K, I] * n_flow[M, J]
+                                C_ep[K * DIM + I, M * DIM + J] = c_val
+
+                # Consistent two-point J2 tangent A[i,I,j,J] such that
+                #   dP_{iI} = A_{iIjJ} * grad_v_{jJ}   (grad_v_{jJ} = sum_b v_{bj} dNdX_{bJ}).
+                #   A_{iIjJ} = delta_{ij} S_{JI}                       (geometric / initial stress)
+                #            + sum_{K,M} F_{iK} C_ep_{KIMJ} F_{jM}     (material, F.(C_ep:dE))
+                # Stored 9x9 on the (i,I)x(j,J) pairs (row i*DIM+I, col j*DIM+J).
+                A = ti.Matrix.zero(ti.f64, DIM * DIM, DIM * DIM)
+                for i in ti.static(range(DIM)):
+                    for I in ti.static(range(DIM)):
+                        for j in ti.static(range(DIM)):
+                            for J in ti.static(range(DIM)):
+                                # material: sum_{K,M} F_{iK} C_ep_{KIMJ} F_{jM}
+                                a_iIjJ = ti.f64(0.0)
+                                for K in ti.static(range(DIM)):
+                                    for M in ti.static(range(DIM)):
+                                        a_iIjJ += F[i, K] * C_ep[K * DIM + I, M * DIM + J] * F[j, M]
+                                # geometric: delta_{ij} S_{JI}
+                                if i == j:
+                                    a_iIjJ += S[J, I]
+                                A[i * DIM + I, j * DIM + J] = a_iIjJ
+
+                # Optimiser-recorded contraction path [(2, 3), (1, 2), (0, 1)] for
+                #   qaI,qiIjJ,qbJ,bj->qai   operands (dNdX, A, dNdX, v).
+                # Realised as the three recorded pairwise steps; physics indices
+                # (i, I, j, J in range DIM) are ti.static, node dummies (a, b) runtime.
+
+                # step 1  (path (2, 3)):  bj, qbJ -> jJ    grad_v_{jJ}
+                grad_v = ti.Matrix.zero(ti.f64, DIM, DIM)
+                for b in range(N_NODES):
+                    nid_b = elem_nodes[e, b]
+                    for j in ti.static(range(DIM)):
+                        for J in ti.static(range(DIM)):
+                            grad_v[j, J] += v[nid_b][j] * dNdX[b, J]
+
+                # step 2  (path (1, 2)):  jJ, iIjJ -> iI    dP_{iI} = A_{iIjJ} grad_v_{jJ}
+                dP = ti.Matrix.zero(ti.f64, DIM, DIM)
+                for i in ti.static(range(DIM)):
+                    for I in ti.static(range(DIM)):
+                        acc = ti.f64(0.0)
+                        for j in ti.static(range(DIM)):
+                            for J in ti.static(range(DIM)):
+                                acc += A[i * DIM + I, j * DIM + J] * grad_v[j, J]
+                        dP[i, I] = acc
+
+                # step 3  (path (0, 1)):  iI, aI -> ai    Kv_{ai} = dP_{iI} dNdX_{aI}
+                # scattered to global nodes with the quadrature weight (atomic add).
+                for a in range(N_NODES):
+                    nid_a = elem_nodes[e, a]
+                    for i in ti.static(range(DIM)):
+                        kv_ai = ti.f64(0.0)
+                        for I in ti.static(range(DIM)):
+                            kv_ai += dP[i, I] * dNdX[a, I]
+                        out[nid_a][i] += w_q * detJ0 * kv_ai
+
+# ======================================================================
 # Mesh validation
 # ======================================================================
 
@@ -468,7 +742,17 @@ def newton_solve(lam: float, mu: float,
         u_arr[bc_dofs] = bc_values
         u.from_numpy(u_arr.reshape((-1, 3)))
 
+    # Snapshot committed plastic history (see comment below).
+    _alpha_committed.copy_from(alpha)
+
     for iteration in range(max_iter):
+        # Restore committed history so this iteration's return
+        # map reads the step-start alpha_old (not the previous
+        # iteration's trial). Matches ref solve_plastic, which
+        # assembles every iteration from the committed alpha_old.
+        # On-device copy_from — no host round-trip.
+        alpha.copy_from(_alpha_committed)
+
         # Step 1: Compute internal force
         compute_internal_force(lam, mu, sigma_y0, K_hard, n_hard)
 
@@ -522,6 +806,10 @@ def newton_solve(lam: float, mu: float,
         u_arr = u.to_numpy()
         u.from_numpy(u_arr + du_arr)
 
+    # Non-convergence: roll plastic history back to the committed
+    # state before raising (ref solve_plastic does history.rollback()).
+    # On-device copy_from — no host round-trip.
+    alpha.copy_from(_alpha_committed)
     raise RuntimeError(f"Newton did not converge in {max_iter} iterations. Final |R| = {res_norm:.3e}")
 
 # ======================================================================

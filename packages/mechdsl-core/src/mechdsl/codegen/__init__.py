@@ -84,4 +84,7 @@ def compile(problem_ir: ProblemIR) -> ArtifactBundle:
         contraction_plans=bundle.contraction_plans,
         emitted_source=source,
         metadata=bundle.metadata,
+        # P3-1: preserve the derived-energy Python-object channel through the
+        # bundle rebuild so a LaTeX-derived constitutive law reaches codegen.
+        derived_energy=bundle.derived_energy,
     )

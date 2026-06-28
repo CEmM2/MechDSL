@@ -106,7 +106,9 @@ def _radial_nodes(radius: float, half_width: float, n_radial: int, radial_bias: 
     return r_nodes
 
 
-def _ray_to_square(radius: float, half_width: float, rho: float, theta: float) -> tuple[float, float]:
+def _ray_to_square(
+    radius: float, half_width: float, rho: float, theta: float
+) -> tuple[float, float]:
     """Map a radial coordinate ``rho`` and angle ``theta`` to the quarter plate."""
     c = math.cos(theta)
     s = math.sin(theta)
@@ -132,7 +134,9 @@ def _generate_hex8_plate_with_hole_mesh(
             f"Kirsch benchmark needs half_width > 10 * radius, got {half_width} and {radius}."
         )
     if n_theta % 4 != 0:
-        raise ValueError(f"n_theta must be divisible by 4 so theta=pi/4 is a mesh line, got {n_theta}.")
+        raise ValueError(
+            f"n_theta must be divisible by 4 so theta=pi/4 is a mesh line, got {n_theta}."
+        )
 
     rho_nodes = _radial_nodes(radius, half_width, n_radial, radial_bias)
     theta_nodes = np.linspace(0.0, 0.5 * math.pi, n_theta + 1, dtype=np.float64)
@@ -244,9 +248,9 @@ def _upgrade_hex8_mesh_to_hex20(mesh: PlateWithHoleMesh, radius: float) -> Plate
         x0_nodes=np.where(np.abs(coords20[:, 0]) < tol)[0].astype(np.int64),
         y0_nodes=np.where(np.abs(coords20[:, 1]) < tol)[0].astype(np.int64),
         z0_nodes=np.where(np.abs(coords20[:, 2]) < tol)[0].astype(np.int64),
-        z1_nodes=np.where(np.abs(coords20[:, 2] - float(np.max(mesh.coords[:, 2]))) < tol)[0].astype(
-            np.int64
-        ),
+        z1_nodes=np.where(np.abs(coords20[:, 2] - float(np.max(mesh.coords[:, 2]))) < tol)[
+            0
+        ].astype(np.int64),
         traction_elements=mesh.traction_elements.copy(),
     )
 

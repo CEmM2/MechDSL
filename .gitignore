@@ -58,5 +58,12 @@ ti_cache/
 **/.orchestra/
 *.original.md
 *.original.[0-9].md
-.claude/worktrees/ line
+.claude/worktrees/
+.publisher-worktrees/
 .sesskey
+
+# MkDocs build output
+/site/
+
+# Generated wiki / code-intelligence index (logic-loom / akms tooling)
+.repo_wiki/

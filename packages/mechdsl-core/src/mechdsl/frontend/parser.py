@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any
 
 from mechdsl.frontend.directives import (
-    DEFERRED_DIRECTIVES,
+    FLAG_OPTIONS,
     HANDLERS,
     ParseError,
 )
@@ -65,9 +65,8 @@ def scan_directives(source: str) -> list[tuple[int, str]]:
     skipped silently.
 
     Trailing LaTeX comments on the same line (``% mechanics dim 3  % 3D``)
-    are *not* stripped — they survive into the token stream and
-    :func:`shlex.split` treats them as positional tokens, which would cause
-    a parse error.  Directives must occupy the whole comment.
+    are stripped with quote awareness so documented examples can annotate
+    directives without changing quoted values.
     """
     out: list[tuple[int, str]] = []
     for line_no, raw in enumerate(source.splitlines(), start=1):
@@ -83,7 +82,7 @@ def scan_directives(source: str) -> list[tuple[int, str]]:
         tail = after_percent[len(_DIRECTIVE_PREFIX) :]
         if tail and not tail[0].isspace():
             continue
-        body = tail.strip()
+        body = _strip_trailing_latex_comment(tail).strip()
         out.append((line_no, body))
     return out
 
@@ -93,13 +92,39 @@ def scan_directives(source: str) -> list[tuple[int, str]]:
 # ---------------------------------------------------------------------------
 
 
+def _strip_trailing_latex_comment(text: str) -> str:
+    """Return ``text`` with the first unquoted, unescaped ``%`` tail removed."""
+    in_single = False
+    in_double = False
+    escaped = False
+    for i, ch in enumerate(text):
+        if escaped:
+            escaped = False
+            continue
+        if ch == "\\":
+            escaped = True
+            continue
+        if ch == "'" and not in_double:
+            in_single = not in_single
+            continue
+        if ch == '"' and not in_single:
+            in_double = not in_double
+            continue
+        if ch == "%" and not in_single and not in_double:
+            return text[:i].rstrip()
+    return text
+
+
 def _split_directive(body: str, *, line_no: int) -> tuple[str, list[str], dict[str, str]]:
     """Split a directive body into ``(command, positional, options)``.
 
     Uses :func:`shlex.split` so quoted strings (``--traction "t_bar"``) and
     LaTeX escapes (``--mu \\mu``) survive as single tokens.  Options are
-    ``--key value`` pairs: the key strips the leading ``--`` and the value
-    is the immediately-following token.
+    normally ``--key value`` pairs: the key strips the leading ``--`` and the
+    value is the immediately-following token.  A small command-scoped allowlist
+    in :data:`mechdsl.frontend.directives.FLAG_OPTIONS` supports documented
+    flag-only forms such as ``% mechanics constitutive Psi --strain_energy``
+    without loosening missing-value checks for legacy directives.
     """
     try:
         tokens = shlex.split(body, comments=False, posix=True)
@@ -113,6 +138,7 @@ def _split_directive(body: str, *, line_no: int) -> tuple[str, list[str], dict[s
     command = tokens[0]
     positional: list[str] = []
     options: dict[str, str] = {}
+    flag_options = FLAG_OPTIONS.get(command, frozenset())
     i = 1
     while i < len(tokens):
         tok = tokens[i]
@@ -120,6 +146,10 @@ def _split_directive(body: str, *, line_no: int) -> tuple[str, list[str], dict[s
             key = tok[2:]
             if not key:
                 raise ParseError(f"line {line_no}: empty option name ('--' with no key)")
+            if key in flag_options:
+                options[key] = "true"
+                i += 1
+                continue
             if i + 1 >= len(tokens):
                 raise ParseError(f"line {line_no}: option --{key} is missing a value")
             next_tok = tokens[i + 1]
@@ -186,27 +216,19 @@ def parse(source: str) -> dict[str, Any]:
 
     accum: dict[str, Any] = {}
     for line_no, body in scan_directives(source):
-        # Peek at the command word before full tokenisation so deferred
-        # directives (which may use flag-only options like
-        # ``constitutive Psi --strain_energy``) are rejected with the
-        # Plan B pointer rather than a misleading ``missing a value`` error.
         first_word = body.split(None, 1)[0] if body else ""
-        if first_word in DEFERRED_DIRECTIVES:
-            phase, reason = DEFERRED_DIRECTIVES[first_word]
-            raise ParseError(
-                f"line {line_no}: '% mechanics {first_word}' is not part of "
-                f"the MVP subset; {reason} ({phase})"
-            )
         if first_word not in HANDLERS:
             raise ParseError(
                 f"line {line_no}: unknown directive '% mechanics {first_word}'. "
-                f"Known MVP directives: {sorted(HANDLERS)}"
+                f"Known directives: {sorted(HANDLERS)}"
             )
         command, positional, options = _split_directive(body, line_no=line_no)
         # _split_directive preserves the same command word, so the handler
         # lookup below is unconditional — it exists because we just checked.
         handler = HANDLERS[command]
         handler(accum, (positional, options), line_no)
+        locations: dict[str, list[int]] = accum.setdefault("directive_locations", {})
+        locations.setdefault(command, []).append(line_no)
 
     # Defaults for fields that build_context treats as required.  The
     # accumulator-only fields (coord_spatial etc.) flow through untouched.
@@ -231,6 +253,9 @@ def parse(source: str) -> dict[str, Any]:
         coord_system=accum.get("coord_system", "cartesian"),
         integration=accum.get("integration", "full"),
         hourglass=accum.get("hourglass"),
+        # constitutive_latex P5-1: the `% mechanics fiber` directive supplies the
+        # fiber field, satisfying build_context's anisotropic-requires-fiber gate.
+        fiber_families=accum.get("fiber_families"),
     )
 
     # Merge accumulator extras (coord_spatial etc.) into the final context.
@@ -244,6 +269,15 @@ def parse(source: str) -> dict[str, Any]:
         "indices_material",
         "metric_current",
         "metric_reference",
+        "fields",
+        "fiber_families",
+        "constitutive",
+        "weak_forms",
+        "residual_contract",
+        "codegen",
+        "verify",
+        "body_forces",
+        "directive_locations",
     ):
         if key in accum:
             base[key] = accum[key]

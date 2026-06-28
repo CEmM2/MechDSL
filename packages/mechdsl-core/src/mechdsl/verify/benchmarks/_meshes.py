@@ -205,7 +205,9 @@ def cook_membrane_mesh(
     )
 
 
-def jacobian_determinants(mesh: BenchmarkMesh, element: ElementIR | None = None) -> NDArray[np.float64]:
+def jacobian_determinants(
+    mesh: BenchmarkMesh, element: ElementIR | None = None
+) -> NDArray[np.float64]:
     """Return element Jacobian determinants at each quadrature point."""
 
     elem = element or ElementFactory.create(mesh.element_type)

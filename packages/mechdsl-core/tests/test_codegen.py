@@ -266,8 +266,20 @@ class TestGeneratedVsHandwritten:
             "Analytical J2 tangent must call radial_return for the consistent tangent"
         )
         # Neither the FD save/restore pattern nor any write back to the field.
-        assert "alpha_save" not in source, "FD alpha_save pattern should be gone"
-        assert "alpha.from_numpy" not in source, (
+        # Scoped to the tangent_matvec body: newton_solve legitimately
+        # snapshots/restores alpha for committed/trial history separation
+        # (WI-2, dev/plans/pj14_fix.md) — that is the driver, not the tangent.
+        start = source.find("def tangent_matvec(")
+        assert start >= 0, "tangent_matvec definition not found"
+        rest = source[start:]
+        next_boundary = len(rest)
+        for marker in ("\ndef ", "\nclass ", "\n@ti.kernel"):
+            idx = rest.find(marker, 1)
+            if idx != -1 and idx < next_boundary:
+                next_boundary = idx
+        matvec_body = rest[:next_boundary]
+        assert "alpha_save" not in matvec_body, "FD alpha_save pattern should be gone"
+        assert "alpha.from_numpy" not in matvec_body, (
             "Analytical tangent must not write alpha back to the Taichi field"
         )
 

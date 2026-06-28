@@ -19,20 +19,36 @@ sibling package of ``mechdsl-core`` (see ``.claude/CLAUDE.md`` /
 transitively — ``mechdsl``.  Consumers that want a runnable implementation
 own the translation step.
 
-Parser deferral note
---------------------
+Transpilation status (issue #307, updated)
+------------------------------------------
 
-The current ``algo2code.algo_parser``/``expr_parser`` cannot fully consume
-this LaTeX without modification: multi-letter scratch identifiers such as
-``pq`` (used as the LHS of ``\State $pq = p^\top q$``) tokenise as two
-single-letter ``LETTER`` tokens, so the expression parser interprets
-``pq`` as ``p * q``.  Adding multi-letter identifier support (or rewriting
-``pq`` to ``p^\top q``-without-name) is tracked as follow-up work.  Until
-then, ``mechdsl-core``'s ``Algo2CodePCGSolver`` consumes this LaTeX as a
-*specification artifact* — the adapter's runtime body is a verbatim,
-line-by-line Python translation of the algorithm below.  The two are kept
-in sync by the test
-``packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p6_1.py``.
+This LaTeX **now transpiles** via :func:`algo2code.transpile`. The original
+deferral — multi-letter scratch identifiers such as ``pq`` tokenising as
+``p * q`` — was resolved by the tokenizer's multi-character identifier rule
+(``expr_parser.TOKEN_PATTERNS``), and the compound updates lower correctly via
+the SSA vector-lowering pass (issue #307 F1/F2). The generated ``pcg`` driver is
+runnable Taichi.
+
+``mechdsl-core``'s ``Algo2CodePCGSolver`` is the hand-written, line-by-line
+translation. A numeric comparison (hand-written vs ``transpile`` output, run under
+Taichi) now shows them **bit-identical on every path** — both the converged path
+and the max-iteration-exhausted path — after the for-loop range lowering was
+fixed to emit the inclusive ``range(start, end + 1)`` (issue #307; the generated
+``\For{$k = 1, ..., \text{maxiter}$}`` previously did one fewer iteration). The
+parity is guarded by
+``...recovery_plan_latex_contract/test_pcg_transpiler_parity.py``.
+
+The hand-translation is **retained** despite the parity, because the generated
+code and the consumer have different runtime models: ``transpile`` emits **Taichi**
+operating on a **dense matrix field** ``A``, whereas the Newton seam
+(``mechdsl.solver.newton``) is **matrix-free numpy** — it passes the tangent as a
+matvec callback and never forms ``A``. Swapping the generated Taichi code in would
+break that matrix-free contract. A literal code replacement would require a numpy
+backend for algo2code that emits a matrix-free PCG matching ``LinearSolverInterface``
+(the numpy backend is currently a stub). Until then the adapter stays, but it is
+no longer a maintenance hazard: the parity test mechanically proves it stays
+faithful to this canonical LaTeX. Behaviour is also pinned by
+``...recovery_plan_latex_contract/test_p6_1.py``.
 """
 
 from __future__ import annotations

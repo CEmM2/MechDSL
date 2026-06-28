@@ -139,7 +139,9 @@ def element_internal_force_elastic(
     return f_int
 
 
-def run_elastic_cantilever_smoke(params: ElasticSolverParameters | None = None) -> ElasticSolveResult:
+def run_elastic_cantilever_smoke(
+    params: ElasticSolverParameters | None = None,
+) -> ElasticSolveResult:
     """Run an internal prescribed-displacement elastic cantilever smoke cell."""
 
     params = params or ElasticSolverParameters()
@@ -220,6 +222,5 @@ def _validate_params(params: ElasticSolverParameters) -> None:
 def _validate_formulation(formulation: str) -> None:
     if formulation not in ("total_lagrangian", "updated_lagrangian"):
         raise ValueError(
-            "formulation must be 'total_lagrangian' or 'updated_lagrangian', "
-            f"got {formulation!r}"
+            f"formulation must be 'total_lagrangian' or 'updated_lagrangian', got {formulation!r}"
         )

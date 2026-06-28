@@ -46,14 +46,25 @@ class TestTaskP2_1:
     def test_signature_matches_canonical_form(self) -> None:
         sig = inspect.signature(compile_latex)
         params = list(sig.parameters.values())
-        assert [p.name for p in params] == ["source", "profile"], (
-            f"unexpected parameter list: {[p.name for p in params]}"
-        )
+        # The canonical core is (source, profile); constitutive_latex added the
+        # keyword-only energy_source / energy_file producers for strain-energy
+        # auto-population (both default None, so existing callers are unaffected).
+        assert [p.name for p in params] == [
+            "source",
+            "profile",
+            "energy_source",
+            "energy_file",
+        ], f"unexpected parameter list: {[p.name for p in params]}"
         # `source` must be positional, `profile` must default to "mvp"
         source_param = sig.parameters["source"]
         profile_param = sig.parameters["profile"]
         assert source_param.default is inspect.Parameter.empty
         assert profile_param.default == "mvp"
+        # The energy producers are keyword-only and optional.
+        for name in ("energy_source", "energy_file"):
+            p = sig.parameters[name]
+            assert p.kind is inspect.Parameter.KEYWORD_ONLY
+            assert p.default is None
 
     @pytest.mark.unit
     def test_smoke_compile_latex_returns_artifact_bundle(self) -> None:

@@ -22,6 +22,8 @@ import numpy as np
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from ti_runtime.seams import LinearSolveContext, PreconditionerBase
+
 
 class LinearSolverInterface(Protocol):
     """Protocol every linear solver adapter must implement."""
@@ -422,6 +424,25 @@ def get_default_solver() -> LinearSolverInterface:
     solver remains the default fallback until the ``algo2code``-generated
     PCG path (P6-1) is proven stable through P6-3's integration test and
     broader regression. Do not flip this default until that work lands.
+
+    PlanJune14 P4-3 status
+    ----------------------
+    The all-Taichi on-device **seam** solve path (generated matrix-free PCG
+    via ``ti_runtime`` ``set_solver`` + the P3-2 generated tangent operator
+    via ``set_operator``, optionally the P4-1 generated Jacobi via
+    ``set_preconditioner``) is now *validated to <1e-10 against this fallback*
+    on the reference SVK patch (see ``tests/plan_tests/test_p4_3.py``) and is
+    **selectable** through :func:`make_seam_solver` (and the
+    ``mechdsl.solver.seam_solve`` entry points). It is intentionally a
+    *different interface* — it drives a ``ti_runtime.LinearSolveContext`` over
+    on-device ``ti.Vector.field`` DOF vectors, not the host-NumPy
+    ``LinearSolverInterface`` matvec callback consumed by ``newton.py`` — so it
+    is exposed as a distinct opt-in path rather than a ``build_solver`` mode.
+
+    Per the Option-1 architecture decision, this function's global default is
+    **intentionally NOT flipped**: ``ScipyCGSolver`` stays the fallback default
+    and the guarded global flip to the generated seam path is deferred until
+    broader regression coverage (Phase 5 J2 + Phase 7 governance) lands.
     """
     return ScipyCGSolver()
 
@@ -459,3 +480,81 @@ def build_solver(
     if mode == "generated":
         return Algo2CodePCGSolver(precond_fn=precond_fn)
     raise ValueError(f"Unknown solver mode {mode!r}; expected 'fallback' or 'generated'.")
+
+
+# ---------------------------------------------------------------------------
+# PlanJune14 P4-3 — selectable all-Taichi seam solve path (Option 1, opt-in).
+#
+# The seam path is NOT a ``build_solver`` mode: it does not implement the
+# host-NumPy ``LinearSolverInterface`` (matvec-callback) contract consumed by
+# ``newton.py``.  It drives a ``ti_runtime.LinearSolveContext`` over on-device
+# ``ti.Vector.field`` DOF vectors — a deliberately distinct interface.  This
+# factory is therefore a sibling of ``build_solver``, not an extra mode, so the
+# two interface boundaries are never conflated.
+# ---------------------------------------------------------------------------
+
+
+def make_seam_solver(
+    *,
+    operator: Callable[..., None],
+    preconditioner: PreconditionerBase | None = None,
+) -> LinearSolveContext:
+    """Construct the all-Taichi on-device **seam** linear solver (opt-in).
+
+    This is the selectable entry point for the PlanJune14 Phase-4 *Option 1*
+    all-Taichi seam path: a generated matrix-free PCG (transpiled from
+    ``dev/algorithms/pcg.tex`` via ``algo2code`` in runtime mode and injected
+    through ``ti_runtime`` ``set_solver``) solving against an injected
+    matrix-free operator (e.g. the P3-2 generated SVK tangent) with an optional
+    generated preconditioner (e.g. the P4-1 Jacobi).
+
+    Unlike :func:`build_solver`, this path does **not** return a host-NumPy
+    :class:`LinearSolverInterface`.  It returns a bound
+    ``ti_runtime.LinearSolveContext`` whose ``ctx.solver.solve(b, x, tol,
+    maxiter)`` runs the generated PCG entirely on device (no NumPy in the hot
+    path) over ``ti.Vector.field`` DOF vectors.  The seam interface and the
+    NumPy matvec-callback interface are intentionally kept separate — do not
+    route the seam solver through ``newton.py``'s NumPy callback.
+
+    Parameters
+    ----------
+    operator
+        The matrix-free operator ``apply(out, x)`` (out FIRST) injected via
+        ``LinearSolveContext.set_operator`` — e.g. the P3-2 generated SVK
+        tangent ``apply_A``.
+    preconditioner
+        Optional ``ti_runtime.seams.PreconditionerBase`` injected via
+        ``set_preconditioner`` (e.g. the P4-1 ``GeneratedJacobiPreconditioner``
+        or an ``IdentityPreconditioner``).  When ``None`` the context keeps its
+        default ``IdentityPreconditioner`` (unpreconditioned).
+
+    The device/arch is owned by the caller's ``ti.init`` — the generated PCG
+    body is device-agnostic and is transpiled+imported once per process.
+
+    Returns
+    -------
+    ti_runtime.seams.LinearSolveContext
+        A context with the generated PCG bound at ``set_solver`` and the given
+        operator (and preconditioner) injected; ready to drive
+        ``ctx.solver.solve(b, x, tol, maxiter)``.
+
+    Failure contract
+    ----------------
+    ``ctx.solver.solve`` solves in place and returns ``(x, iterations,
+    residual)`` on success. If the inner PCG does **not** converge (maxiter
+    exhaustion or a ``|pq| < 1e-300`` breakdown) it raises ``RuntimeError``
+    rather than returning a garbage increment -- so an outer Newton / time step
+    cannot silently advance on a failed solve (WI-2; see
+    :func:`mechdsl.solver.seam_solve.bind_generated_pcg_solver`).
+    """
+    # Lazy imports: the seam path pulls in Taichi / ti_runtime, which the
+    # host-NumPy adapters above deliberately do not depend on.
+    from mechdsl.solver.seam_solve import bind_generated_pcg_solver
+    from ti_runtime.seams import LinearSolveContext
+
+    ctx = LinearSolveContext()
+    ctx.set_operator(operator)
+    if preconditioner is not None:
+        ctx.set_preconditioner(preconditioner)
+    bind_generated_pcg_solver(ctx)
+    return ctx

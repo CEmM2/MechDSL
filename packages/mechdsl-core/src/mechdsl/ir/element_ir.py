@@ -6,7 +6,6 @@ rule, and formulation metadata. Produced by lowering ProblemIR.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
@@ -16,6 +15,8 @@ import numpy as np
 from mechdsl.ir.mechanics_ir import IntegrationRule
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from numpy.typing import NDArray
 
 # Hex8 node coordinates in reference space [-1,1]^3
@@ -394,6 +395,14 @@ class ElementIR:
     material_eval: MaterialEvalContract | None = None
     local_force: LocalForceDescriptor | None = None
     local_tangent: LocalTangentDescriptor | None = None
+
+    # constitutive_latex P5-1: per-element fiber-orientation field data carried
+    # down from ProblemIR.fiber_field (anisotropic models, HGO). One unit-ish
+    # direction per fiber family; None for isotropic problems. Held as a plain
+    # data tuple so the Element IR stays decoupled from the Mechanics-IR
+    # FiberFieldSpec type. This is the no-layer-bypass carry: frontend directive
+    # -> ProblemIR.fiber_field -> ElementIR.fiber_field.
+    fiber_field: tuple[tuple[float, float, float], ...] | None = None
 
     def __post_init__(self) -> None:
         """Validate at construction."""

@@ -108,8 +108,13 @@ class TestH1J2ConvergenceCheck:
     """R3.1.7: Emitted J2 convergence check after Newton loop."""
 
     def test_emitted_j2_convergence_check_present(self, j2_source: str) -> None:
-        assert "f_final" in j2_source
-        assert "ti.abs(f_final)" in j2_source
+        # WI-C (PlanJune14 re-review): the return-map non-convergence guard is now
+        # an explicit `converged` flag set by the in-loop convergence check, not a
+        # post-loop f_final residual-magnitude test (which silently accepted
+        # results in the (effective_tol, 1e3*effective_tol] band).
+        assert "converged = 0" in j2_source
+        assert "converged = 1" in j2_source
+        assert "if converged == 0:" in j2_source
 
     def test_emitted_j2_nan_flag_on_non_convergence(self, j2_source: str) -> None:
         assert "float('nan')" in j2_source

@@ -165,6 +165,7 @@ class TypeInferrer:
         Resolve multiplication semantics:
           transposed_vector * vector  →  dot product (scalar result)
           matrix * vector             →  matvec (vector result)
+          callable * vector           →  matvec (vector result, matrix-free seam)
           scalar * vector             →  scale (vector result)
           scalar * scalar             →  multiply (scalar result)
         """
@@ -179,6 +180,14 @@ class TypeInferrer:
             return VarType.VECTOR
 
         if lt == VarType.MATRIX and rt == VarType.VECTOR:
+            expr.op = "matvec"
+            return VarType.VECTOR
+
+        # Matrix-free operator seam (11-ALGO2CODE §8.3): a `callable` operator A
+        # applied to a vector — `A \cdot p` — is a matvec whose body is an
+        # injected in-place call A(out, p), not a dense stored-matrix multiply.
+        # The backend distinguishes the two by the operand's CALLABLE type.
+        if lt == VarType.CALLABLE and rt == VarType.VECTOR:
             expr.op = "matvec"
             return VarType.VECTOR
 

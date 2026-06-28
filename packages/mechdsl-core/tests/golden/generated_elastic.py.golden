@@ -136,6 +136,15 @@ du = ti.Vector.field(3, dtype=ti.f64)           # displacement increment
 Kv = ti.Vector.field(3, dtype=ti.f64)           # tangent matvec result
 elem_nodes = ti.field(dtype=ti.i32)             # connectivity
 
+# Quadrature tables as ti.fields (PlanJune14 WI-1): the matrix-free
+# tangent matvec kernels run the q-loop at RUNTIME (the ÷8 JIT-budget
+# lever), so they cannot index the Python-list constants GRAD_AT_QUAD /
+# QUAD_WEIGHTS by a runtime q. These device-resident copies are filled
+# from those constants in allocate_fields(). The Python lists are kept
+# for the ti.static-q residual kernel and the host-NumPy paths.
+_GRAD_AT_QUAD_F = ti.field(dtype=ti.f64)         # (N_QP, N_NODES, DIM)
+_QUAD_WEIGHTS_F = ti.field(dtype=ti.f64)         # (N_QP,)
+
 
 def allocate_fields(nn: int, ne: int) -> None:
     """Allocate Taichi fields after mesh dimensions are known."""
@@ -144,6 +153,10 @@ def allocate_fields(nn: int, ne: int) -> None:
     n_elem = ne
     ti.root.dense(ti.i, n_nodes).place(x_ref, x_cur, u, f_int, f_ext, residual, du, Kv)
     ti.root.dense(ti.ij, (n_elem, N_NODES)).place(elem_nodes)
+    ti.root.dense(ti.ijk, (N_QP, N_NODES, DIM)).place(_GRAD_AT_QUAD_F)
+    ti.root.dense(ti.i, N_QP).place(_QUAD_WEIGHTS_F)
+    _GRAD_AT_QUAD_F.from_numpy(np.asarray(GRAD_AT_QUAD, dtype=np.float64))
+    _QUAD_WEIGHTS_F.from_numpy(np.asarray(QUAD_WEIGHTS, dtype=np.float64))
 
 
 # ======================================================================
@@ -313,6 +326,143 @@ def tangent_matvec(v_flat: np.ndarray, lam: float, mu: float) -> np.ndarray:
             Kv[nodes[a]] += Kv_e[a]
 
     return Kv.ravel()
+
+# ======================================================================
+# Generated matrix-free SVK tangent @ti.kernel (PlanJune14 P3-2)
+#
+# Applies K(u)·v fully matrix-free (D-A: element tangents never stored),
+# recomputed per matvec. The tangent contraction rides the P3-1
+# opt_einsum ContractionPlan ('qaI,qiIjJ,qbJ,bj->qai', path [(2, 3), (1, 2), (0, 1)],
+# tier 2). Kinematics use the Tier-1 ti_runtime @ti.func
+# helpers; the kernel targets the ti_runtime apply_A(out, x) seam.
+# ======================================================================
+
+from ti_runtime import tensor_ti as _tt
+
+
+@ti.kernel
+def svk_tangent_matvec_apply(
+    out: ti.template(),
+    v: ti.template(),
+    lam: ti.f64,
+    mu: ti.f64,
+):
+    """Matrix-free SVK tangent: out = K(u) · v, recomputed per call.
+
+    D-A (06-CODEGEN §3.3): no element stiffness is ever formed or stored.
+    ``out`` is zeroed here, then element contributions are scattered via
+    Taichi's implicit atomic add. ``u`` (current Newton iterate) and the
+    mesh fields ``x_ref`` / ``elem_nodes`` are read live.
+
+    The tangent contraction is the P3-1 opt_einsum ContractionPlan for
+    ``qaI,qiIjJ,qbJ,bj->qai`` (operands dNdX, A, dNdX, v), realised as the
+    recorded path [(2, 3), (1, 2), (0, 1)] (tier 2, within
+    the 512-line @ti.func JIT budget).
+    """
+    # Zero the output field (mesh loop — runtime).
+    for n in range(n_nodes):
+        out[n] = ti.Vector([0.0, 0.0, 0.0], dt=ti.f64)
+
+    # Loop over elements (runtime — mesh index).
+    for e in range(n_elem):
+        # Gather element reference coordinates.
+        X_elem = ti.Matrix.zero(ti.f64, N_NODES, DIM)
+        for a in range(N_NODES):
+            nid = elem_nodes[e, a]
+            for d in ti.static(range(DIM)):
+                X_elem[a, d] = x_ref[nid][d]
+
+        # Quadrature loop (RUNTIME — PlanJune14 WI-1 JIT-budget lever).
+        # Runtime q divides the per-QP unroll by N_QP (8); physics indices
+        # i,I,j,J,a,d stay ti.static. The body can no longer index the
+        # Python-list quad constants by a runtime q, so it reads the
+        # device-resident _GRAD_AT_QUAD_F / _QUAD_WEIGHTS_F filled in
+        # allocate_fields() (codegen.md: runtime-q is convention-clean once
+        # the body no longer indexes Python-list constants).
+        for q in range(N_QP):
+            w_q = _QUAD_WEIGHTS_F[q]
+            # Parametric shape gradients dN/dxi at this quad point.
+            dN_dxi = ti.Matrix.zero(ti.f64, N_NODES, DIM)
+            for a in ti.static(range(N_NODES)):
+                for d in ti.static(range(DIM)):
+                    dN_dxi[a, d] = _GRAD_AT_QUAD_F[q, a, d]
+
+            # Reference Jacobian J0 = X^T @ dN/dxi and dNdX = dN/dxi @ J0^{-1}.
+            J0 = X_elem.transpose() @ dN_dxi
+            detJ0 = _tt.det3(J0)
+            # Degenerate-element guard (07-CONVENTIONS §6).
+            if detJ0 > 1e-15:
+                dNdX = dN_dxi @ _tt.inv3(J0)
+
+                # Material displacement gradient grad_u = sum_a u_a (x) dNdX_a.
+                grad_u = ti.Matrix.zero(ti.f64, DIM, DIM)
+                for a in range(N_NODES):
+                    nid = elem_nodes[e, a]
+                    for i in ti.static(range(DIM)):
+                        for I in ti.static(range(DIM)):
+                            grad_u[i, I] += u[nid][i] * dNdX[a, I]
+
+                # Kinematics + PK2 (SVK) via Tier-1 ti_runtime helpers.
+                F = _tt.deformation_gradient(grad_u)
+                E = _tt.green_lagrange(F)
+                S = lam * _tt.trace3(E) * _tt.identity3() + 2.0 * mu * E
+
+                # Consistent two-point SVK tangent A[i,I,j,J] such that
+                #   dP_{iI} = A_{iIjJ} * grad_v_{jJ}   (grad_v_{jJ} = sum_b v_{bj} dNdX_{bJ}).
+                # SVK closed form (no rank-4 C array; C:dE collapses analytically):
+                #   A_{iIjJ} = delta_{ij} S_{JI}        (geometric / initial stress)
+                #            + lam F_{iI} F_{jJ}
+                #            + mu (F F^T)_{ij} delta_{IJ}
+                #            + mu F_{iJ} F_{jI}          (material, F.(C:dE))
+                # Stored 9x9 on the (i,I)x(j,J) pairs (row i*DIM+I, col j*DIM+J).
+                FFt = F @ F.transpose()
+                A = ti.Matrix.zero(ti.f64, DIM * DIM, DIM * DIM)
+                for i in ti.static(range(DIM)):
+                    for I in ti.static(range(DIM)):
+                        for j in ti.static(range(DIM)):
+                            for J in ti.static(range(DIM)):
+                                # material: lam F_{iI} F_{jJ} + mu F_{iJ} F_{jI}
+                                a_iIjJ = lam * F[i, I] * F[j, J] + mu * F[i, J] * F[j, I]
+                                # geometric: delta_{ij} S_{JI}
+                                if i == j:
+                                    a_iIjJ += S[J, I]
+                                # material: mu (F F^T)_{ij} delta_{IJ}
+                                if I == J:
+                                    a_iIjJ += mu * FFt[i, j]
+                                A[i * DIM + I, j * DIM + J] = a_iIjJ
+
+                # Optimiser-recorded contraction path [(2, 3), (1, 2), (0, 1)] for
+                #   qaI,qiIjJ,qbJ,bj->qai   operands (dNdX, A, dNdX, v).
+                # Realised as the three recorded pairwise steps; physics indices
+                # (i, I, j, J in range DIM) are ti.static, node dummies (a, b) runtime.
+
+                # step 1  (path (2, 3)):  bj, qbJ -> jJ    grad_v_{jJ}
+                grad_v = ti.Matrix.zero(ti.f64, DIM, DIM)
+                for b in range(N_NODES):
+                    nid_b = elem_nodes[e, b]
+                    for j in ti.static(range(DIM)):
+                        for J in ti.static(range(DIM)):
+                            grad_v[j, J] += v[nid_b][j] * dNdX[b, J]
+
+                # step 2  (path (1, 2)):  jJ, iIjJ -> iI    dP_{iI} = A_{iIjJ} grad_v_{jJ}
+                dP = ti.Matrix.zero(ti.f64, DIM, DIM)
+                for i in ti.static(range(DIM)):
+                    for I in ti.static(range(DIM)):
+                        acc = ti.f64(0.0)
+                        for j in ti.static(range(DIM)):
+                            for J in ti.static(range(DIM)):
+                                acc += A[i * DIM + I, j * DIM + J] * grad_v[j, J]
+                        dP[i, I] = acc
+
+                # step 3  (path (0, 1)):  iI, aI -> ai    Kv_{ai} = dP_{iI} dNdX_{aI}
+                # scattered to global nodes with the quadrature weight (atomic add).
+                for a in range(N_NODES):
+                    nid_a = elem_nodes[e, a]
+                    for i in ti.static(range(DIM)):
+                        kv_ai = ti.f64(0.0)
+                        for I in ti.static(range(DIM)):
+                            kv_ai += dP[i, I] * dNdX[a, I]
+                        out[nid_a][i] += w_q * detJ0 * kv_ai
 
 # ======================================================================
 # Mesh validation

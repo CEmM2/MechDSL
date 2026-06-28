@@ -67,10 +67,7 @@ class TestTaskP1_4:
                 if (root / short_path).exists():
                     return True
             tail = short_path.rsplit("/", 1)[-1]
-            for root in search_roots:
-                if any(root.rglob(tail)):
-                    return True
-            return False
+            return any(any(root.rglob(tail)) for root in search_roots)
 
         resolved_missing = [p for p in cited_paths if not _resolves(p)]
         assert not resolved_missing, f"cited paths do not resolve: {resolved_missing}"

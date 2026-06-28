@@ -72,7 +72,9 @@ class TestTaskP2_3:
                         problems.append(f"{f.name}:{lineno}: {line.strip()}")
                         found_on_line = True
                 if not found_on_line:
-                    problems.append(f"{f.name}: Found both integration marker and doc-tier tests (potential multi-line command)")
+                    problems.append(
+                        f"{f.name}: Found both integration marker and doc-tier tests (potential multi-line command)"
+                    )
                     problems.append(f"{f.name}:{lineno}: {line.strip()}")
         assert not problems, (
             "integration-marker fallback still references doc-tier P7-3..6 "

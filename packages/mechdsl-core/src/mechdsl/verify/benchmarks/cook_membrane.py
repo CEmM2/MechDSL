@@ -102,7 +102,9 @@ def run_cook_membrane_benchmark(
     return _run_prescribed_matrix_cell(params)
 
 
-def _run_hex8_reference(params: CookMembraneParameters, solve_plastic: _SolvePlasticFn) -> BenchmarkResult:
+def _run_hex8_reference(
+    params: CookMembraneParameters, solve_plastic: _SolvePlasticFn
+) -> BenchmarkResult:
     """Run the legacy Hex8 reference solve for a Cook matrix cell."""
 
     mesh = generate_cook_membrane_mesh(params.nx, params.ny, params.nz)

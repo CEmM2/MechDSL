@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mechdsl-core"
-version = "0.1.0"
+version = "0.2.0"
 description = "MechDSL core — LaTeX tensor expressions to FEM solver code"
 readme = "README.md"
 license = "MIT"
@@ -25,14 +25,37 @@ dependencies = [
     "sympy>=1.12",
     "numpy>=1.24",
     "opt-einsum>=3.3",
-    "taichi>=1.7",
     "pyyaml>=6.0",
     "scipy>=1.17.0",
     "nrpylatex @ git+https://github.com/SOSOVSKI/nrpylatex",
 ]
 
 [project.optional-dependencies]
-verify = ["torch>=2.0"]
+# Taichi is the runtime backend — imported *only* on the verify() / run path
+# (the emit, transpile, capabilities and model_catalog surfaces are proven
+# Taichi-free; see tests/test_integration_surface.py::*taichi_free*). It lives
+# in the `verify` extra so downstream consumers (compmech_reference_pack,
+# akms_learn, the Logic-Loom sidecar) can install mechdsl-core for code
+# emission without pulling Taichi's ~170 MB into their closure. Install
+# `mechdsl-core[verify]` to run verification / solves. opt-einsum stays a base
+# dep — it is a 0.4 MB pure-Python compile-time requirement of the emit path.
+#
+# PlanJune14 P3-2: the generated matrix-free SVK tangent @ti.kernel emits
+# `from ti_runtime import ...` (Tier-1 tensor helpers + hex8 shape gradients +
+# the apply_A injection seam), establishing the mechdsl-core -> ti-runtime
+# production dependency edge. ti-runtime is Taichi-bearing, so it rides in the
+# `verify` extra alongside taichi — the base install (emit / transpile /
+# capabilities) stays Taichi-free.
+# PlanJune14 P4-2: the generated matrix-free PCG solver is transpiled from
+# `dev/algorithms/pcg.tex` via `algo2code` in runtime mode and injected through
+# the ti_runtime `set_solver` seam (mechdsl.solver.seam_solve). algo2code is a
+# stdlib-only compile-time tool — it rides in the `verify` extra alongside the
+# rest of the on-device seam path; the base install stays algo2code/Taichi-free.
+verify = ["torch>=2.0", "taichi>=1.7", "ti-runtime", "algo2code"]
+
+[tool.uv.sources]
+ti-runtime = { workspace = true }
+algo2code = { workspace = true }
 
 [project.urls]
 Repository = "https://github.com/SOSOVSKI/MechDSL"

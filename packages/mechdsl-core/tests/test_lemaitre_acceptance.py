@@ -733,3 +733,245 @@ class TestTaskP6_3:
             f"  D(argmax e={argmax_elem}) = {damage_elem[argmax_elem]:.3e}\n"
             f"  D(far    e={far_elem}) = {damage_elem[far_elem]:.3e}"
         )
+
+    @pytest.mark.slow
+    @pytest.mark.e2e
+    def test_generated_lemaitre_newton_driver_committed_history_vs_ref(
+        self, tmp_path: Path
+    ) -> None:
+        """WI-A (PlanJune14 re-review): the GENERATED Lemaitre ``newton_solve``
+        manages ALL mutable history (alpha + damage_D + is_deleted) across Newton
+        iterations, not just alpha.
+
+        Codex re-review (HIGH): the WI-2 fix snapshotted/restored only ``alpha``
+        in the generated ``newton_solve``, but the driver is gated on
+        ``_is_plastic_material`` which also covers Lemaitre. Lemaitre's
+        ``compute_internal_force`` mutates ``damage_D[e, q]`` in place and sets
+        the one-way ``is_deleted[e]`` flag — neither was rolled back between
+        Newton iterations, so the generated Lemaitre driver still drifted the
+        damage history across iterations (same bug class J2 had before WI-2,
+        only half-fixed).
+
+        WI-A fix (damage-gated): ``newton_solve`` now additionally snapshots
+        ``damage_D``/``is_deleted`` before the loop, restores them at the top of
+        every iteration (so each residual eval advances damage from the
+        step-start state), and rolls them back on non-convergence. ``is_deleted``
+        is treated as TRIAL state within a step (rolled back on a failed
+        iteration; committed by construction on convergence) — matching the
+        reference ``_newton_step_lemaitre``, which snapshots+restores BOTH alpha
+        AND damage_D around every residual evaluation.
+
+        This test drives the *generated* ``newton_solve`` across multiple
+        displacement-controlled load steps with damage actively evolving
+        (several Newton iterations per step) and asserts it (a) CONVERGES at
+        every step (before this fix it would diverge like J2 did pre-WI-2) and
+        (b) the committed ``alpha`` AND ``damage_D`` match the reference Lemaitre
+        evolution (the snapshot-both ``_newton_step_lemaitre`` harness) within
+        the 1e-8 acceptance tolerance.
+
+        Decisiveness guards: damage actually grows (committed D > 0) and at least
+        one load step takes > 1 Newton iteration (otherwise the per-iteration
+        damage aliasing would never be exercised).
+        """
+        # n_hard = 1.0 (linear hardening) keeps the J2 tangent well-defined as
+        # alpha -> 0 under the sub-linear (undamaged-tangent) Newton; eps_D = 0.0
+        # and a modest S_d make damage activate as soon as the bar yields.
+        n_hard = 1.0
+        S_d = 2.0
+        s_d = 1.0
+        eps_D = 0.0
+        D_crit = 0.95
+
+        lem_ir = ProblemIR(
+            dim=3,
+            formulation=Formulation.TOTAL_LAGRANGIAN,
+            element_type=ElementType.HEX8,
+            material=MaterialSpec(
+                model="lemaitre",
+                params={
+                    "E": _E,
+                    "nu": _NU,
+                    "sigma_y0": _SIGMA_Y0,
+                    "K": _K_HARD,
+                    "n": n_hard,
+                    "S_d": S_d,
+                    "s_d": s_d,
+                    "eps_D": eps_D,
+                    "D_crit": D_crit,
+                },
+            ),
+            boundaries=(
+                BoundaryCondition(name="fix", bc_type=BCType.DIRICHLET),
+                BoundaryCondition(name="load", bc_type=BCType.NEUMANN, traction="t_bar"),
+            ),
+        )
+        bundle = mechdsl_compile(lem_ir)
+        source = bundle.emitted_source
+
+        # --- Structural guard (WI-A fix): the generated driver must snapshot AND
+        #     restore the damage history (damage_D + is_deleted), not just alpha.
+        ns_start = source.find("def newton_solve(")
+        assert ns_start >= 0, "generated Lemaitre module missing newton_solve driver"
+        ns_body = source[ns_start : source.find("\ndef ", ns_start + 1)]
+        assert "_alpha_committed.copy_from(alpha)" in ns_body, (
+            "newton_solve must still snapshot committed alpha (WI-2), now via "
+            "on-device copy_from into the _alpha_committed mirror field"
+        )
+        assert "_damage_D_committed.copy_from(damage_D)" in ns_body, (
+            "newton_solve must snapshot committed damage_D before the Newton loop "
+            "(WI-A: damage materials carry extra mutable history), now via "
+            "on-device copy_from into the _damage_D_committed mirror field"
+        )
+        assert "_is_deleted_committed.copy_from(is_deleted)" in ns_body, (
+            "newton_solve must snapshot committed is_deleted before the Newton loop "
+            "(now via on-device copy_from into the _is_deleted_committed mirror field)"
+        )
+        assert "damage_D.copy_from(_damage_D_committed)" in ns_body, (
+            "newton_solve must restore committed damage_D each iteration and on "
+            "rollback — now via on-device copy_from from the mirror field"
+        )
+        assert "is_deleted.copy_from(_is_deleted_committed)" in ns_body, (
+            "newton_solve must restore committed is_deleted each iteration and on "
+            "rollback — now via on-device copy_from from the mirror field"
+        )
+
+        # --- Shared problem: small bar past yield, displacement controlled. ---
+        coords, conn = _build_hex8_block(nx=2, ny=1, nz=1, Lx=2.0, Ly=1.0, Lz=1.0)
+        n_nodes = coords.shape[0]
+        n_elem = conn.shape[0]
+
+        x_left = np.where(np.abs(coords[:, 0] - 0.0) < 1e-12)[0]
+        x_right = np.where(np.abs(coords[:, 0] - 2.0) < 1e-12)[0]
+
+        bc_mask = np.zeros((n_nodes, 3), dtype=bool)
+        bc_mask[x_left, :] = True
+        bc_mask[x_right, 0] = True
+
+        # ~5x yield strain over length 2 => strongly plastic + active damage,
+        # several Newton iterations per step under the undamaged-J2 tangent.
+        total_ux = 0.02
+        n_steps = 5
+        bc_dofs = np.where(bc_mask.ravel())[0].astype(np.int64)
+
+        # --- Generated driver: drive newton_solve once per load step, committing
+        #     alpha + damage_D at step boundaries (the generated analogue of the
+        #     reference HistoryFields.commit()). ---
+        gen_mod = _import_generated_module(source, tmp_path, "gen_lem_wiA_driver")
+        _load_mesh_into_module(gen_mod, coords, conn)
+        gen_mod.u.from_numpy(np.zeros((n_nodes, 3)))
+        gen_mod.f_ext.from_numpy(np.zeros((n_nodes, 3)))
+
+        alpha_committed = np.zeros((n_elem, 8), dtype=np.float64)
+        damage_committed = np.zeros((n_elem, 8), dtype=np.float64)
+        deleted_committed = np.zeros((n_elem,), dtype=np.int32)
+
+        iters_per_step: list[int] = []
+        for step in range(1, n_steps + 1):
+            frac = step / n_steps
+            bc_values = np.zeros((n_nodes, 3), dtype=np.float64)
+            bc_values[x_right, 0] = frac * total_ux
+            bc_values_flat = bc_values.ravel()[bc_dofs]
+
+            # Seed live fields with the COMMITTED step-start state; newton_solve
+            # mutates them in place across its iterations (and now rolls the
+            # damage history back internally each iteration).
+            gen_mod.alpha.from_numpy(alpha_committed)
+            gen_mod.damage_D.from_numpy(damage_committed)
+            gen_mod.is_deleted.from_numpy(deleted_committed)
+
+            n_iters = gen_mod.newton_solve(
+                _LAM,
+                _MU,
+                _SIGMA_Y0,
+                _K_HARD,
+                n_hard,
+                S_d,
+                s_d,
+                eps_D,
+                _E,
+                _NU,
+                D_crit,
+                bc_dofs=bc_dofs,
+                bc_values=bc_values_flat,
+                max_iter=50,
+                tol_abs=1e-12,
+                tol_rel=1e-8,
+            )
+            iters_per_step.append(int(n_iters))
+
+            # Commit converged state for the next step.
+            alpha_committed = gen_mod.alpha.to_numpy().copy()
+            damage_committed = gen_mod.damage_D.to_numpy().copy()
+            deleted_committed = gen_mod.is_deleted.to_numpy().copy()
+
+        u_gen = gen_mod.u.to_numpy()
+        alpha_gen = alpha_committed
+        damage_gen = damage_committed
+
+        # --- Reference: identical loading driven through the snapshot-both
+        #     _newton_step_lemaitre harness (the faithful committed/trial Lemaitre
+        #     reference: it restores alpha AND damage_D around every residual). ---
+        ref_mod = _import_generated_module(source, tmp_path, "gen_lem_wiA_ref")
+        _load_mesh_into_module(ref_mod, coords, conn)
+        u_ref = np.zeros((n_nodes, 3), dtype=np.float64)
+        ref_mod.u.from_numpy(u_ref)
+        for step in range(1, n_steps + 1):
+            frac = step / n_steps
+            u_ref[x_left, :] = 0.0
+            u_ref[x_right, 0] = frac * total_ux
+            ref_mod.u.from_numpy(u_ref)
+            u_ref = _newton_step_lemaitre(
+                ref_mod,
+                u_ref,
+                bc_mask,
+                lam=_LAM,
+                mu=_MU,
+                sigma_y0=_SIGMA_Y0,
+                K_hard=_K_HARD,
+                n_hard=n_hard,
+                S_d=S_d,
+                s_d=s_d,
+                eps_D=eps_D,
+                E_mod=_E,
+                nu_val=_NU,
+                D_crit=D_crit,
+                tol=1e-10,
+                max_iter=50,
+            )
+        alpha_ref = ref_mod.alpha.to_numpy()
+        damage_ref = ref_mod.damage_D.to_numpy()
+
+        # --- Decisiveness: damage actually evolved + a multi-iteration step. ---
+        assert float(np.max(alpha_gen)) > 1e-6, (
+            f"generated committed alpha never yielded (max={np.max(alpha_gen):.3e}); "
+            "the damage-history drift would not be exercised"
+        )
+        assert float(np.max(damage_gen)) > 0.0, (
+            f"generated committed damage never grew (max D={np.max(damage_gen):.3e}); "
+            "the damage_D aliasing across Newton iterations is not exercised"
+        )
+        assert max(iters_per_step) > 1, (
+            f"no load step took >1 Newton iteration (iters/step={iters_per_step}); "
+            "the multi-iteration damage-history aliasing is not exercised"
+        )
+
+        # --- Decisive comparison: converged displacement + committed alpha + D. ---
+        max_u_diff = float(np.max(np.abs(u_gen - u_ref)))
+        max_alpha_diff = float(np.max(np.abs(alpha_gen - alpha_ref)))
+        max_damage_diff = float(np.max(np.abs(damage_gen - damage_ref)))
+
+        assert max_u_diff < 1e-8, (
+            f"generated Lemaitre driver displacement drifted from the reference: "
+            f"max|u_gen - u_ref| = {max_u_diff:.3e} (iters/step={iters_per_step})"
+        )
+        assert max_alpha_diff < 1e-8, (
+            f"generated Lemaitre driver COMMITTED ALPHA drifted from reference: "
+            f"max|alpha_gen - alpha_ref| = {max_alpha_diff:.3e}"
+        )
+        assert max_damage_diff < 1e-8, (
+            f"generated Lemaitre driver COMMITTED damage_D drifted from reference "
+            f"across multi-iteration Newton steps: "
+            f"max|D_gen - D_ref| = {max_damage_diff:.3e} "
+            f"(max D_gen={np.max(damage_gen):.3e}, max D_ref={np.max(damage_ref):.3e}) "
+            f"— the WI-A damage-history snapshot/restore is what makes these match"
+        )

@@ -14,8 +14,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    # Type-only: keeps SymPy-heavy symbolic.energy off the codegen import path.
+    # `derived_energy` rides as an opaque Python object (excluded from all
+    # serialisation), so the concrete class is not needed at runtime.
     from mechdsl.ir.mechanics_ir import ProblemIR
     from mechdsl.lowering.fe_localise import LocalisationResult
+    from mechdsl.symbolic.energy import EnergyModel
 
 
 @dataclass(frozen=True)
@@ -123,6 +127,17 @@ class ArtifactBundle:
     # contents are derived from ``problem_ir_dict``'s boundary list.
     f_ext_kernel: str | None = None
 
+    # constitutive_latex P3-1: parallel Python-object channel carrying the
+    # LaTeX-derived symbolic energy model (PK2 stress + material tangent) so
+    # the Taichi printer can emit the constitutive ``@ti.func`` from the
+    # derived energy instead of the hard-coded named-model switch. Held off
+    # the JSON path entirely (`to_dict`, `from_dict`, `content_hash`, and the
+    # `to_json`/`from_json` round-trip): the model carries SymPy expressions
+    # that do not serialise cleanly, and golden files compare the JSON-able
+    # semantic surface only. ``None`` for every named-model bundle so the JSON
+    # path and content hash are byte-identical to pre-P3-1 bundles.
+    derived_energy: EnergyModel | None = field(default=None, compare=False)
+
     # ------------------------------------------------------------------
     # Convenience constructors
     # ------------------------------------------------------------------
@@ -189,6 +204,9 @@ class ArtifactBundle:
             contraction_plans=contraction_plans,
             emitted_source=emitted_source,
             element_ir_dict=element_ir.to_dict(),
+            # P3-1: carry the LaTeX-derived energy (if any) into codegen via
+            # the Python-object channel. ``None`` for named-model IRs.
+            derived_energy=problem_ir.derived_energy,
         )
 
     # ------------------------------------------------------------------

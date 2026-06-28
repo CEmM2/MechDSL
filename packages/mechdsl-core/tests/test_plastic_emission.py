@@ -118,8 +118,9 @@ class TestRadialReturnLoop:
         assert "dl = ti.f64(0.0)" in j2_source
 
     def test_convergence_check(self, j2_source: str) -> None:
-        """Newton loop has convergence check."""
-        assert "ti.abs(f) < 1e-12" in j2_source
+        """Newton loop has stress-scaled convergence check (WI-3)."""
+        assert "ti.abs(f) < effective_tol" in j2_source
+        assert "effective_tol = ti.max(1e-12, 1e-12 * stress_ref)" in j2_source
 
     def test_derivative_computation(self, j2_source: str) -> None:
         """Newton loop computes derivative for update."""
@@ -340,11 +341,25 @@ class TestTangentForBoth:
         assert "radial_return(_j2_mat, E, float(alpha_np[e, q]))" in j2_source
 
     def test_j2_tangent_does_not_mutate_alpha(self, j2_source: str) -> None:
-        """Analytical J2 tangent reads alpha once and never writes it back."""
+        """Analytical J2 tangent reads alpha once and never writes it back.
+
+        Scoped to the ``tangent_matvec`` body: ``newton_solve`` legitimately
+        snapshots/restores ``alpha`` for committed/trial history separation
+        (WI-2, dev/plans/pj14_fix.md) — that is the *driver*, not the tangent.
+        """
         assert "alpha_np = alpha.to_numpy()" in j2_source
-        assert "alpha.from_numpy" not in j2_source
+        start = j2_source.find("def tangent_matvec(")
+        assert start >= 0, "tangent_matvec definition not found"
+        rest = j2_source[start:]
+        next_boundary = len(rest)
+        for marker in ("\ndef ", "\nclass ", "\n@ti.kernel"):
+            idx = rest.find(marker, 1)
+            if idx != -1 and idx < next_boundary:
+                next_boundary = idx
+        matvec_body = rest[:next_boundary]
+        assert "alpha.from_numpy" not in matvec_body
         # The FD save/restore pattern must be gone.
-        assert "alpha_save" not in j2_source
+        assert "alpha_save" not in matvec_body
 
     def test_svk_tangent_no_alpha(self, svk_source: str) -> None:
         """SVK tangent does not touch alpha history at all."""
@@ -532,18 +547,19 @@ class TestTaskP4T4Safeguards:
         )
 
     def test_hardening_derivative_guard_in_emitted_code(self):
-        """Verifies: alpha^(n-1) hardening derivative has 1e-30 floor in emitted code.
+        """Verifies: alpha^(n-1) hardening derivative has 1e-12 floor in emitted code.
 
-        Acceptance criterion: Safeguards match 07-CONVENTIONS.md section 6
+        Acceptance criterion: Safeguards match the reference yield_stress_derivative
+        (j2_power_law.py), which returns 0 for alpha <= 1e-12 (n<1 singularity guard).
         Passes when: floor guard on hardening derivative found in emitted Taichi source
         """
         source = emit(_make_j2_bundle())
-        # Guard pattern: ternary that checks alpha_trial > 1e-30 before ti.pow(alpha_trial, n_hard - 1.0)
-        assert "alpha_trial > 1e-30" in source, (
-            "Hardening derivative 1e-30 floor guard missing from emitted J2 code "
-            "(07-CONVENTIONS.md §6)"
+        # Guard pattern: ternary that checks alpha_trial > 1e-12 before ti.pow(alpha_trial, n_hard - 1.0)
+        assert "alpha_trial > 1e-12" in source, (
+            "Hardening derivative 1e-12 floor guard missing from emitted J2 code "
+            "(matches reference yield_stress_derivative's n<1 singularity guard)"
         )
         # The guarded expression must fall back to 0.0 when alpha_trial is near zero
         assert "else 0.0" in source, (
-            "Hardening derivative guard must fall back to 0.0 when alpha_trial <= 1e-30"
+            "Hardening derivative guard must fall back to 0.0 when alpha_trial <= 1e-12"
         )

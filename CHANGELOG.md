@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-16
+
+### Added — PlanJune14: Seams & Bodies (fully-generated solver/operator over a lean Taichi runtime)
+
+`dev/plans/PlanJune14.md` demonstrates the "later from algo2code-generated code" branch (Decision D8) end-to-end: every numerical kernel the Newton driver needs is generated from LaTeX by `algo2code` and injected over lean `ti_runtime` seams, with no NumPy in the hot paths. Full closure record in `dev/plans/PlanJune14_closure.md`.
+
+- **`ti-runtime` package (PJ-0)**: new neutral Taichi runtime package (`packages/ti-runtime/`) — vector primitives, Tier-1 `@ti.func` helpers, and solver/operator/integrator injection seams (`ti_runtime.{fields,hex8,seams,tensor_ti,vector_ops}`). `mechdsl-core` takes a production dependency on it via the `verify` extra; `algo2code` joins the same extra.
+- **Matrix-free tangent operator seam (PJ-2 / PJ-3 / PJ-5)**: `% type A callable` (a.k.a. `A:callable`) emits an in-place `A(out, p)` matching the `ti_runtime` `apply_A(out, x)` contract — no dense `A` field, no inner matvec loop — injected via `LinearSolveContext.set_operator`. `local_tangent` einsum routes through Layer-4b and emits an `@ti.kernel` matvec. Proven for the elastic operator (PJ-3) and the dissipative J2 algorithmic tangent (PJ-5).
+- **Generated linear solver + Jacobi preconditioner seam (PJ-4)**: PCG injected via `set_solver`, Jacobi via `set_preconditioner`. **Opt-in (Option 1)**: `get_default_solver()` still returns the imported `ScipyCGSolver` as the default fallback — the imported solver is retained, not removed; selecting the all-Taichi seam path is explicit.
+- **Time-integration seam (PJ-6)**: Newmark-β / HHT integrators injected via `TimeIntegrationContext.set_integrator` / `step`.
+- **Governance (PJ-7)**: `pending` status value added to `dev/tracking/STATUS_LEGEND.md`; PlanJune14 allowlisted in the anti-drift guard. Design-doc addenda (Decision D8 + `11-ALGO2CODE.md` §8.3 / §2.4) are staged for manual maintainer apply (see the closure doc).
+
+### Added — AKMS executable-bridge Phase 1 (Tier-1 integration façade)
+
+`dev/plans/akms_executable_bridge.md` Phase 1 lands the stable, machine-readable surface that lets MechDSL be driven as the AKMS-Learn `executable_bridge` (Phases 2–3 — the AKMS adapter and Logic-Loom plugin — execute in their own repos).
+
+- **`mechdsl.integration` façade (P1-1..P1-5)**: new package `packages/mechdsl-core/src/mechdsl/integration/__init__.py` exposing five entry points — `capabilities()`, `model_catalog()`, `compile_from_sources(*, problem_source, energy_source, energy_file, profile)`, `transpile_algorithm(algpseudocode, backend)`, and `verify(kind, params)`. The façade wraps existing entry points (`compile_latex`, `algo2code.transpile`, the verify harness) and returns JSON-serialisable summaries; no IR layer is bypassed. Bound as `mechdsl.integration` and added to `mechdsl.__all__`.
+- **Taichi-free Tier-1 contract**: `capabilities()` declares `taichi_required_for: ["verify"]`; importing the module and calling the other four entry points never fires `ti.init`. All heavy imports are lazy (inside helper bodies), and the invariant is proven by fresh-interpreter subprocess guards asserting `'taichi' not in sys.modules`. `model_catalog()` enumerates **12 constitutive models** — eight `symbolic.models.*` introspected live (numpy + sympy), `lemaitre`, and three `lib.plasticity*` listed statically (those modules exec transpiled Taichi source at import).
+- **`verify()` kinds**: `patch_test`, `rigid_body`, `ad_oracle_svk`, `ad_oracle_j2`, and `benchmark` (cantilever / cook_membrane over `mechdsl.verify.benchmarks`). `compile_from_sources` returns a JSON-safe `element_ir_summary` (five scalar fields) plus `content_hash` (`ArtifactBundle.content_hash()`, semantic IR only — excludes emitted source).
+- **Catalog hardening**: `model_catalog()` is memoised behind a cached `_build_model_catalog()` snapshot and returns per-call deep copies (callers can't corrupt the cache). `_introspect_model_class` now **fails loudly** instead of silently returning `((), False)` — which uncovered and fixed a latent bug where `HGOModel(mat, fiber_dirs)` was being mis-introspected (constructor now filled via signature-aware `_dummy_model_ctor_args`). A `@pytest.mark.slow` subprocess test guards `_LIB_PLASTICITY_CATALOG` against drift from the real `J2KinematicMaterial` / `J2MixedMaterial` dataclasses.
+- **`verify('benchmark', …)` convergence**: `passed` now requires `relative_error <= tolerance` when the benchmark compared against a reference (cantilever vs Euler-Bernoulli; cook_membrane Hex8 reference path) — previously it only checked the solve ran to completion. The default cook_membrane prescribed-displacement smoke cell reports `relative_error = NaN`, so it stays completion-only and now flags `reference_checked: false`. New `details` keys: `relative_error` (float | None), `tolerance` (float), `reference_checked` (bool). Tolerance defaults to the benchmark's own `tip_tolerance`, else 2%.
+- **Tests**: `tests/test_integration_surface.py` (canonical façade contract) + `tests/plan_tests/akms_executable_bridge/test_P1-1..5.py`; README gains a `mechdsl.integration` façade section. `akms_executable_bridge` registered as an active plan in `test_p7_5.py` governance allowlists.
+
 ### Added — post_recovery_plan Phases 1–7
 
 `dev/plans/post_recovery_plan.md` lands seven follow-up phases that close residual gaps from the LaTeX-first recovery.

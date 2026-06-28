@@ -3,6 +3,14 @@
 Reference: 06-CODEGEN.md §8, 07-CONVENTIONS.md.
 For MVP (Cartesian reference): G_IJ = δ_IJ, g_IJ = C_IJ = F^T F.
 For curvilinear reference (Plan B phase B2): G_IJ supplied via MetricField.
+
+This module is the single authoritative home for curvilinear-coordinate
+tensor calculus in mechdsl.  The metric / Christoffel / covariant-derivative
+implementations live here once; named-coordinate constructors
+(:func:`cylindrical_basis`, :func:`spherical_basis`) and basis-vector
+conveniences (:func:`metric_from_bases`, :func:`reciprocal_bases`,
+:func:`verify_biorthogonality`, :func:`christoffel_from_bases`) compose those
+primitives rather than duplicating the math (absorbed from constkit, P1-2).
 """
 
 from __future__ import annotations
@@ -167,6 +175,147 @@ def invert_metric(g: sp.Matrix) -> sp.Matrix:
     return g.inv()
 
 
+def cylindrical_basis(
+    r: sp.Expr | float,
+    phi: sp.Expr | float,
+) -> list[sp.Matrix]:
+    """Covariant basis vectors for cylindrical coordinates (r, phi, z).
+
+    The mapping is x^1 = r cos(phi), x^2 = r sin(phi), x^3 = z, so the
+    covariant base vectors g_I = dx/dtheta^I are::
+
+        g_r   = ( cos(phi),  sin(phi), 0 )
+        g_phi = (-r sin(phi), r cos(phi), 0 )
+        g_z   = ( 0, 0, 1 )
+
+    Compose with :func:`metric_from_bases` to obtain g_IJ = diag(1, r^2, 1).
+
+    Args:
+        r: Radial coordinate (may be a SymPy expression or float).
+        phi: Azimuthal coordinate.
+
+    Returns:
+        List of three 3x1 SymPy column matrices [g_r, g_phi, g_z].
+    """
+    g_r = sp.Matrix([sp.cos(phi), sp.sin(phi), 0])
+    g_phi = sp.Matrix([-r * sp.sin(phi), r * sp.cos(phi), 0])
+    g_z = sp.Matrix([0, 0, 1])
+    return [g_r, g_phi, g_z]
+
+
+def spherical_basis(
+    R: sp.Expr | float,
+    theta: sp.Expr | float,
+    phi: sp.Expr | float,
+) -> list[sp.Matrix]:
+    """Covariant basis vectors for spherical coordinates (R, theta, phi).
+
+    The mapping is x^1 = R sin(theta) cos(phi), x^2 = R sin(theta) sin(phi),
+    x^3 = R cos(theta).  The covariant base vectors g_I = dx/dtheta^I compose
+    with :func:`metric_from_bases` to give g_IJ = diag(1, R^2, R^2 sin^2(theta)).
+
+    Args:
+        R: Radial coordinate (may be a SymPy expression or float).
+        theta: Polar (inclination) coordinate.
+        phi: Azimuthal coordinate.
+
+    Returns:
+        List of three 3x1 SymPy column matrices [g_R, g_theta, g_phi].
+    """
+    st, ct = sp.sin(theta), sp.cos(theta)
+    sp_, cp = sp.sin(phi), sp.cos(phi)
+
+    g_R = sp.Matrix([st * cp, st * sp_, ct])
+    g_theta = sp.Matrix([R * ct * cp, R * ct * sp_, -R * st])
+    g_phi = sp.Matrix([-R * st * sp_, R * st * cp, 0])
+    return [g_R, g_theta, g_phi]
+
+
+def metric_from_bases(g_cov: list[sp.Matrix]) -> sp.Matrix:
+    """Build the covariant metric g_IJ = g_I . g_J from covariant base vectors.
+
+    This is the basis-vector form of the metric, complementing the
+    deformation-gradient form :func:`compute_convected_metric` (which takes
+    F and reference base vectors).  Each entry is the Euclidean inner product
+    of two covariant base vectors, trigonometrically simplified.
+
+    Args:
+        g_cov: List of three 3x1 covariant base vectors [g_1, g_2, g_3]
+            (e.g. from :func:`cylindrical_basis` or :func:`spherical_basis`).
+
+    Returns:
+        3x3 symmetric SymPy Matrix for the covariant metric g_IJ.
+
+    Raises:
+        ValueError: If ``g_cov`` does not contain exactly 3 basis vectors.
+    """
+    if len(g_cov) != 3:
+        raise ValueError(f"metric_from_bases requires exactly 3 basis vectors, got {len(g_cov)}")
+    g = sp.zeros(3, 3)
+    for i in range(3):
+        for j in range(3):
+            g[i, j] = sp.trigsimp(g_cov[i].dot(g_cov[j]))
+    return g
+
+
+def reciprocal_bases(g_cov: list[sp.Matrix]) -> list[sp.Matrix]:
+    """Contravariant (reciprocal) base vectors g^I dual to covariant g_I.
+
+    Composes existing primitives rather than duplicating a cross-product
+    formula: builds the metric via :func:`metric_from_bases`, inverts it
+    with :func:`invert_metric`, then raises indices through the existing
+    :func:`contravariant_bases` (g^I = g^{IJ} g_J).  The result satisfies
+    biorthogonality g_I . g^J = delta^J_I.
+
+    Args:
+        g_cov: List of three 3x1 covariant base vectors [g_1, g_2, g_3].
+
+    Returns:
+        List of three 3x1 contravariant base vectors [g^1, g^2, g^3].
+
+    Raises:
+        ValueError: If the covariant base vectors are linearly dependent
+            (singular metric).
+    """
+    g = metric_from_bases(g_cov)
+    g_inv = invert_metric(g)
+    return contravariant_bases(g_cov, g_inv)
+
+
+def verify_biorthogonality(
+    g_cov: list[sp.Matrix],
+    g_contra: list[sp.Matrix],
+) -> bool:
+    """Verify biorthogonality g_I . g^J = delta^J_I for all I, J.
+
+    Args:
+        g_cov: List of three 3x1 covariant base vectors [g_1, g_2, g_3].
+        g_contra: List of three 3x1 contravariant base vectors [g^1, g^2, g^3].
+
+    Returns:
+        ``True`` when all nine dot products match the Kronecker delta.
+
+    Raises:
+        AssertionError: With the offending indices and value when any
+            dot product deviates from delta.
+        ValueError: If either basis list does not contain exactly 3 vectors.
+    """
+    if len(g_cov) != 3 or len(g_contra) != 3:
+        raise ValueError(
+            "verify_biorthogonality requires exactly 3 covariant and 3 contravariant "
+            f"basis vectors, got {len(g_cov)} and {len(g_contra)}"
+        )
+    for i in range(3):
+        for j in range(3):
+            expected = 1 if i == j else 0
+            actual = sp.simplify(sp.trigsimp(g_cov[i].dot(g_contra[j])))
+            if actual != expected:
+                raise AssertionError(
+                    f"Biorthogonality failed: g_{i + 1} . g^{j + 1} = {actual}, expected {expected}"
+                )
+    return True
+
+
 def covariant_bases(F: sp.Matrix, G_ref_vecs: sp.Matrix | None = None) -> list[sp.Matrix]:
     """Compute covariant base vectors g_I = F G_I at a material point.
 
@@ -259,6 +408,38 @@ def christoffel_symbols(
     return gamma
 
 
+def christoffel_from_bases(
+    g_cov: list[sp.Matrix],
+    coords: tuple[sp.Symbol, ...] | list[sp.Symbol],
+) -> sp.MutableDenseNDimArray:
+    """Christoffel symbols of the second kind from covariant base vectors.
+
+    Convenience wrapper that composes existing primitives: it builds the
+    covariant metric via :func:`metric_from_bases` and forwards to the
+    authoritative :func:`christoffel_symbols` (metric-based).  The Christoffel
+    formula is NOT reimplemented here.
+
+    Args:
+        g_cov: List of three 3x1 covariant base vectors [g_1, g_2, g_3]
+            (e.g. from :func:`cylindrical_basis`), each depending on ``coords``.
+        coords: Tuple of 3 SymPy coordinate symbols (theta^1, theta^2, theta^3).
+
+    Returns:
+        3x3x3 SymPy MutableDenseNDimArray. gamma[K, I, J] = Gamma^K_{IJ}.
+
+    Raises:
+        ValueError: If ``g_cov`` or ``coords`` does not have exactly 3 entries.
+    """
+    if len(g_cov) != 3:
+        raise ValueError(
+            f"christoffel_from_bases requires exactly 3 basis vectors, got {len(g_cov)}"
+        )
+    if len(coords) != 3:
+        raise ValueError(f"coords must have exactly 3 coordinate symbols, got {len(coords)}")
+    g = metric_from_bases(g_cov)
+    return christoffel_symbols(g, coords)
+
+
 def covariant_derivative_contravariant(
     v: sp.Matrix,
     gamma: sp.MutableDenseNDimArray,
@@ -319,29 +500,74 @@ def covariant_derivative_tensor2(
     T: sp.Matrix,
     gamma: sp.MutableDenseNDimArray,
     theta: tuple[sp.Symbol, ...] | list[sp.Symbol],
+    variant: str = "contravariant",
 ) -> sp.MutableDenseNDimArray:
-    """Covariant derivative of a rank-2 contravariant tensor field.
+    """Covariant derivative of a rank-2 tensor field.
 
-    (∇T)_{IJK} = ∇_I T^{JK} = ∂T^{JK}/∂θ^I + Γ^J_{IL} T^{LK} + Γ^K_{IL} T^{JL}
+    The ``variant`` selects the index character of ``T``:
+
+    - ``"contravariant"`` (default) — upper indices T^{JK}::
+
+          ∇_I T^{JK} = ∂T^{JK}/∂θ^I + Γ^J_{IL} T^{LK} + Γ^K_{IL} T^{JL}
+
+    - ``"covariant"`` — lower indices T_{JK}::
+
+          ∇_I T_{JK} = ∂T_{JK}/∂θ^I − Γ^L_{IJ} T_{LK} − Γ^L_{IK} T_{JL}
+
+    - ``"mixed"`` — mixed indices T^J_K (first index up, second down)::
+
+          ∇_I T^J_K = ∂T^J_K/∂θ^I + Γ^J_{IL} T^L_K − Γ^L_{IK} T^J_L
 
     Args:
-        T: 3x3 Matrix of contravariant components T^{JK}.
+        T: 3x3 Matrix of tensor components (interpretation set by ``variant``).
         gamma: Christoffel symbols gamma[K,I,J] = Γ^K_{IJ}.
         theta: Tuple of 3 coordinate symbols.
+        variant: Index character of ``T`` — one of ``"contravariant"``,
+            ``"covariant"``, or ``"mixed"``.  Defaults to ``"contravariant"``.
 
     Returns:
-        3x3x3 MutableDenseNDimArray where result[I, J, K] = ∇_I T^{JK}.
+        3x3x3 MutableDenseNDimArray where result[I, J, K] = ∇_I T[J, K].
+
+    Raises:
+        ValueError: If ``variant`` is not one of the supported strings, ``T`` is
+            not 3x3, or ``theta`` does not have exactly 3 coordinate symbols.
     """
+    if variant not in ("contravariant", "covariant", "mixed"):
+        raise ValueError(
+            f"variant must be 'contravariant', 'covariant', or 'mixed', got '{variant}'"
+        )
+    if T.shape != (3, 3):
+        raise ValueError(f"T must be a 3x3 matrix, got {T.shape}")
+    if len(theta) != 3:
+        raise ValueError(f"theta must have exactly 3 coordinate symbols, got {len(theta)}")
+
     n = 3
     _zero_flat = [sp.S.Zero] * (n * n * n)
     result = sp.MutableDenseNDimArray(_zero_flat, (n, n, n))
-    for I in range(n):
-        for J in range(n):
-            for K in range(n):
-                val = sp.diff(T[J, K], theta[I])
-                for L in range(n):
-                    val = val + gamma[J, I, L] * T[L, K] + gamma[K, I, L] * T[J, L]
-                result[I, J, K] = val
+    if variant == "contravariant":
+        for I in range(n):
+            for J in range(n):
+                for K in range(n):
+                    val = sp.diff(T[J, K], theta[I])
+                    for L in range(n):
+                        val = val + gamma[J, I, L] * T[L, K] + gamma[K, I, L] * T[J, L]
+                    result[I, J, K] = val
+    elif variant == "covariant":
+        for I in range(n):
+            for J in range(n):
+                for K in range(n):
+                    val = sp.diff(T[J, K], theta[I])
+                    for L in range(n):
+                        val = val - gamma[L, I, J] * T[L, K] - gamma[L, I, K] * T[J, L]
+                    result[I, J, K] = val
+    elif variant == "mixed":
+        for I in range(n):
+            for J in range(n):
+                for K in range(n):
+                    val = sp.diff(T[J, K], theta[I])
+                    for L in range(n):
+                        val = val + gamma[J, I, L] * T[L, K] - gamma[L, I, K] * T[J, L]
+                    result[I, J, K] = val
     return result
 
 

@@ -90,9 +90,15 @@ def _get_source_lines_for_function(source: str, func_name: str) -> str:
     """Extract the source lines for a named function from the emitted code.
 
     Uses a regex approach: finds ``def func_name(`` and captures until the
-    next top-level ``def `` or end of file.
+    next top-level ``def ``, the next top-level ``# ====`` section banner, or
+    end of file. Stopping at the banner keeps a function's slice from absorbing
+    the comment header of the *following* emitted section (e.g. the P3-2
+    generated ``@ti.kernel`` banner that follows the host ``tangent_matvec``).
     """
-    pattern = rf"((?:@\w+[\.\w]*\n)?def {re.escape(func_name)}\(.*?)(?=\ndef |\Z)"
+    pattern = (
+        rf"((?:@\w+[\.\w]*\n)?def {re.escape(func_name)}\(.*?)"
+        r"(?=\ndef |\n# ={5,}|\Z)"
+    )
     match = re.search(pattern, source, re.DOTALL)
     if match:
         return match.group(1)

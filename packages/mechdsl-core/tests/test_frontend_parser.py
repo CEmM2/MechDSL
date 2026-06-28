@@ -7,8 +7,9 @@ Covers:
   ``formulation``, ``material``, ``boundary``, ``index``).
 - Syntax-error paths (unknown command, malformed option, missing value,
   unbalanced quotes, trailing comments, wrong positional count).
-- Deferred-directive rejection (``field``, ``weak_form``, ``constitutive``,
-  ``codegen``, ``verify``) with Plan B pointer.
+- Documented directive normalization (``bc``, ``field``, ``weak_form``,
+  ``constitutive``, ``codegen``, ``verify``), including MVP-stable
+  rejection for unsupported codegen / verification modes.
 - Parser → :func:`build_context` round-trip equality.
 - Supported-subset rejection propagates with Plan B phase pointers
   (analogues of parser IDs P2 / P5 / P6 from ``08-VERIFICATION.md``).
@@ -21,6 +22,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from mechdsl import compile_latex
 from mechdsl.frontend import build_context, parse, parse_file
 from mechdsl.frontend.directives import ParseError
 from mechdsl.frontend.parser import scan_directives
@@ -93,6 +95,14 @@ class TestScanDirectives:
         source = "%mechanics dim 3\n"
         assert scan_directives(source) == [(1, "dim 3")]
 
+    def test_trailing_latex_comment_is_stripped(self) -> None:
+        source = "% mechanics weak_form momentum --residual  % nonlinear residual form\n"
+        assert scan_directives(source) == [(1, "weak_form momentum --residual")]
+
+    def test_percent_inside_quoted_value_is_preserved(self) -> None:
+        source = '% mechanics material svk --label "100% load case"  % trailing comment\n'
+        assert scan_directives(source) == [(1, 'material svk --label "100% load case"')]
+
     def test_prefix_must_be_a_whole_word(self) -> None:
         # '% mechanicsfoo' is a plain LaTeX comment, NOT a malformed directive.
         source = "% mechanicsfoo dim 3\n"
@@ -151,9 +161,11 @@ class TestMVPExampleEndToEnd:
         assert bcs[0]["type"] == "dirichlet"
         assert bcs[0]["value"] == 0
         assert bcs[0]["components"] == [0, 1, 2]
+        assert bcs[0]["source_line"] == 11
         assert bcs[1]["name"] == "Gamma_t"
         assert bcs[1]["type"] == "neumann"
         assert bcs[1]["traction"] == "t_bar"
+        assert bcs[1]["source_line"] == 12
 
 
 class TestJ2Example:
@@ -193,8 +205,9 @@ class TestBuildContextRoundTrip:
                     "type": "dirichlet",
                     "value": 0,
                     "components": [0, 1, 2],
+                    "source_line": 11,
                 },
-                {"name": "Gamma_t", "type": "neumann", "traction": "t_bar"},
+                {"name": "Gamma_t", "type": "neumann", "traction": "t_bar", "source_line": 12},
             ],
         )
         # The seven build_context keys must match exactly.
@@ -359,26 +372,247 @@ class TestMissingRequiredDirectives:
 
 
 # ---------------------------------------------------------------------------
-# Deferred directives
+# Documented directive normalization
 # ---------------------------------------------------------------------------
 
 
-class TestDeferredDirectives:
-    """Non-MVP directives from 02-LATEX-DSL.md raise with a Plan B pointer."""
+class TestDocumentedDirectiveNormalization:
+    """Documented P3 directive shapes normalize into explicit metadata."""
+
+    def test_bc_alias_accepts_documented_dirichlet_and_neumann_shapes(self) -> None:
+        source = (
+            _MIN_HEADER
+            + "% mechanics field u --type vector --space V --order 1\n"
+            + "% mechanics bc dirichlet --field u --boundary left --value 0\n"
+            + '% mechanics bc neumann --field u --boundary right --traction "0, -P/A"\n'
+        )
+        ctx = parse(source)
+
+        assert ctx["boundaries"] == [
+            {
+                "name": "left",
+                "type": "dirichlet",
+                "field_name": "u",
+                "source_line": 6,
+                "value": 0,
+            },
+            {
+                "name": "right",
+                "type": "neumann",
+                "field_name": "u",
+                "source_line": 7,
+                "traction": "0, -P/A",
+            },
+        ]
+
+    def test_bc_alias_dirichlet_rejects_traction_payload(self) -> None:
+        source = _MIN_HEADER + '% mechanics bc dirichlet --value 0 --traction "0 0 -1"\n'
+
+        with pytest.raises(ParseError, match=r"bc dirichlet.*unknown option.*traction"):
+            parse(source)
+
+    def test_bc_alias_neumann_rejects_value_payload(self) -> None:
+        source = _MIN_HEADER + '% mechanics bc neumann --traction "0 0 -1" --value 0\n'
+
+        with pytest.raises(ParseError, match=r"bc neumann.*unknown option.*value"):
+            parse(source)
+
+    def test_bc_alias_numeric_neumann_reuses_legacy_traction_normalization(self) -> None:
+        source = _MIN_HEADER + '% mechanics bc neumann --traction "0 0 -1000"\n'
+        ctx = parse(source)
+
+        assert ctx["boundaries"] == [
+            {
+                "name": "neumann_0",
+                "type": "neumann",
+                "field_name": "u",
+                "source_line": 5,
+                "traction": [0.0, 0.0, -1000.0],
+            }
+        ]
+
+    def test_bc_alias_numeric_neumann_drives_f_ext_kernel(self) -> None:
+        source = _MIN_HEADER + '% mechanics bc neumann --traction "0 0 -1000" --surface z1\n'
+        bundle = compile_latex(source, profile="mvp")
+
+        assert bundle.f_ext_kernel is not None
+        assert "init_f_ext_from_neumann_neumann_0" in bundle.f_ext_kernel
+        assert "Surface tag: 'z1'" in bundle.f_ext_kernel
+        assert "-1000" in bundle.f_ext_kernel
+
+    def test_bc_body_force_is_metadata_not_boundary_region(self) -> None:
+        source = (
+            _MIN_HEADER
+            + "% mechanics field u --type vector --space V --order 1\n"
+            + '% mechanics bc body_force --field u --value "0, -rho*g"\n'
+        )
+        ctx = parse(source)
+
+        assert ctx["boundaries"] == []
+        assert ctx["body_forces"] == [
+            {
+                "type": "body_force",
+                "field_name": "u",
+                "value": "0, -rho*g",
+                "source_line": 6,
+            }
+        ]
+
+    def test_legacy_boundary_syntax_remains_valid(self) -> None:
+        source = _MIN_HEADER + "% mechanics boundary fix --type dirichlet --value 0\n"
+        ctx = parse(source)
+        assert ctx["boundaries"] == [
+            {"name": "fix", "type": "dirichlet", "source_line": 5, "value": 0}
+        ]
+
+    def test_legacy_and_bc_boundaries_preserve_source_lines(self) -> None:
+        source = (
+            "\n"
+            + _MIN_HEADER
+            + "% mechanics boundary fix --type dirichlet --value 0\n"
+            + '% mechanics bc neumann --field u --boundary load --traction "0 0 -1000"\n'
+        )
+        ctx = parse(source)
+
+        assert ctx["boundaries"][0]["source_line"] == 6
+        assert ctx["boundaries"][1]["source_line"] == 7
+
+    def test_field_directives_preserve_field_metadata_and_source_line(self) -> None:
+        source = (
+            "\n"
+            + _MIN_HEADER
+            + "% mechanics field u --type vector --space V --order 1\n"
+            + "% mechanics field p --type scalar --space Q --order 0\n"
+        )
+        ctx = parse(source)
+
+        assert ctx["fields"] == [
+            {
+                "name": "u",
+                "kind": "vector",
+                "space": "V",
+                "order": 1,
+                "source_line": 6,
+            },
+            {
+                "name": "p",
+                "kind": "scalar",
+                "space": "Q",
+                "order": 0,
+                "source_line": 7,
+            },
+        ]
+        assert ctx["directive_locations"]["field"] == [6, 7]
+
+    def test_field_negative_order_raises_line_specific_parse_error(self) -> None:
+        source = _MIN_HEADER + "% mechanics field u --type vector --space V --order -1\n"
+        with pytest.raises(ParseError, match=r"line 5:.*--order.*non-negative"):
+            parse(source)
 
     @pytest.mark.parametrize(
-        "body",
+        ("body", "role"),
         [
-            "field u --type vector --space V --order 1",
-            "weak_form momentum --test v --trial u",
-            "constitutive Psi --strain_energy",
-            "codegen --target taichi --output out.py",
-            "verify --benchmark cantilever",
+            ("constitutive Psi --strain_energy", "strain_energy"),
+            ("constitutive sigma --cauchy", "cauchy"),
+            ("constitutive S --pk2", "pk2"),
         ],
     )
-    def test_deferred_directive_rejected(self, body: str) -> None:
-        source = _MIN_HEADER + f"% mechanics {body}\n"
-        with pytest.raises(ParseError, match="Plan B"):
+    def test_constitutive_directives_normalize_roles(self, body: str, role: str) -> None:
+        ctx = parse(_MIN_HEADER + f"% mechanics {body}\n")
+        assert ctx["constitutive"] == [{"symbol": body.split()[1], "role": role, "source_line": 5}]
+
+    def test_weak_form_linear_shape_normalizes_variational_metadata(self) -> None:
+        source = _MIN_HEADER + "% mechanics weak_form momentum --test v --trial u --domain Omega\n"
+        ctx = parse(source)
+
+        assert ctx["weak_forms"] == [
+            {
+                "name": "momentum",
+                "kind": "bilinear",
+                "test": "v",
+                "trial": "u",
+                "domain": "Omega",
+                "source_line": 5,
+            }
+        ]
+        assert ctx["residual_contract"]["weak_form_label"] == "momentum"
+        assert ctx["residual_contract"]["metadata"]["kind"] == "bilinear"
+
+    def test_weak_form_residual_shape_normalizes_residual_metadata(self) -> None:
+        ctx = parse(_MIN_HEADER + "% mechanics weak_form momentum --residual\n")
+
+        assert ctx["weak_forms"] == [{"name": "momentum", "kind": "residual", "source_line": 5}]
+        assert ctx["residual_contract"] == {
+            "terms": [],
+            "weak_form_label": "momentum",
+            "metadata": {"kind": "residual", "source_line": 5},
+        }
+
+    def test_weak_form_residual_accepts_trailing_latex_comment(self) -> None:
+        ctx = parse(_MIN_HEADER + "% mechanics weak_form momentum --residual  % nonlinear\n")
+
+        assert ctx["weak_forms"] == [{"name": "momentum", "kind": "residual", "source_line": 5}]
+
+    def test_duplicate_weak_form_rejects_with_existing_label(self) -> None:
+        source = (
+            _MIN_HEADER
+            + "% mechanics weak_form momentum --test v --trial u --domain Omega\n"
+            + "% mechanics weak_form energy --residual\n"
+        )
+        with pytest.raises(
+            ParseError, match=r"line 6:.*overwrite an existing residual_contract.*'momentum'"
+        ):
+            parse(source)
+
+    def test_codegen_taichi_shape_normalizes_metadata(self) -> None:
+        ctx = parse(_MIN_HEADER + "% mechanics codegen --target taichi --output cantilever.py\n")
+
+        assert ctx["codegen"] == {
+            "target": "taichi",
+            "output": "cantilever.py",
+            "source_line": 5,
+        }
+
+    @pytest.mark.parametrize("target", ["mfem", "moose"])
+    def test_codegen_non_taichi_targets_reject_cleanly(self, target: str) -> None:
+        source = _MIN_HEADER + f"% mechanics codegen --target {target} --output out.txt\n"
+        with pytest.raises(ParseError, match=f"line 5:.*target {target!r}.*MVP-stable"):
+            parse(source)
+
+    def test_compile_latex_rejects_non_taichi_codegen_on_mvp_path(self) -> None:
+        source = (
+            _MIN_HEADER
+            + "% mechanics boundary fix --type dirichlet --value 0\n"
+            + "% mechanics codegen --target mfem --output cantilever_mfem.cpp\n"
+        )
+        with pytest.raises(ParseError, match=r"target 'mfem'.*MVP-stable"):
+            compile_latex(source, profile="mvp")
+
+    def test_verify_benchmark_shape_normalizes_metadata(self) -> None:
+        source = "% mechanics dim 3\n% mechanics cell hex8\n% mechanics formulation total_lagrangian\n% mechanics material svk --E 200e9 --nu 0.3\n% mechanics verify --benchmark cantilever_beam --E 200e9 --nu 0.3 --P 1e6\n"
+        ctx = parse(source)
+
+        assert ctx["verify"] == [
+            {
+                "kind": "benchmark",
+                "source_line": 5,
+                "benchmark": "cantilever_beam",
+                "params": {"E": 200e9, "nu": 0.3, "P": 1e6},
+            }
+        ]
+
+    def test_verify_patch_test_shape_normalizes_metadata(self) -> None:
+        ctx = parse(_MIN_HEADER + "% mechanics verify --patch_test\n")
+        assert ctx["verify"] == [{"kind": "patch_test", "source_line": 5}]
+
+    def test_verify_patch_test_rejects_extra_options(self) -> None:
+        source = _MIN_HEADER + "% mechanics verify --patch_test --E 200e9\n"
+        with pytest.raises(ParseError, match=r"line 5:.*verify.*unknown option\(s\)"):
+            parse(source)
+
+    def test_verify_mms_method_rejects_cleanly(self) -> None:
+        source = _MIN_HEADER + "% mechanics verify --method mms --order 2\n"
+        with pytest.raises(ParseError, match=r"line 5:.*method mms.*not supported"):
             parse(source)
 
     def test_assign_is_not_deferred(self) -> None:
@@ -387,6 +621,16 @@ class TestDeferredDirectives:
 
         assert "assign" in HANDLERS, "'assign' must be registered in HANDLERS after Task P2-4"
         assert "assign" not in DEFERRED_DIRECTIVES, "'assign' must NOT be in DEFERRED_DIRECTIVES"
+
+    @pytest.mark.parametrize(
+        "command",
+        ["field", "weak_form", "constitutive", "codegen", "verify", "bc"],
+    )
+    def test_documented_p3_commands_are_handlers_not_deferred(self, command: str) -> None:
+        from mechdsl.frontend.directives import DEFERRED_DIRECTIVES, HANDLERS
+
+        assert command in HANDLERS
+        assert command not in DEFERRED_DIRECTIVES
 
 
 # ---------------------------------------------------------------------------

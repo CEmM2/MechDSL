@@ -23,7 +23,8 @@ Public surface
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from collections.abc import Callable  # noqa: TC003 — runtime use in cast() below
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -67,7 +68,7 @@ exec(
     compile(_TRANSPILED_SOURCE, "<algo2code:radial_return_j2>", "exec"),
     _TRANSPILED_NAMESPACE,
 )
-_radial_return_j2_scalar = _TRANSPILED_NAMESPACE["radial_return_j2"]
+_radial_return_j2_scalar = cast("Callable[..., Any]", _TRANSPILED_NAMESPACE["radial_return_j2"])
 
 
 def _imported_path_active() -> bool:
@@ -133,7 +134,7 @@ def _radial_return_algo2code(
         )
 
     # --- 4. Trial yield check + scalar Newton — algo2code-transpiled.
-    plastic_flag, alpha_new_from_algo, dl_from_algo = _radial_return_j2_scalar(
+    plastic_flag, _alpha_new_from_algo, dl_from_algo = _radial_return_j2_scalar(
         sigma_eq=sigma_eq_trial,
         alpha=alpha_old,
         mu=mu,

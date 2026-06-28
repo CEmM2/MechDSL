@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ti-runtime"
+version = "0.2.0"
+description = "Neutral Taichi runtime: vector primitives, Tier-1 @ti.func helpers, and solver/operator injection seams for MechDSL-generated code (PlanJune14 PJ-0)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12,<3.13"
+authors = [
+    { name = "Shmuel Osovski" },
+]
+keywords = ["taichi", "fem", "matrix-free", "runtime", "kernels"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+]
+
+# Only depends on Taichi. MechDSL-generated artifacts import THIS package
+# (`from ti_runtime import ...`), never `mechdsl` — so generated output stays
+# portable (PlanJune14 D-D). Harvested one-time from NumerixWeave (D-B); MechDSL
+# then diverges freely.
+dependencies = [
+    "taichi>=1.7",
+]
+
+[tool.uv]
+# Supply-chain safety: ignore any package version uploaded after this date.
+exclude-newer = "2026-02-20T00:00:00Z"
+
+[project.urls]
+Repository = "https://github.com/SOSOVSKI/MechDSL"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ti_runtime"]

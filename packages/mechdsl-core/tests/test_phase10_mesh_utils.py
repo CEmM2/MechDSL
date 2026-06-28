@@ -27,9 +27,7 @@ class TestTaskP1_1:
         assert mesh.connectivity.shape == (1, 8)
         assert mesh.n_nodes == 8
         assert mesh.n_elements == 1
-        assert {"x_min", "x_max", "y_min", "y_max", "z_min", "z_max"} <= set(
-            mesh.boundary_nodes
-        )
+        assert {"x_min", "x_max", "y_min", "y_max", "z_min", "z_max"} <= set(mesh.boundary_nodes)
 
     @pytest.mark.unit
     def test_invalid_connectivity_shape_is_rejected(self) -> None:
@@ -92,4 +90,3 @@ class TestTaskP1_2:
         assert np.array_equal(mesh.boundary_nodes["fixed"], mesh.boundary_nodes["x_min"])
         assert np.array_equal(mesh.boundary_nodes["load"], mesh.boundary_nodes["x_max"])
         assert mesh.boundary_nodes["top"].size > 0
-

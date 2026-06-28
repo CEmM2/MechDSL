@@ -37,7 +37,6 @@ class TestTaskP7_7:
     def test_baseline_stability_job_present(self) -> None:
         """At least one workflow file mentions a baseline-stability /
         algo2code-import smoke job."""
-        problems = []
         found = False
         for f in _workflow_files():
             text = f.read_text(encoding="utf-8")

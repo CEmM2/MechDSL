@@ -190,6 +190,56 @@ class TestNewtonSolveUnit:
         assert not result.converged
         assert result.n_iterations == 5
 
+    def test_nonfinite_residual_raises_and_rolls_back(self):
+        """WI-1: a non-finite residual fails loud (raise + rollback).
+
+        A NaN/Inf ``||R||`` means the assembled residual is poisoned -- e.g. a
+        generated J2 return map that did not converge set ``dl = NaN`` and it
+        propagated through stress -> f_int -> R. A magnitude-only convergence
+        test can't see this (``NaN < tol`` is False), so without the isfinite
+        guard the solve would silently exhaust ``max_iter`` (or, on a backend
+        that clamps the NaN, accept a never-converged step). The guard must
+        instead restore ``u`` to its pre-solve snapshot, roll back history, and
+        raise -- the contract the source-substring tests never exercised.
+        """
+        n = 4
+        u = np.zeros((n, 3), dtype=np.float64)
+        u_before = u.copy()
+        bc_mask = np.zeros((n, 3), dtype=bool)
+        bc_mask[0, :] = True
+
+        # Finite on the first assembly (so iteration 0 actually updates u),
+        # then poisoned on the second -- proving the rollback undoes the update.
+        call_count = [0]
+
+        def staged_residual(u_: np.ndarray) -> np.ndarray:
+            call_count[0] += 1
+            r = np.full_like(u_, 1.0)
+            if call_count[0] >= 2:
+                r[1, 0] = np.nan
+            return r
+
+        def identity_matvec(u_: np.ndarray, v: np.ndarray) -> np.ndarray:
+            return v.copy()
+
+        history = MagicMock(spec=HistoryFields)
+
+        with pytest.raises(RuntimeError, match="non-finite"):
+            newton_solve(
+                assemble_residual=staged_residual,
+                tangent_matvec=identity_matvec,
+                u=u,
+                bc_mask=bc_mask,
+                config=NewtonConfig(max_iter=5, tol=1e-12),
+                history=history,
+            )
+
+        # u restored to the pre-solve snapshot (the iteration-0 update undone).
+        np.testing.assert_array_equal(u, u_before)
+        # History rolled back, never committed.
+        history.rollback.assert_called_once()
+        history.commit.assert_not_called()
+
     def test_dirichlet_dofs_remain_zero(self, elastic_setup: dict):
         """Constrained DOFs are exactly zero after solve."""
         s = elastic_setup

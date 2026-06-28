@@ -8,7 +8,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from algo2code.expr_parser import parse_latex_expr, parse_assignment, tokenize
 from algo2code.algo_parser import parse_algorithm
 from algo2code.type_inference import infer_types
-from algo2code.taichi_codegen import generate_taichi
 from algo2code.ast_nodes import (
     Var, Number, BinOp, UnaryOp, FuncCall, VarType,
     Assign, ForLoop, Branch, Return, Break, Algorithm

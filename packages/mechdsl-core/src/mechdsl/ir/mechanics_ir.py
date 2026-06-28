@@ -10,9 +10,16 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from mechdsl.symbolic.convected import UnsupportedError
+
+if TYPE_CHECKING:
+    # Type-only: keeps the SymPy-heavy symbolic.energy off the IR import path
+    # (ProblemIR is imported broadly). The `derived_energy` field is validated
+    # by duck-typing in __post_init__, so the concrete class is not needed at
+    # runtime; `from __future__ import annotations` makes the annotation a string.
+    from mechdsl.symbolic.energy import EnergyModel
 
 # ---------------------------------------------------------------------------
 # Error classes (from ir.md)
@@ -350,6 +357,54 @@ class FieldSpec:
 
 
 @dataclass(frozen=True)
+class FiberFieldSpec:
+    """Per-element fiber-orientation field data for anisotropic models (HGO).
+
+    constitutive_latex Phase 5 (P5-1). This is **field data**, deliberately
+    distinct from :class:`MaterialSpec` scalar params: it carries one direction
+    vector per fiber family (HGO uses two). Authored via the
+    ``% mechanics fiber --family "x,y,z"`` directive as constant (uniform)
+    directions, or supplied programmatically through
+    :func:`mechdsl.frontend.build_context` ``fiber_data``. Genuinely
+    heterogeneous per-element arrays remain a mesh-binding concern; this carrier
+    holds the *declared* family directions that flow ProblemIR -> Element IR.
+
+    Immutable; validated at construction (each family is a nonzero 3-vector).
+    Directions are stored as authored — consumers normalise (the HGO oracle
+    normalises internally), so the carry does not silently rescale user input.
+    """
+
+    families: tuple[tuple[float, float, float], ...]
+
+    def __post_init__(self) -> None:
+        if not self.families:
+            raise ValueError(
+                "FiberFieldSpec requires at least one fiber family; an "
+                "anisotropic model needs its fiber direction(s) declared."
+            )
+        for k, a in enumerate(self.families):
+            if len(a) != 3:
+                raise ValueError(
+                    f"FiberFieldSpec family {k} must be a 3-vector (x, y, z), got {a!r}."
+                )
+            if sum(float(c) * float(c) for c in a) <= 0.0:
+                raise ValueError(
+                    f"FiberFieldSpec family {k} must be a nonzero direction, got {a!r}."
+                )
+
+    @property
+    def n_families(self) -> int:
+        return len(self.families)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"families": [list(a) for a in self.families]}
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> FiberFieldSpec:
+        return cls(families=tuple((float(a[0]), float(a[1]), float(a[2])) for a in d["families"]))
+
+
+@dataclass(frozen=True)
 class DomainSpec:
     """Optional domain-level metadata (geometry / region naming hints).
 
@@ -439,6 +494,69 @@ class ResidualContract:
             terms=tuple(d.get("terms", ())),
             weak_form_label=d.get("weak_form_label"),
             metadata=dict(d.get("metadata", {})),
+        )
+
+
+# Roles that the equation classifier may emit but that carry no committed
+# constitutive meaning. Per the Phase 4 → Phase 5 handoff, a role of
+# ``unknown`` (or ``None``) must NOT be inferred into a real constitutive
+# role — it is recorded as an auxiliary definition so the serialized IR still
+# explains that the compiler saw the equation without claiming to understand
+# its physics.
+#
+# ``auxiliary_definition`` is bucketed here because it is the classifier's own
+# label for "a definition with no committed physics" — the same semantic bucket
+# as ``unknown``. Normalizing it to the canonical ``"auxiliary"`` token keeps a
+# single auxiliary spelling in the serialized record regardless of whether the
+# role arrived as ``unknown``/``None`` (no classification) or
+# ``auxiliary_definition`` (classified as auxiliary). The empty string covers a
+# present-but-blank role field.
+_NON_COMMITTED_ROLES: frozenset[str] = frozenset({"unknown", "auxiliary_definition", ""})
+
+
+@dataclass(frozen=True)
+class LatexSemantics:
+    """Record of the LaTeX-derived semantics the compiler understood (fgram P5-1).
+
+    This is the serializable explanation of *what the compiler read* from a
+    LaTeX source: which fields were declared, which constitutive roles were
+    tagged on which symbols, the weak-form label, and (when a ``$...$`` math
+    block was present) the per-equation role assignments.
+
+    It is **additive and advisory**: the authoritative IR configuration still
+    lives in :class:`ProblemIR`'s typed fields. This record exists so the
+    serialized bundle can be reviewed and golden-diffed without re-parsing the
+    source. All members are JSON-primitive tuples/strings so :meth:`to_dict`
+    stays round-trip-safe.
+
+    ``role`` values are taken verbatim from directive-tagged metadata (which
+    is authoritative per the Phase 4 handoff). A role of ``unknown`` /
+    ``None`` from the equation classifier is downgraded to ``"auxiliary"``
+    rather than inferred into a constitutive role.
+    """
+
+    fields: tuple[str, ...] = ()
+    constitutive: tuple[tuple[str, str], ...] = ()  # (symbol, role) pairs
+    weak_form_label: str | None = None
+    equations: tuple[tuple[str, str], ...] = ()  # (lhs, role) pairs
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "fields": list(self.fields),
+            "constitutive": [{"symbol": s, "role": r} for s, r in self.constitutive],
+            "weak_form_label": self.weak_form_label,
+            "equations": [{"lhs": lhs, "role": role} for lhs, role in self.equations],
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> LatexSemantics:
+        return cls(
+            fields=tuple(d.get("fields", ())),
+            constitutive=tuple(
+                (entry["symbol"], entry["role"]) for entry in d.get("constitutive", [])
+            ),
+            weak_form_label=d.get("weak_form_label"),
+            equations=tuple((entry["lhs"], entry["role"]) for entry in d.get("equations", [])),
         )
 
 
@@ -579,6 +697,33 @@ class ProblemIR:
     domain: DomainSpec | None = None
     mesh_contract: MeshContract | None = None
     residual_contract: ResidualContract | None = None
+
+    # fgram Phase 5 (P5-1): LaTeX-derived semantic record. Optional and
+    # advisory — captures what the compiler understood from the LaTeX source
+    # (declared fields, constitutive roles, weak-form label, equation roles)
+    # so the serialized bundle can explain itself. None for IRs built without
+    # a LaTeX semantic source (legacy / programmatic callers).
+    latex_semantics: LatexSemantics | None = None
+
+    # constitutive_latex Phase 3 (P3-1): the LaTeX-derived symbolic energy
+    # model (PK2 stress + material tangent) when the constitutive law was
+    # derived from a strain-energy density rather than dispatched by model
+    # name. This is the carrier that lets codegen emit from the derived
+    # energy instead of the hard-coded named-model switch — replacing the
+    # advisory-only `latex_semantics` path. Appended last, defaulting to
+    # ``None`` so the ~21 direct / 61 transitive ProblemIR constructors pass
+    # no new argument and are unaffected. Held as a Python object (SymPy
+    # expressions inside) and deliberately NOT serialized into `to_dict`:
+    # SymPy does not JSON-encode cleanly, and the codegen contract reads it
+    # off the in-memory IR / ArtifactBundle, not the serialized dict.
+    derived_energy: EnergyModel | None = None
+
+    # constitutive_latex Phase 5 (P5-1): per-element fiber-orientation field
+    # data for anisotropic models (HGO). Field data, NOT a scalar material
+    # param — carried separately from MaterialSpec.params and flowed through to
+    # the Element IR. Appended last, defaulting to None so every existing
+    # ProblemIR constructor is unaffected.
+    fiber_field: FiberFieldSpec | None = None
 
     # Formulation → Configuration mapping (Plan B §B1.5).
     _FORMULATION_TO_CONFIG: ClassVar[dict[Formulation, Configuration]] = {
@@ -763,6 +908,43 @@ class ProblemIR:
         # compile-path boundary (`compile_latex(profile="mvp")` calls
         # `assert_mvp_stable()`).
 
+        # constitutive_latex P3-1: validate the derived-energy carrier at
+        # construction time (IR discipline). A no-op when None (the default,
+        # so every legacy constructor is unaffected); when present it must be
+        # a fully-formed energy model carrying symbolic PK2 stress and tangent
+        # so codegen can emit from it. Duck-typed to avoid importing the heavy
+        # symbolic.energy module at IR-construction time.
+        if self.derived_energy is not None:
+            de = self.derived_energy
+            # Three recognised derivation shapes, each carrying the symbolic
+            # data its codegen path consumes (duck-typed to avoid importing the
+            # heavy symbolic modules at IR-construction time):
+            #   - invariant  (EnergyModel):          closed-form pk2 + rank-4 tangent
+            #   - spectral   (SpectralEnergyModel):  principal stresses S_i(lambda)
+            #   - anisotropic(AnisotropicEnergyModel): iso + fiber stress + Ibar4
+            shapes = {
+                "invariant": ("pk2", "tangent", "strain_symbols"),
+                "spectral": ("principal_pk2", "stretch_symbols", "param_symbols"),
+                "anisotropic": ("iso_pk2", "fiber_pk2", "fiber_ibar4", "strain_symbols"),
+            }
+            if not any(all(hasattr(de, a) for a in attrs) for attrs in shapes.values()):
+                raise ValueError(
+                    "derived_energy must be a recognised constitutive model carrying "
+                    "its derived stress: a mechdsl.symbolic.energy.EnergyModel "
+                    "(invariant), SpectralEnergyModel (Ogden), or AnisotropicEnergyModel "
+                    "(HGO); got an object missing all of their required attributes."
+                )
+
+        # constitutive_latex P5-1: validate the fiber-field carrier at
+        # construction time (IR discipline). A no-op when None (the default).
+        # Duck-typed to keep this cheap; FiberFieldSpec already validates its
+        # own families in its __post_init__.
+        if self.fiber_field is not None and not hasattr(self.fiber_field, "families"):
+            raise ValueError(
+                "fiber_field must be a mechdsl.ir.mechanics_ir.FiberFieldSpec "
+                "carrying per-family direction vectors."
+            )
+
     def to_dict(self) -> dict[str, Any]:
         """Serialize to JSON-compatible dict for golden comparison."""
         assert self.configuration is not None  # guaranteed by __post_init__
@@ -789,6 +971,16 @@ class ProblemIR:
             "residual_contract": (
                 self.residual_contract.to_dict() if self.residual_contract is not None else None
             ),
+            # fgram Phase 5 (P5-1) LaTeX-derived semantic record. Always
+            # emitted (None when absent) so consumers can round-trip it;
+            # legacy dicts without the key rebuild with `latex_semantics=None`.
+            "latex_semantics": (
+                self.latex_semantics.to_dict() if self.latex_semantics is not None else None
+            ),
+            # constitutive_latex P5-1: fiber field data. Emitted only when
+            # present so every existing (fiber-less) golden stays byte-identical;
+            # from_dict rebuilds None when the key is absent.
+            **({"fiber_field": self.fiber_field.to_dict()} if self.fiber_field is not None else {}),
         }
 
     @classmethod
@@ -820,6 +1012,12 @@ class ProblemIR:
         mesh_contract = MeshContract.from_dict(raw_mesh) if raw_mesh else None
         raw_residual = d.get("residual_contract")
         residual_contract = ResidualContract.from_dict(raw_residual) if raw_residual else None
+        # fgram Phase 5 (P5-1) LaTeX semantic record. Optional; missing key
+        # rebuilds as None so every existing golden continues to round-trip.
+        raw_latex = d.get("latex_semantics")
+        latex_semantics = LatexSemantics.from_dict(raw_latex) if raw_latex else None
+        raw_fiber = d.get("fiber_field")
+        fiber_field = FiberFieldSpec.from_dict(raw_fiber) if raw_fiber else None
         return cls(
             dim=d["dim"],
             formulation=Formulation(d["formulation"]),
@@ -835,6 +1033,8 @@ class ProblemIR:
             domain=domain,
             mesh_contract=mesh_contract,
             residual_contract=residual_contract,
+            latex_semantics=latex_semantics,
+            fiber_field=fiber_field,
         )
 
     # ------------------------------------------------------------------
@@ -927,7 +1127,214 @@ class ProblemIR:
                 params=dict(ctx.get("params", {})),
             ),
             boundaries=boundaries,
+            fiber_field=cls._fiber_field_from_context(ctx),
         )
+
+    @staticmethod
+    def _fiber_field_from_context(ctx: dict[str, Any]) -> FiberFieldSpec | None:
+        """Map fiber-direction directive entries to a :class:`FiberFieldSpec`.
+
+        The ``% mechanics fiber --family "x,y,z"`` directive accumulates one
+        ``{"direction": (x, y, z), "source_line": n}`` entry per family under
+        ``ctx['fiber_families']`` (see ``frontend/directives.py``). Returns
+        ``None`` when no fiber directive was declared, so isotropic problems
+        carry no fiber field.
+        """
+        entries = ctx.get("fiber_families")
+        if not entries:
+            return None
+        families: list[tuple[float, float, float]] = []
+        for entry in entries:
+            d = entry["direction"]
+            families.append((float(d[0]), float(d[1]), float(d[2])))
+        return FiberFieldSpec(families=tuple(families))
+
+    # ------------------------------------------------------------------
+    # LaTeX-semantic adapter (fgram Phase 5 / P5-1).
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_latex_semantics(cls, ctx: dict[str, Any]) -> ProblemIR:
+        """Build a validated :class:`ProblemIR` from LaTeX-derived semantics.
+
+        This is the LaTeX-semantic constructor (fgram Phase 5). Unlike
+        :meth:`from_context`, which reads only the thin directive core
+        (``dim`` / ``cell_type`` / ``formulation`` / ``material_type`` /
+        ``boundaries``), this adapter additionally consumes the richer
+        semantic objects a LaTeX source carries through the frontend:
+
+        - ``fields`` → :class:`FieldSpec` entries on :attr:`fields`.
+        - ``residual_contract`` / ``weak_forms`` →
+          :class:`ResidualContract` on :attr:`residual_contract`.
+        - ``constitutive`` role tags and any ``$...$`` equation roles →
+          a serializable :class:`LatexSemantics` record on
+          :attr:`latex_semantics` so the bundle explains what the compiler
+          understood.
+
+        Convergence (Phase 4 handoff): the MVP-stable *core* of the returned
+        IR is identical to :meth:`from_context` for the same ``ctx`` — this
+        adapter only *adds* enrichment, it never diverges on the core
+        configuration. Symbolic / constitutive meaning is not re-derived here:
+        constitutive role tags are taken verbatim from the (authoritative)
+        directive metadata, and equation roles that the classifier reported as
+        ``unknown`` are recorded as ``"auxiliary"`` rather than inferred.
+
+        Parameters
+        ----------
+        ctx
+            Frontend context dict from :func:`mechdsl.frontend.parse` /
+            :func:`mechdsl.frontend.parse_compile_context`. Required keys are
+            those of :meth:`from_context`; the LaTeX-semantic keys
+            (``fields``, ``constitutive``, ``weak_forms``,
+            ``residual_contract``, ``math``) are all optional.
+
+        Returns
+        -------
+        ProblemIR
+            Validated, enriched IR. Construction-time errors propagate
+            unchanged.
+        """
+        boundaries = tuple(
+            BoundaryCondition.from_context(bc, idx)
+            for idx, bc in enumerate(ctx.get("boundaries", []))
+        )
+        fields = cls._fields_from_context(ctx)
+        residual_contract = cls._residual_contract_from_context(ctx)
+        latex_semantics = cls._latex_semantics_from_context(ctx, fields)
+        return cls(
+            dim=int(ctx["dim"]),
+            formulation=Formulation(ctx["formulation"]),
+            element_type=ElementType(ctx["cell_type"]),
+            material=MaterialSpec(
+                model=ctx["material_type"],
+                params=dict(ctx.get("params", {})),
+            ),
+            boundaries=boundaries,
+            fields=fields,
+            residual_contract=residual_contract,
+            latex_semantics=latex_semantics,
+            fiber_field=cls._fiber_field_from_context(ctx),
+        )
+
+    @staticmethod
+    def _fields_from_context(ctx: dict[str, Any]) -> tuple[FieldSpec, ...]:
+        """Map ``ctx['fields']`` directive entries to :class:`FieldSpec`.
+
+        The directive normalizer emits ``{"name", "kind", "space", "order"}``
+        dicts (see ``frontend/directives.py``); only ``name`` and ``kind``
+        carry into the IR FieldSpec — ``space`` / ``order`` are SymPDE-stage
+        metadata and stay out of the MVP IR.
+        """
+        return tuple(
+            FieldSpec(name=str(entry["name"]), kind=str(entry.get("kind", "vector")))
+            for entry in ctx.get("fields", [])
+        )
+
+    @staticmethod
+    def _residual_contract_from_context(ctx: dict[str, Any]) -> ResidualContract | None:
+        """Map weak-form metadata to a :class:`ResidualContract`.
+
+        The directive layer already assembles a ``residual_contract`` dict
+        (terms / weak_form_label / metadata) under ``ctx['residual_contract']``
+        when a ``% mechanics weak_form`` directive is present. Reuse it
+        directly so the LaTeX path and the directive layer agree on the
+        contract shape. Returns ``None`` when no weak form was declared.
+        """
+        # A ProblemIR permits exactly one weak-form declaration. The directive
+        # layer enforces this at parse time (a second ``% mechanics weak_form``
+        # raises ParseError) and emits the singular ``residual_contract`` next to
+        # a *single-entry* ``weak_forms`` list — so the two keys co-existing is
+        # the normal state, not a conflict. A caller assembling ``ctx`` directly
+        # can still smuggle in a ``weak_forms`` list carrying more than one form:
+        # a genuine duplicate singular-field declaration. Reject it explicitly
+        # rather than silently honouring only ``residual_contract`` (issue #274).
+        # The check runs before the ``residual_contract`` lookup so it also
+        # catches a duplicate ``weak_forms`` list passed without a contract.
+        weak_forms = ctx.get("weak_forms")
+        if isinstance(weak_forms, (list, tuple)) and len(weak_forms) > 1:
+            labels = [
+                wf.get("weak_form_label") if isinstance(wf, dict) else wf for wf in weak_forms
+            ]
+            raise ValueError(
+                f"ctx declares {len(weak_forms)} weak forms ({labels!r}); "
+                "ProblemIR.residual_contract is singular — declare exactly one "
+                "'% mechanics weak_form' per source. The directive layer enforces "
+                "this at parse time; multi-form support is planned for Plan B."
+            )
+
+        raw = ctx.get("residual_contract")
+        if not raw:
+            return None
+        # A non-mapping ``residual_contract`` (e.g. a list of contracts or a bare
+        # string) is likewise rejected explicitly rather than letting
+        # ResidualContract.from_dict fail obscurely or silently build a wrong
+        # contract.
+        if not isinstance(raw, dict):
+            raise ValueError(
+                "ctx['residual_contract'] must be a single weak-form contract "
+                f"mapping; got {type(raw).__name__}. A ProblemIR permits exactly "
+                "one weak-form declaration — the directive layer rejects duplicate "
+                "'% mechanics weak_form' directives at parse time."
+            )
+        return ResidualContract.from_dict(raw)
+
+    @staticmethod
+    def _latex_semantics_from_context(
+        ctx: dict[str, Any], fields: tuple[FieldSpec, ...]
+    ) -> LatexSemantics | None:
+        """Assemble the serializable :class:`LatexSemantics` record.
+
+        Records *what the compiler understood* — declared field names,
+        directive-tagged constitutive roles (authoritative), the weak-form
+        label, and any equation roles from a ``$...$`` math block. Equation
+        roles reported as ``unknown`` / ``None`` are downgraded to
+        ``"auxiliary"`` rather than inferred into a constitutive role (Phase 4
+        handoff). Returns ``None`` when the context carries no LaTeX-derived
+        semantics at all, so legacy / programmatic IRs stay unannotated.
+        """
+        constitutive = tuple(
+            (str(entry["symbol"]), str(entry["role"])) for entry in ctx.get("constitutive", [])
+        )
+        residual = ctx.get("residual_contract") or {}
+        weak_form_label = residual.get("weak_form_label")
+
+        equations: list[tuple[str, str]] = []
+        math = ctx.get("math")
+        if isinstance(math, dict):
+            for eq in math.get("equations", ()):
+                lhs, role = ProblemIR._equation_lhs_and_role(eq)
+                equations.append((lhs, role))
+
+        field_names = tuple(f.name for f in fields)
+        if not (field_names or constitutive or weak_form_label or equations):
+            return None
+        return LatexSemantics(
+            fields=field_names,
+            constitutive=constitutive,
+            weak_form_label=weak_form_label,
+            equations=tuple(equations),
+        )
+
+    @staticmethod
+    def _equation_lhs_and_role(eq: Any) -> tuple[str, str]:
+        """Extract ``(lhs, role)`` from an equation record, downgrading
+        non-committed roles to ``"auxiliary"``.
+
+        Accepts both the mapping form (e.g. a serialized
+        ``EquationSemantics``) and any object exposing ``lhs`` / ``role``
+        attributes, so the adapter does not depend on a single equation
+        representation.
+        """
+        if isinstance(eq, Mapping):
+            lhs = str(eq.get("lhs", ""))
+            raw_role = eq.get("role")
+        else:
+            lhs = str(getattr(eq, "lhs", ""))
+            raw_role = getattr(eq, "role", None)
+        role = "" if raw_role is None else str(raw_role)
+        if role in _NON_COMMITTED_ROLES:
+            role = "auxiliary"
+        return lhs, role
 
     # ------------------------------------------------------------------
     # MVP-stable subset contract (recovery-plan P3-4).
@@ -970,7 +1377,11 @@ class ProblemIR:
                 f"{tuple(e.value for e in MVP_STABLE_SUBSET.element_types)}. "
                 "Additional element families are planned for Plan B phase B5."
             )
-        if self.material.model not in MVP_STABLE_SUBSET.materials:
+        # A LaTeX-derived constitutive law supplies its own stress/tangent, so
+        # the named-model allow-list does not gate it (mirrors the codegen
+        # rationale in taichi_printer.emit_constitutive_update): the
+        # strain-energy derivation, not the model name, defines the physics.
+        if self.derived_energy is None and self.material.model not in MVP_STABLE_SUBSET.materials:
             raise MvpSubsetViolation(
                 f"material.model={self.material.model!r} is outside the "
                 f"MVP-stable subset {MVP_STABLE_SUBSET.materials}. "
@@ -1001,7 +1412,14 @@ class ProblemIR:
         # research code constructs minimal IRs for shape-only testing — the
         # check belongs to the production-readiness contract enforced by
         # the canonical compile path, not the bare IR schema.
-        required_params = _MVP_MATERIAL_REQUIRED_PARAMS.get(self.material.model)
+        # A derived model's required parameters come from its strain-energy
+        # LaTeX (enforced at emission, where the actual param names are known),
+        # not from the named-model E/nu contract.
+        required_params = (
+            None
+            if self.derived_energy is not None
+            else _MVP_MATERIAL_REQUIRED_PARAMS.get(self.material.model)
+        )
         if required_params is not None:
             missing = [k for k in required_params if k not in self.material.params]
             if missing:

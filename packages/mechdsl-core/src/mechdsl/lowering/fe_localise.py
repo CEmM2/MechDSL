@@ -131,12 +131,18 @@ def _enrich_element_ir(legacy_ir: ElementIR, problem_ir: ProblemIR) -> ElementIR
         contraction_sketch="qaI,qIJKL,qbK->qaJbL",  # B^T C B
     )
 
+    # constitutive_latex P5-1: carry fiber-orientation field data down from the
+    # ProblemIR to the Element IR (anisotropic models, HGO). Lossless copy of
+    # the declared family directions — no layer bypass; None for isotropic.
+    fiber_field = problem_ir.fiber_field.families if problem_ir.fiber_field is not None else None
+
     return replace(
         legacy_ir,
         geometry=geometry,
         material_eval=material_eval,
         local_force=local_force,
         local_tangent=local_tangent,
+        fiber_field=fiber_field,
     )
 
 

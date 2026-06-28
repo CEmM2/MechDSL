@@ -2,6 +2,22 @@
 
 [![CI](https://github.com/SOSOVSKI/MechDSL/actions/workflows/ci.yml/badge.svg)](https://github.com/SOSOVSKI/MechDSL/actions/workflows/ci.yml)
 
+> **Write your mechanics in LaTeX. Get a tested finite-element solver back.**
+>
+> Describe a boundary-value problem with `% mechanics` directives in an ordinary LaTeX
+> document; MechDSL derives the kinematics and stress/tangent symbolically and emits
+> deterministic Taichi solver code. The same `.tex` renders normally through `pdflatex`,
+> so your paper's source can be your simulation's source. The guiding principle: **derive
+> models from LaTeX; don't hand-code what the compiler should generate.**
+
+📖 **New here? Start with the [documentation](docs/index.md)** —
+[Getting started](docs/getting-started.md) ·
+[Core concepts](docs/concepts.md) ·
+[LaTeX directive reference](docs/latex-directives.md) ·
+[Constitutive models](docs/constitutive-models.md) ·
+[Examples](docs/examples.md) ·
+[FAQ](docs/faq.md)
+
 MechDSL is a monorepo for LaTeX-to-code compilers aimed at computational mechanics.
 `mechdsl-core` compiles 3D solid mechanics problems — Total Lagrangian and Updated
 Lagrangian formulations with curvilinear reference coordinates — into deterministic
@@ -215,6 +231,35 @@ bundle = compile(problem)
 print(bundle.element_ir_summary)
 ```
 
+## Documentation
+
+User-facing documentation lives in [`docs/`](docs/) and is built as a
+[MkDocs Material](https://squidfunk.github.io/mkdocs-material/) site:
+
+| Page | What it covers |
+|------|----------------|
+| [Home](docs/index.md) | What MechDSL is and why to use it |
+| [Getting started](docs/getting-started.md) | Install with `uv`, first solver, `.tex` and energy-derived inputs |
+| [Core concepts](docs/concepts.md) | LaTeX-first idea, six-layer pipeline, hyperelastic vs. dissipative, support tiers |
+| [LaTeX directive reference](docs/latex-directives.md) | Every `% mechanics` directive with examples |
+| [Constitutive models](docs/constitutive-models.md) | Model catalog with runnable snippets |
+| [Algorithm transpiler (algo2code)](docs/algo2code.md) | How return-maps/PCG are transpiled from `algpseudocode` |
+| [Examples gallery](docs/examples.md) | Cantilever, Cook's membrane, necking bar, patch test, cyclic plasticity |
+| [How it works](docs/architecture.md) | Layers, IR discipline, determinism, verification |
+| [FAQ & troubleshooting](docs/faq.md) | Common questions and fixes |
+
+Build or preview the site locally:
+
+```bash
+uv sync --group docs
+uv run mkdocs serve     # live preview at http://127.0.0.1:8000
+uv run mkdocs build     # static site into ./site
+```
+
+The authoritative design specs remain under [`dev/design_docs/`](dev/design_docs/)
+(read-only); the `docs/` site is the friendly, task-oriented entry point that links into
+them.
+
 ## Architecture
 
 The `mechdsl-core` compiler uses a six-layer pipeline:
@@ -285,6 +330,45 @@ Phase 1):
 
 The recovery plan is additive: experimental scope is **not** deleted; it is
 labeled so the canonical story is unambiguous.
+
+### `mechdsl.integration` — MVP-stable machine-readable façade
+
+`mechdsl.integration` is the stable, machine-readable Tier-1 surface.
+Downstream adapters (Tier-2 AKMS bridge, `MechDSLRunner`) should call only
+these five entry points:
+
+| Function | Description | Taichi required? |
+|----------|-------------|-----------------|
+| `capabilities()` | Returns a machine-readable manifest: version, profiles, backends, actions, models | No |
+| `model_catalog()` | Enumerates all constitutive models with tier, dissipative flag, params, and state variables | No |
+| `compile_from_sources(*, problem_source, energy_source, energy_file, profile)` | Wraps `compile_latex`; returns `{element_ir_summary, emitted_source, content_hash, derived_energy_present}` | No |
+| `transpile_algorithm(algpseudocode, backend)` | Wraps `algo2code.transpile`; returns `{code, entry_point, line_count, valid_python}` | No |
+| `verify(kind, params)` | Runs a verification harness; returns `{kind, passed, details}` | **Yes** — only this function |
+
+**Taichi-required-for contract:** `capabilities()` declares
+`taichi_required_for: ["verify"]`.  The other four entry points are
+guaranteed to never trigger `ti.init` — importing `mechdsl.integration`
+and calling them is safe in Taichi-free environments.  Only `verify()`
+is permitted to pay the Taichi cost, and it does so lazily (import at
+call time, not at module import time).
+
+```python
+from mechdsl.integration import capabilities, compile_from_sources, verify
+
+caps = capabilities()          # Taichi-free; returns version, profiles, models, …
+print(caps["taichi_required_for"])  # → ["verify"]
+
+result = compile_from_sources(
+    problem_source="% mechanics dim 3\n% mechanics cell hex8\n...",
+)
+print(result["content_hash"])   # 64-char sha-256 hex digest
+
+vr = verify("patch_test", {"lam": 1.0, "mu": 1.0})  # pays the Taichi cost
+print(vr["passed"])
+```
+
+Do not add entry points to this module without a plan-level decision; the
+surface is a machine API contract, not a convenience library.
 
 ### Stability policy
 

@@ -39,7 +39,15 @@ class TestTaskP4_4:
     def test_deliverable_covers_svk_pk1_round_trip(self) -> None:
         text = _deliverable_path().read_text(encoding="utf-8")
         assert "svk" in text.lower(), "deliverable must reference SVK case"
-        assert "test_round_trip_svk" in text, "deliverable must define an SVK round-trip test"
+        # fgram Phase 4 (P4-1) replaced the closed-form ``test_round_trip_svk*``
+        # surrogate with an expression-preserving finite-deformation test that
+        # covers the same PK2->PK1 stress round-trip (S_{IJ} then P_{iI}).
+        assert "test_round_trip_finite_deformation" in text, (
+            "deliverable must define a finite-deformation (SVK/PK1) round-trip test"
+        )
+        assert any(p in text for p in ("P_{i I}", "P_{iI}")), (
+            "finite-deformation round-trip must preserve the PK1 stress P_{iI}"
+        )
 
     @pytest.mark.integration
     def test_deliverable_covers_j2_yield_round_trip(self) -> None:

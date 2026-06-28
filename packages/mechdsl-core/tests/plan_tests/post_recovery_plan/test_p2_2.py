@@ -110,9 +110,19 @@ class TestTaskP2_2:
         # post_recovery_plan stub directory is admitted, plus the two
         # standalone regression-guard files. Replaces the old
         # phase-by-phase widening pattern (P3-1, P4-5, P5-5, P7).
+        # The fgram plan (the continuation after post_recovery_plan)
+        # carries its own docs-tier governance/round-trip stubs under
+        # plan_tests/fgram/, admitted here on the same footing.
+        # PlanJune14 (PJ-7 governance) adds two top-level doc-anchor stubs under
+        # plan_tests/: test_p7_1 pins the 06-CODEGEN/11-ALGO2CODE design-doc addenda,
+        # test_p7_2 pins the STATUS_LEGEND vocabulary contract. Admitted here on the
+        # same footing as the recovery_plan / post_recovery_plan / fgram doc-tier tests.
         allowed_prefixes = (
             "packages/mechdsl-core/tests/plan_tests/recovery_plan_latex_contract/test_p7_",
             "packages/mechdsl-core/tests/plan_tests/post_recovery_plan/",
+            "packages/mechdsl-core/tests/plan_tests/fgram/",
+            "packages/mechdsl-core/tests/plan_tests/test_p7_1.py",
+            "packages/mechdsl-core/tests/plan_tests/test_p7_2.py",
             "packages/mechdsl-core/tests/test_compile_latex_docstring.py",
             "packages/mechdsl-core/tests/test_nrpylatex_round_trip.py",
         )

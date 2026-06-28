@@ -67,7 +67,7 @@ class TestTaskP2_4:
         now authorized in subsequent engagements; the assertion was relaxed to
         a data-integrity check that survives across exec phases.
         """
-        gh_map = _require_scaffold()
+        _require_scaffold()
         json_dir = RP_TASKS / "json"
         if not json_dir.is_dir():
             pytest.skip("json/ not present yet")

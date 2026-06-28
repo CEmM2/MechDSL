@@ -100,6 +100,13 @@ def newton_solve(
 
     Raises
     ------
+    RuntimeError
+        If the assembled residual norm is non-finite (NaN/Inf) at any
+        iteration -- e.g. a generated return map that did not converge set
+        ``dl = NaN`` and it propagated into ``R`` (WI-1). The pre-iteration
+        ``u`` is restored and ``history.rollback()`` is called before raising,
+        so the caller is left on the last good state rather than advancing on a
+        corrupt one.
     Exception
         Propagates exceptions raised by ``assemble_residual``,
         ``tangent_matvec``, or the configured linear solver backend.
@@ -126,6 +133,25 @@ def newton_solve(
 
         R_norm = float(np.linalg.norm(R))
         residual_history.append(R_norm)
+
+        # Fail-loud on a non-finite residual. A NaN/Inf ``||R||`` means the
+        # assembled residual is poisoned -- e.g. the generated J2 return map
+        # set ``dl = NaN`` on non-convergence (WI-1, taichi_printer) and it
+        # propagated through stress -> internal force -> R. A magnitude-only
+        # convergence test cannot catch this: ``NaN < tol`` is False, so the
+        # loop would silently exhaust ``max_iter`` (or, on a backend that
+        # clamps the NaN, accept a return map that never converged). Restore
+        # the pre-iteration state and raise instead of advancing on garbage.
+        if not np.isfinite(R_norm):
+            u[:] = u_snapshot
+            if history is not None:
+                history.rollback()
+            raise RuntimeError(
+                f"Newton residual is non-finite (||R|| = {R_norm}) at "
+                f"iteration {iteration}: the assembled residual is poisoned "
+                "(e.g. a return map that did not converge set dl = NaN). "
+                "Aborting rather than advancing on a corrupt state."
+            )
 
         logger.debug(
             "Newton iter %d: ||R|| = %.6e",

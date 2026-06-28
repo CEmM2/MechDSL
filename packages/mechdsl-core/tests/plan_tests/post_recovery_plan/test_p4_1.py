@@ -56,12 +56,15 @@ class TestTaskP4_1:
 
     @pytest.mark.unit
     def test_unsupported_node_raises_with_phase_pointer(self) -> None:
-        """A LaTeX block that exercises an nrpylatex grammar feature
-        outside the supported subset (e.g. ``\\det``) raises
-        MathParseError whose message names ``post_recovery_plan
-        Phase 4``.
+        """A LaTeX block that exercises a grammar feature outside the
+        supported subset raises MathParseError whose message names
+        ``post_recovery_plan Phase 4``.
+
+        ``\\det`` was the original example, but fgram Phase 4 (P4-1)
+        promoted it to a supported node; ``\\sin`` remains a documented
+        full-grammar deferral (``math_parser._UNSUPPORTED_FUNCTIONS``).
         """
-        unsupported = "% declare FUU --dim 3\nJ = \\mathrm{det}(F)\n"
+        unsupported = "% declare FUU --dim 3\nT = \\sin{F}\n"
         with pytest.raises(MathParseError) as excinfo:
             parse_math(unsupported)
         assert "post_recovery_plan Phase 4" in str(excinfo.value), (

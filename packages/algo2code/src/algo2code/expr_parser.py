@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 
 from .ast_nodes import BinOp, Expr, FuncCall, Number, UnaryOp, Var
+from .errors import UnsupportedConstructError
 
 # ── Tokenizer ────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,7 @@ TOKEN_PATTERNS = [
     (r"\\(?:lVert|left\\\|)", "LNORM"),
     (r"\\(?:rVert|right\\\|)", "RNORM"),
     (r"\\\|", "NORMPIPE"),
+    (r"\|", "PIPE"),
     (r"\\frac\s*", "FRAC"),
     (r"\\sqrt\s*", "SQRT"),
     (r"\\cdot", "CDOT"),
@@ -90,9 +92,21 @@ class Token:
 
 
 def tokenize(latex: str) -> list[Token]:
-    """Tokenize a LaTeX math expression."""
+    """Tokenize a LaTeX math expression.
+
+    Fail-loud (F6): characters that match no token pattern are *not* silently
+    skipped. Previously a stray ``:`` (tensor contraction) or ``\\tilde`` accent
+    left an unmatched gap that the regex dropped, so the surrounding statement
+    parsed as something else entirely with no warning. Any non-whitespace gap
+    now raises :class:`UnsupportedConstructError`.
+    """
     tokens = []
+    cursor = 0
     for m in _TOKEN_RE.finditer(latex):
+        gap = latex[cursor : m.start()]
+        if gap.strip():
+            _raise_unrecognized(gap.strip(), cursor, latex)
+        cursor = m.end()
         for i, (_, name) in enumerate(TOKEN_PATTERNS):
             g = m.group(f"T{i}")
             if g is not None:
@@ -111,7 +125,41 @@ def tokenize(latex: str) -> list[Token]:
                         val = inner.group(1)
                 tokens.append(Token(name, val, m.start()))
                 break
+    tail = latex[cursor:]
+    if tail.strip():
+        _raise_unrecognized(tail.strip(), cursor, latex)
     return tokens
+
+
+_ACCENT_RE = re.compile(r"\\(tilde|hat|bar|vec|dot|ddot|acute|grave|check|breve)\b")
+
+
+def _raise_unrecognized(fragment: str, pos: int, latex: str) -> None:
+    """Raise a focused, actionable error for an unrecognised token fragment."""
+    # The accent name (e.g. ``tilde``) tokenises as a LETTER, so the unmatched
+    # gap is just the leading backslash. Look at the remaining source from ``pos``
+    # to recognise the full ``\tilde{...}`` form and give an actionable message.
+    accent = _ACCENT_RE.match(latex[pos:]) or _ACCENT_RE.match(fragment)
+    if accent:
+        name = accent.group(1)
+        raise UnsupportedConstructError(
+            f"accent macro '\\{name}{{...}}' is not supported on variables "
+            f"(at position {pos} in {latex!r}). Diacritics are ambiguous as "
+            f"identifiers — use a subscript instead, e.g. 'r_tilde' or "
+            f"'\\tau_{{hat}}'. See dev/design_docs/11-ALGO2CODE.md §2.4."
+        )
+    if fragment.startswith(":"):
+        raise UnsupportedConstructError(
+            f"tensor double-contraction ':' is not supported by algo2code "
+            f"(at position {pos} in {latex!r}). Contraction belongs in the "
+            f"mechdsl-core einsum pipeline; algo2code handles solver scaffolding "
+            f"only. See dev/design_docs/11-ALGO2CODE.md §2.4."
+        )
+    raise UnsupportedConstructError(
+        f"unrecognised character(s) {fragment!r} at position {pos} in {latex!r}. "
+        f"This fragment matches no algo2code token. If it is a valid construct "
+        f"the parser should support, it is not yet implemented."
+    )
 
 
 # ── Recursive-descent parser ─────────────────────────────────────────────────
@@ -313,6 +361,13 @@ class ExprParser:
             self.advance()
             return UnaryOp(op="transpose", operand=base)
 
+        # Bare ^T transpose alias (issue #307 F7): a lone uppercase T after ^
+        # means transpose in linear-algebra notation, same as ^\top and ^{T}.
+        tok = self.peek()
+        if tok is not None and tok.kind == "LETTER" and tok.value == "T":
+            self.advance()
+            return UnaryOp(op="transpose", operand=base)
+
         exp = self.parse_atom()
         return BinOp(op="pow", left=base, right=exp)
 
@@ -337,8 +392,22 @@ class ExprParser:
         if self.at("SQRT"):
             return self.parse_sqrt()
 
-        if self.at("NORMPIPE", "LNORM"):
-            return self.parse_norm()
+        if self.at("NORMPIPE", "LNORM", "PIPE"):
+            norm = self.parse_norm()
+            # A norm may carry an order subscript: ||r||_2, ||r||_1, ||r||_\infty.
+            # The generated _norm kernel computes the Euclidean (2-)norm, so the
+            # default and ``_2`` are fine; any other order must fail loud rather
+            # than silently compute the wrong norm (F6).
+            if self.at("UNDERSCORE"):
+                self.advance()
+                order = self._parse_subscript_text()
+                if order not in ("", "2"):
+                    raise UnsupportedConstructError(
+                        f"only the Euclidean 2-norm is supported by algo2code; "
+                        f"got a norm of order {order!r}. Other norm orders would "
+                        f"need a dedicated kernel."
+                    )
+            return norm
 
         atom = self.parse_atom()
 
@@ -375,11 +444,18 @@ class ExprParser:
         return FuncCall(func=Var(name="sqrt"), args=[inner])
 
     def parse_norm(self) -> Expr:
-        """\\| expr \\|  or  \\lVert expr \\rVert"""
-        start = self.advance()  # consume NORMPIPE or LNORM
+        """\\| expr \\|  or  \\lVert expr \\rVert  or  | expr |
+
+        Bare ``|expr|`` is absolute value / norm; the closing delimiter matches
+        the opener. Codegen lowers a scalar operand to ``abs(...)`` and a vector
+        operand to the ``_norm`` kernel.
+        """
+        start = self.advance()  # consume NORMPIPE, LNORM, or PIPE
         inner = self.parse_expr()
         if start.kind == "LNORM":
             self.expect("RNORM")
+        elif start.kind == "PIPE":
+            self.expect("PIPE")
         else:
             self.expect("NORMPIPE")
         return UnaryOp(op="norm", operand=inner)
@@ -444,7 +520,18 @@ def parse_latex_expr(latex: str) -> Expr:
     if not tokens:
         raise SyntaxError(f"Empty expression: {latex!r}")
     parser = ExprParser(tokens)
-    return parser.parse()
+    result = parser.parse()
+    # Fail-loud (F6): the parser must consume the whole expression. A leftover
+    # token means a prefix parsed and the rest was silently dropped (e.g. an
+    # unhandled operator). Surface it instead of emitting a truncated AST.
+    if parser.pos != len(tokens):
+        leftover = tokens[parser.pos]
+        raise UnsupportedConstructError(
+            f"could not fully parse {latex!r}: unexpected {leftover.kind} "
+            f"token {leftover.value!r} at position {leftover.pos}. "
+            f"{parser.pos} of {len(tokens)} tokens consumed."
+        )
+    return result
 
 
 def parse_assignment(latex: str) -> tuple[Var, Expr] | None:
@@ -500,5 +587,15 @@ def parse_condition(latex: str) -> Expr:
             lhs = parse_latex_expr(lhs_str)
             rhs = parse_latex_expr(rhs_str)
             return BinOp(op=op, left=lhs, right=rhs)
+        elif depth == 0 and ch == "=":
+            # Equality test in a condition, e.g. \If{$r_0 = 0$}.  In LaTeX a
+            # bare ``=`` inside a condition is equality, not assignment, so it
+            # lowers to Python ``==``. (``<=``/``>=`` are caught above because
+            # the ``<``/``>`` is reached first.)
+            lhs_str = latex[:i].strip()
+            rhs_str = latex[i + 1 :].strip()
+            lhs = parse_latex_expr(lhs_str)
+            rhs = parse_latex_expr(rhs_str)
+            return BinOp(op="==", left=lhs, right=rhs)
 
     return parse_latex_expr(latex)

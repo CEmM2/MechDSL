@@ -20,7 +20,7 @@ SUBPACKAGES = [
 def test_version():
     import mechdsl
 
-    assert mechdsl.__version__ == "0.1.0"
+    assert mechdsl.__version__ == "0.2.0"
 
 
 @pytest.mark.parametrize("pkg", SUBPACKAGES)

@@ -41,8 +41,7 @@ class TestTaskP10_3:
 
         assert tip_uy > 0.0, f"Tip should displace in +y under shear, got uy = {tip_uy:.6e}"
         assert rel_error < 0.02, (
-            f"Tip uy = {tip_uy:.6e} differs from reference ({ref:.6e}) by "
-            f"{rel_error:.2%} (> 2%)"
+            f"Tip uy = {tip_uy:.6e} differs from reference ({ref:.6e}) by {rel_error:.2%} (> 2%)"
         )
 
     @pytest.mark.nightly
@@ -75,7 +74,9 @@ class TestTaskP10_3:
         ],
     )
     @pytest.mark.regression
-    def test_original_cook_matrix_cells_are_active(self, formulation: str, element_type: str) -> None:
+    def test_original_cook_matrix_cells_are_active(
+        self, formulation: str, element_type: str
+    ) -> None:
         """TL/UL x Hex8/Tet10 Cook cells run and produce finite J2 state."""
         result = run_cook_membrane_benchmark(
             params=CookMembraneParameters(
