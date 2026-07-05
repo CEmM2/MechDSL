@@ -1,0 +1,54 @@
+# Swift-Voce isotropic hardening law — authoritative MechDSL source.
+#
+# MFront-mimic Cycle M0, Phase 4 (dev/plans/mfront_cycleM0.md lines 114-116).
+#
+# This YAML is the single source of truth for the SwiftVoce hardening carrier.
+# ``mechdsl-lawgen compile laws/plasticity/swift_voce.yaml --target ticonstit
+# --out <dir>`` lowers the R/H/Q expressions below into a Taichi ``class SwiftVoce``
+# (swift_voce.py), a Cycle 0-shaped _manifest.json, and a self-contained pytest
+# file — the artifacts NumerixWeave's ``ticonstit.generated`` package consumes.
+#
+# Canonical formula + source_hash
+# --------------------------------
+# The ``R`` expression string below is spelled VERBATIM to reproduce Cycle 0's
+# published ``source_hash`` — the SHA-256 of the canonical generator-input
+# formula string "R = sigma0 + Q*(1-exp(-b*p)) + K*((p+p0)**n - p0**n)"
+# (= 7b5af3a8bb79c2e44e0055a7076dd2c9de2ce8c75eb2e262b80bb4e0232d557f). The
+# compiler prepends "R = " to this raw string and hashes it verbatim (no
+# whitespace normalisation), so the spacing here (``1-exp`` and ``**n - p0**n``)
+# is load-bearing — do not reformat it.
+#
+# Q-vs-Q_inf naming (transitional divergence)
+# -------------------------------------------
+# The Voce saturation magnitude is spelled ``Q`` in this formula (matching the
+# Cycle 0 formula string), while the hand-authored material card names it
+# ``Q_inf``. Reconciling the two names is deferred; the manifest emitter runs with
+# check_matches_spec disabled during this transition (see manifest.py).
+#
+# H and Q factors
+# ---------------
+# H (strain-rate factor) and Q (thermal factor) are the two multiplicative
+# factors of the flow stress — NOT dR/dp. This authoritative SwiftVoce law is
+# rate-independent and isothermal, so both factors are the neutral ``1`` (their
+# derivatives are ``0``), matching the Cycle 0 reference's fallback when the
+# optional rate (edot0, m) / thermal (alpha, T_ref) parameters are absent.
+
+name: SwiftVoce
+
+# Material parameters, in Cycle 0 order: the Voce base (sigma0, Q, b) followed by
+# the Swift power-law term (K, n, p0). Q is the saturation magnitude (see the
+# Q-vs-Q_inf note above).
+parameters: [sigma0, Q, b, K, n, p0]
+
+# Free-variable bindings: accumulated plastic strain p (R's primary axis), plastic
+# strain rate edot (H's axis), temperature T (Q's axis).
+variables: [p, edot, T]
+
+expressions:
+  # Isotropic-hardening flow stress: Voce saturation + Swift power-law.
+  # Spelled verbatim for source_hash fidelity (see the header note).
+  R: "sigma0 + Q*(1-exp(-b*p)) + K*((p+p0)**n - p0**n)"
+  # Rate factor (neutral: rate-independent).
+  H: "1"
+  # Thermal factor (neutral: isothermal).
+  Q: "1"

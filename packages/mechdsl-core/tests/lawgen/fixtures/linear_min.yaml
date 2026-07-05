@@ -1,0 +1,10 @@
+# Minimal law fixture for the mechdsl-lawgen compile CLI (Task P1-2).
+# A trivial power-law isotropic-hardening carrier — non-colliding names so it
+# never clashes with the real swift_voce.yaml P4-1 ships.
+name: linear_min
+parameters: [sigma0, K, n]
+variables: [p, edot, T]
+expressions:
+  R: "sigma0 + K*p**n"
+  H: "1"
+  Q: "1"
