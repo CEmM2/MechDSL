@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "MechDSL core — LaTeX tensor expressions to FEM solver code"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.11,<3.14"
 authors = [
     { name = "Shmuel Osovski" },
 ]
@@ -23,9 +23,9 @@ classifiers = [
 ]
 dependencies = [
     "sympy>=1.12",
-    "numpy>=1.24",
+    "numpy>=2.4.2",
     "opt-einsum>=3.3",
-    "pyyaml>=6.0",
+    "pyyaml>=6.0.3",
     "scipy>=1.17.0",
     "nrpylatex @ git+https://github.com/SOSOVSKI/nrpylatex",
 ]
@@ -52,6 +52,9 @@ dependencies = [
 # stdlib-only compile-time tool — it rides in the `verify` extra alongside the
 # rest of the on-device seam path; the base install stays algo2code/Taichi-free.
 verify = ["torch>=2.0", "taichi>=1.7", "ti-runtime", "algo2code"]
+
+[project.scripts]
+mechdsl-lawgen = "mechdsl.lawgen.cli:main"
 
 [tool.uv.sources]
 ti-runtime = { workspace = true }

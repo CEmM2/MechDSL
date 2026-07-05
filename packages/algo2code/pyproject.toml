@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "Transpile LaTeX algorithm boxes (algpseudocode) to executable Taichi/NumPy/C code"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.11,<3.14"
 authors = [
     { name = "Shmuel Osovski" },
 ]

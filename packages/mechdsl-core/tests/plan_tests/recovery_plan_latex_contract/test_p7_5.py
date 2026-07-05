@@ -67,6 +67,11 @@ ACTIVE_PLAN_STEMS = {
     # ``june16`` is an active backlog/roadmap planning note (2026-06-16), not a
     # superseded plan.
     "june16",
+    # ``mfront_cycleM0`` is the active MFront-mimic Cycle M0 plan (MechDSL producer
+    # side that generates NumerixWeave's ticonstit.generated.* constitutive laws) —
+    # Phase 1 (contracts + mechdsl-lawgen CLI) merged, Phases 2-4 pending; it is the
+    # authoritative execution source for that work, not superseded.
+    "mfront_cycleM0",
 }
 ACTIVE_TASK_DIRS = {
     "recovery_plan_latex_contract",
