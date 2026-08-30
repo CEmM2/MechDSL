@@ -285,7 +285,7 @@ def verify_j2_elastic_branch(
 
 
 # ---------------------------------------------------------------------------
-# Hyperelastic strain-energy functions (P4-5 AD oracle)
+# Hyperelastic strain-energy functions (AD oracle)
 # ---------------------------------------------------------------------------
 #
 # Each returns Psi(E) so FD central-differences recover PK2 via S = dPsi/dE.

@@ -33,15 +33,15 @@ from mechdsl.verify.perf import (
 
 
 _EXPECTED_REGISTRY_TASKS = (
-    "P10-1",  # MMS convergence matrix (Phase 6)
-    "P10-2",  # Cantilever (Phase 5)
-    "P10-3",  # Cook membrane (PLAN-B + Phase 3 closure)
-    "P10-4",  # Thick cylinder (PLAN-B)
-    "P10-5",  # Plate with hole (PLAN-B)
-    "P10-6",  # Necking bar (PLAN-B + Phase 3 closure)
-    "P10-7",  # Taylor impact (Phase 8)
-    "P10-8",  # Notched bar (PLAN-B)
-    "P10-9",  # HGO uniaxial (PLAN-B)
+    "P10-1",  # MMS convergence matrix
+    "P10-2",  # Cantilever
+    "P10-3",  # Cook membrane
+    "P10-4",  # Thick cylinder
+    "P10-5",  # Plate with hole
+    "P10-6",  # Necking bar
+    "P10-7",  # Taylor impact
+    "P10-8",  # Notched bar
+    "P10-9",  # HGO uniaxial
 )
 
 
@@ -178,7 +178,6 @@ class TestTaskP9_1:
                     f"{delta.pct_delta}"
                 )
                 assert delta.within_tolerance is True
-                # abs_delta sign: positive (current > baseline).
                 assert delta.abs_delta > 0.0
                 # Sanity: abs_delta and pct_delta share sign.
                 assert math.copysign(1.0, delta.abs_delta) == math.copysign(1.0, delta.pct_delta)

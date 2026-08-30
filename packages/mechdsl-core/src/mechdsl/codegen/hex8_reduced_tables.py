@@ -66,9 +66,9 @@ __all__ = [
 HEX8_QUAD_POINTS_REDUCED: NDArray = np.array(
     [[0.0, 0.0, 0.0]],
     dtype=np.float64,
-)  # shape (1, 3)
+)
 
-HEX8_QUAD_WEIGHTS_REDUCED: NDArray = np.array([8.0], dtype=np.float64)  # shape (1,)
+HEX8_QUAD_WEIGHTS_REDUCED: NDArray = np.array([8.0], dtype=np.float64)
 
 # Convenience aliases matching the naming convention in sibling table modules.
 QUAD_POINTS_REDUCED: NDArray = HEX8_QUAD_POINTS_REDUCED
@@ -82,10 +82,10 @@ QUAD_WEIGHTS_REDUCED: NDArray = HEX8_QUAD_WEIGHTS_REDUCED
 SHAPE_AT_QUAD_REDUCED: NDArray = np.array(
     [shape_functions(float(pt[0]), float(pt[1]), float(pt[2])) for pt in HEX8_QUAD_POINTS_REDUCED],
     dtype=np.float64,
-)  # shape (1, 8)
+)
 
 # GRAD_AT_QUAD_REDUCED[q, a, i] = dN_a / d(xi_i) at the centre point.
 GRAD_AT_QUAD_REDUCED: NDArray = np.array(
     [shape_gradients(float(pt[0]), float(pt[1]), float(pt[2])) for pt in HEX8_QUAD_POINTS_REDUCED],
     dtype=np.float64,
-)  # shape (1, 8, 3)
+)

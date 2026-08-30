@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 # Steel-like SVK elastic
-E_YOUNG = 200.0e3  # [MPa]
+E_YOUNG = 200.0e3
 NU = 0.3
 LAM = E_YOUNG * NU / ((1 + NU) * (1 - 2 * NU))
 MU = E_YOUNG / (2 * (1 + NU))
@@ -55,7 +55,7 @@ MAT_PLASTIC = J2PowerLawMaterial(E=E_YOUNG, nu=NU, sigma_y0=250.0, K=500.0, n=1.
 # (ref_hex8_elastic.py) accumulates O(1e-10) roundoff in multi-element
 # Gauss quadrature when MU ~ 77,000.  Unit-material tests in
 # test_patch_test.py achieve 1e-12 because MU = 1 keeps roundoff near
-# machine epsilon.  See dev/plans/reviews/sprint3_phase1.md decision log.
+# machine epsilon.
 _RIGID_BODY_TOL_STEEL = 1e-9
 
 
@@ -507,9 +507,9 @@ class TestCantilever:
         # 3D Hex8 is typically stiffer than E-B beam theory, so FEM deflection
         # is usually less than the beam theory prediction. On a coarse 4x2x1
         # mesh, 3D shear effects and mesh coarseness cause significant deviation.
-        # The 5% tolerance per PLAN-A requires a 40x8x4 mesh; this coarse
-        # 4x2x1 test verifies convergence, direction and coarse-mesh-appropriate
-        # accuracy (within a factor of 2).
+        # The 5% tolerance requires a 40x8x4 mesh; this coarse 4x2x1 test
+        # verifies convergence, direction and coarse-mesh-appropriate accuracy
+        # (within a factor of 2).
         ratio = tip_uz / delta_eb
         assert 0.25 < ratio < 2.0, (
             f"Tip deflection {tip_uz:.6e} vs E-B {delta_eb:.6e}: "

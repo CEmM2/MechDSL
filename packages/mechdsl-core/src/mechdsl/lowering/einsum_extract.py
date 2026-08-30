@@ -109,12 +109,12 @@ def extract_einsum_specs(element_ir: ElementIR) -> dict[str, EinsumSpec]:
 
 
 # ---------------------------------------------------------------------------
-# Matrix-free tangent matvec (PlanJune14 P3-1)
+# Matrix-free tangent matvec
 # ---------------------------------------------------------------------------
 #
 # The ``tangent_matvec`` spec above is the *full* per-quadrature element
 # tangent stiffness ``K(q,a,i,b,j) = dN(q,a,I) A(q,i,I,j,J) dN(q,b,J)``. The
-# matrix-free operator (D-A: never store element tangents) instead applies
+# matrix-free operator (never store element tangents) instead applies
 # that tangent directly to a direction field ``v(b,j)`` at each matvec:
 #
 #     Kv(q,a,i) = sum_{b,J,j,I} dN(q,a,I) A(q,i,I,j,J) dN(q,b,J) v(b,j)
@@ -125,12 +125,13 @@ def extract_einsum_specs(element_ir: ElementIR) -> dict[str, EinsumSpec]:
 # collapsing the rank-5 K(q,a,i,b,j) intermediate to a rank-3 per-qp result
 # and keeping the unrolled-line count well inside the @ti.func budget.
 #
-# This is the production replacement for the PJ-1 hand-written spike tangent
-# kernel. P3-2 consumes the resulting ContractionPlan to emit the matvec
-# @ti.kernel; nothing here touches the backend printer.
+# This is the production replacement for the hand-written spike tangent
+# kernel. The kernel emitter consumes the resulting ContractionPlan to emit
+# the matvec @ti.kernel; nothing here touches the backend printer.
 
-# Public name of the matrix-free tangent matvec contraction. P3-2 keys on
-# this when locating the matvec plan among an element's contraction plans.
+# Public name of the matrix-free tangent matvec contraction. The kernel
+# emitter keys on this when locating the matvec plan among an element's
+# contraction plans.
 TANGENT_MATVEC_APPLY_NAME = "tangent_matvec_apply"
 
 # The matrix-free tangent matvec subscripts: apply the consistent tangent

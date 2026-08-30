@@ -39,10 +39,10 @@ __all__ = [
 ]
 
 
-# post_recovery_plan Phase 4 (P4-3) — detect ``$...$`` math blocks in
-# LaTeX source. The pattern uses non-greedy capture and disallows
-# unescaped newlines so commented-out maths or stray dollar signs in
-# verbatim blocks do not span lines.
+# Detect ``$...$`` math blocks in LaTeX source. The pattern uses
+# non-greedy capture and disallows unescaped newlines so
+# commented-out maths or stray dollar signs in verbatim blocks do
+# not span lines.
 _MATH_BLOCK_RE = re.compile(r"(?<!\\)\$([^$\n]+?)(?<!\\)\$")
 
 
@@ -177,9 +177,9 @@ def parse_with_math(source: str) -> dict[str, Any]:
         "tensors": convert_namespace(all_tensors, all_classifications),
         "namespace": all_tensors,
         "classifications": all_classifications,
-        # Per-equation semantics from the math parser (fgram P5-1). JSON-
-        # primitive dicts so downstream IR construction reads real pipeline
-        # output rather than a hand-built shape.
+        # Per-equation semantics from the math parser. JSON-primitive dicts
+        # so downstream IR construction reads real pipeline output rather
+        # than a hand-built shape.
         "equations": all_equations,
     }
     return context
@@ -325,9 +325,8 @@ def build_context(
         )
     # Topology + integration + hourglass validation is delegated to
     # ElementFactory.create so the frontend, parser, and lowering layers all
-    # agree on the supported triples (Plan B phase B5, task P5-6). Any
-    # ValueError from the factory is rewrapped as UnsupportedError so the
-    # frontend's public-API contract (UnsupportedError + Plan B pointer)
+    # agree on the supported triples. Any ValueError from the factory is
+    # rewrapped as UnsupportedError so the frontend's public-API contract
     # is preserved.
     from mechdsl.ir.element_factory import ElementFactory
 

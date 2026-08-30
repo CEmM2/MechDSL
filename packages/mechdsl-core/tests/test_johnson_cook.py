@@ -438,11 +438,6 @@ class TestElasticPredictorRecovery:
         np.testing.assert_allclose(res.stress, S_expected, atol=1e-14)
 
 
-# ---------------------------------------------------------------------------
-# Task P3-3 stubs (do not modify — for Task P3-3)
-# ---------------------------------------------------------------------------
-
-
 class TestTaskP3_3JohnsonCookTangent:
     """
     Tests for Task P3-3: Consistent viscoplastic algorithmic tangent (JC).
@@ -506,7 +501,7 @@ class TestTaskP3_3JohnsonCookTangent:
             E = 0.03 * 0.5 * (A + A.T)
 
             result = radial_return(mat, E, alpha_old, T_old, dt)
-            C_analytical = result.tangent  # (3, 3, 3, 3)
+            C_analytical = result.tangent
 
             C_fd = self._fd_tangent(mat, E, alpha_old, T_old, dt)
 

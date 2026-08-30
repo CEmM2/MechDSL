@@ -86,13 +86,13 @@ def _shape_grad_reference(
         Determinant of the reference Jacobian.
     """
     dN_dxi = _BASIS.gradient(xi, eta, zeta)
-    J0 = X_elem.T @ dN_dxi  # (3, 3)
+    J0 = X_elem.T @ dN_dxi
     detJ0 = float(np.linalg.det(J0))
     if detJ0 <= 0.0:
         msg = f"Non-positive Jacobian determinant ({detJ0:.6e}) — check element connectivity."
         raise ValueError(msg)
     J0_inv = np.linalg.inv(J0)
-    dN_dX = dN_dxi @ J0_inv  # (8, 3)
+    dN_dX = dN_dxi @ J0_inv
     return dN_dX, detJ0
 
 
@@ -205,17 +205,17 @@ def element_tangent_matvec_plastic(
         dN_dX, detJ0 = _shape_grad_reference(X_elem, xi, eta, zeta)
 
         # Current kinematics
-        grad_u = u_elem.T @ dN_dX  # (3, 3)
+        grad_u = u_elem.T @ dN_dX
         F = deformation_gradient(grad_u)
         E = green_lagrange(F)
 
         # Radial return gives PK2 stress and algorithmic tangent
         result = radial_return(mat, E, float(alpha_elem[q]))
-        S = result.stress  # (3, 3)
-        C4 = result.tangent  # (3, 3, 3, 3)
+        S = result.stress
+        C4 = result.tangent
 
         # Linearisation in direction v
-        grad_v = v_elem.T @ dN_dX  # (3, 3)
+        grad_v = v_elem.T @ dN_dX
         dE = 0.5 * (F.T @ grad_v + grad_v.T @ F)  # linearised E
         dS = np.einsum("ijkl,kl->ij", C4, dE)  # linearised PK2
         dP = grad_v @ S + F @ dS  # linearised PK1
@@ -452,7 +452,6 @@ def solve_plastic(
                 if R0_norm < 1e-15:
                     break
 
-            # Convergence check
             assert R0_norm is not None
             if R_norm < tol * R0_norm:
                 break

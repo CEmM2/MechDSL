@@ -75,9 +75,9 @@ class ElementType(Enum):
     """
 
     HEX8 = "hex8"
-    TET4 = "tet4"  # Plan B §B5.1 — experimental
-    TET10 = "tet10"  # Plan B §B5.2 — experimental
-    HEX20 = "hex20"  # Plan B §B5.3 — experimental
+    TET4 = "tet4"  # experimental
+    TET10 = "tet10"  # experimental
+    HEX20 = "hex20"  # experimental
 
 
 class DynamicsMode(Enum):
@@ -136,9 +136,8 @@ class BCType(Enum):
 #   - a symbolic string ("t_bar", "1e3") referencing a legacy named load,
 #   - a 3-component numeric vector specifying explicit components, or
 #   - None for non-Neumann BCs.
-# The numeric form was added in post_recovery_plan Phase 1 (P1-1) to allow
-# directive-driven Neumann BCs ("--traction \"0 0 -1000\"") to round-trip
-# through the IR without a separate symbolic-load registry.
+# The numeric form lets directive-driven Neumann BCs ("--traction \"0 0 -1000\"")
+# round-trip through the IR without a separate symbolic-load registry.
 TractionT = str | tuple[float, float, float] | None
 
 
@@ -291,12 +290,12 @@ class MaterialSpec:
 
 
 # ---------------------------------------------------------------------------
-# Optional semantic enrichment dataclasses (recovery-plan Phase 3 / R2 / P3-1).
+# Optional semantic enrichment dataclasses.
 #
 # These four small frozen dataclasses carry information that the original
-# (Plan A) ProblemIR left implicit. They are *additive*: every field is
-# optional with a safe default, so legacy callers continue working without
-# source changes.
+# ProblemIR left implicit. They are *additive*: every field is optional
+# with a safe default, so legacy callers continue working without source
+# changes.
 # ---------------------------------------------------------------------------
 
 
@@ -498,11 +497,10 @@ class ResidualContract:
 
 
 # Roles that the equation classifier may emit but that carry no committed
-# constitutive meaning. Per the Phase 4 → Phase 5 handoff, a role of
-# ``unknown`` (or ``None``) must NOT be inferred into a real constitutive
-# role — it is recorded as an auxiliary definition so the serialized IR still
-# explains that the compiler saw the equation without claiming to understand
-# its physics.
+# constitutive meaning. A role of ``unknown`` (or ``None``) must NOT be
+# inferred into a real constitutive role — it is recorded as an auxiliary
+# definition so the serialized IR still explains that the compiler saw the
+# equation without claiming to understand its physics.
 #
 # ``auxiliary_definition`` is bucketed here because it is the classifier's own
 # label for "a definition with no committed physics" — the same semantic bucket
@@ -561,17 +559,16 @@ class LatexSemantics:
 
 
 # ---------------------------------------------------------------------------
-# MVP-stable subset contract (recovery-plan Phase 3 / R2 / P3-4).
+# MVP-stable subset contract.
 #
 # The "MVP-stable subset" is the set of `ProblemIR` configurations that the
-# canonical compile path on the Taichi backend supports today (see
-# `README.md` Support tiers and `dev/design_docs/04-MECHANICS-IR.md` §3.1).
-# Configurations outside this subset may still construct successfully
-# (`ProblemIR.__post_init__` keeps experimental enum values valid for
-# in-tree research code), but `compile_latex(profile="mvp")` and other
-# stability-promised entry points must reject them at the IR boundary so
-# that the failure points at the IR rather than surfacing deep inside
-# codegen / runtime.
+# canonical compile path on the Taichi backend supports today (see the
+# README.md support tiers). Configurations outside this subset may still
+# construct successfully (`ProblemIR.__post_init__` keeps experimental enum
+# values valid for in-tree research code), but `compile_latex(profile="mvp")`
+# and other stability-promised entry points must reject them at the IR
+# boundary so that the failure points at the IR rather than surfacing deep
+# inside codegen / runtime.
 #
 # Keep this descriptor in lock-step with `ALLOWED_PROFILES` in
 # `packages/mechdsl-core/src/mechdsl/__init__.py` and with the support-tier
@@ -630,7 +627,7 @@ MVP_STABLE_SUBSET: MvpStableSubset = MvpStableSubset(
 )
 
 
-# Required parameter sets for MVP-stable material models, used by P3-5
+# Required parameter sets for MVP-stable material models, used by
 # construction-time validation. Models not listed here skip the check —
 # experimental constitutive models declare their own parameter contracts
 # elsewhere and will join this table as they enter the MVP-stable subset.
@@ -690,42 +687,40 @@ class ProblemIR:
     configuration: Configuration | None = None
     dynamics_mode: DynamicsMode | None = None
 
-    # Recovery-plan Phase 3 (R2 / P3-1) optional semantic enrichment.
-    # All four default to a safe empty / None value so legacy callers
-    # continue working without source changes.
+    # Optional semantic enrichment. All four default to a safe empty /
+    # None value so legacy callers continue working without source changes.
     fields: tuple[FieldSpec, ...] = ()
     domain: DomainSpec | None = None
     mesh_contract: MeshContract | None = None
     residual_contract: ResidualContract | None = None
 
-    # fgram Phase 5 (P5-1): LaTeX-derived semantic record. Optional and
-    # advisory — captures what the compiler understood from the LaTeX source
-    # (declared fields, constitutive roles, weak-form label, equation roles)
-    # so the serialized bundle can explain itself. None for IRs built without
-    # a LaTeX semantic source (legacy / programmatic callers).
+    # LaTeX-derived semantic record. Optional and advisory — captures what
+    # the compiler understood from the LaTeX source (declared fields,
+    # constitutive roles, weak-form label, equation roles) so the serialized
+    # bundle can explain itself. None for IRs built without a LaTeX semantic
+    # source (legacy / programmatic callers).
     latex_semantics: LatexSemantics | None = None
 
-    # constitutive_latex Phase 3 (P3-1): the LaTeX-derived symbolic energy
-    # model (PK2 stress + material tangent) when the constitutive law was
-    # derived from a strain-energy density rather than dispatched by model
-    # name. This is the carrier that lets codegen emit from the derived
-    # energy instead of the hard-coded named-model switch — replacing the
-    # advisory-only `latex_semantics` path. Appended last, defaulting to
-    # ``None`` so the ~21 direct / 61 transitive ProblemIR constructors pass
-    # no new argument and are unaffected. Held as a Python object (SymPy
-    # expressions inside) and deliberately NOT serialized into `to_dict`:
-    # SymPy does not JSON-encode cleanly, and the codegen contract reads it
-    # off the in-memory IR / ArtifactBundle, not the serialized dict.
+    # The LaTeX-derived symbolic energy model (PK2 stress + material
+    # tangent) when the constitutive law was derived from a strain-energy
+    # density rather than dispatched by model name. This is the carrier that
+    # lets codegen emit from the derived energy instead of the hard-coded
+    # named-model switch. Appended last, defaulting to ``None`` so existing
+    # ProblemIR constructors pass no new argument and are unaffected. Held as
+    # a Python object (SymPy expressions inside) and deliberately NOT
+    # serialized into `to_dict`: SymPy does not JSON-encode cleanly, and the
+    # codegen contract reads it off the in-memory IR / ArtifactBundle, not
+    # the serialized dict.
     derived_energy: EnergyModel | None = None
 
-    # constitutive_latex Phase 5 (P5-1): per-element fiber-orientation field
-    # data for anisotropic models (HGO). Field data, NOT a scalar material
-    # param — carried separately from MaterialSpec.params and flowed through to
-    # the Element IR. Appended last, defaulting to None so every existing
-    # ProblemIR constructor is unaffected.
+    # Per-element fiber-orientation field data for anisotropic models
+    # (HGO). Field data, NOT a scalar material param — carried separately
+    # from MaterialSpec.params and flowed through to the Element IR. Appended
+    # last, defaulting to None so every existing ProblemIR constructor is
+    # unaffected.
     fiber_field: FiberFieldSpec | None = None
 
-    # Formulation → Configuration mapping (Plan B §B1.5).
+    # Formulation → Configuration mapping.
     _FORMULATION_TO_CONFIG: ClassVar[dict[Formulation, Configuration]] = {
         Formulation.TOTAL_LAGRANGIAN: Configuration.REFERENCE,
         Formulation.UPDATED_LAGRANGIAN: Configuration.CURRENT,
@@ -733,9 +728,9 @@ class ProblemIR:
 
     def __post_init__(self) -> None:
         """Validate at construction time."""
-        # Auto-infer configuration from formulation when not explicitly provided.
-        # Plan B §B1.5: "by flipping one directive" — callers should not need
-        # to manually pass configuration when the formulation implies it.
+        # Auto-infer configuration from formulation when not explicitly
+        # provided — callers should not need to manually pass configuration when
+        # the formulation implies it.
         if self.configuration is None:
             inferred = self._FORMULATION_TO_CONFIG.get(self.formulation)
             if inferred is None:
@@ -747,15 +742,14 @@ class ProblemIR:
 
         assert self.configuration is not None  # guaranteed by auto-inference above
 
-        # Auto-infer dynamics_mode to STATIC when omitted (Plan B §B7).
-        # Matches the `configuration` auto-infer pattern above: a ProblemIR
-        # without `dynamics_mode` behaves identically to Plan A (Newton solve).
+        # Auto-infer dynamics_mode to STATIC when omitted. Matches the
+        # `configuration` auto-infer pattern above: a ProblemIR without
+        # `dynamics_mode` gets the implicit static Newton solve.
         if self.dynamics_mode is None:
             object.__setattr__(self, "dynamics_mode", DynamicsMode.STATIC)
 
         assert self.dynamics_mode is not None  # guaranteed by auto-inference above
 
-        # dim must be 3 for MVP
         if self.dim != 3:
             raise ValueError(
                 f"dim={self.dim} not supported. "
@@ -790,7 +784,6 @@ class ProblemIR:
                 f"Element type {self.element_type.value!r} not supported. "
                 "Additional element families are planned for Plan B phase B5."
             )
-        # material model must be known
         if self.material.model not in (
             "svk",
             "j2_power_law",
@@ -810,7 +803,6 @@ class ProblemIR:
         # need at least one boundary
         if not self.boundaries:
             raise ValueError("At least one boundary condition required.")
-        # coordinate tuples must match dim
         if len(self.coord_spatial) != self.dim:
             raise ValueError(
                 f"Expected {self.dim} spatial coordinates, got {len(self.coord_spatial)}"
@@ -819,7 +811,7 @@ class ProblemIR:
             raise ValueError(
                 f"Expected {self.dim} material coordinates, got {len(self.coord_material)}"
             )
-        # M4: check BC names against declared regions when regions are provided
+        # Check BC names against declared regions when regions are provided.
         if self.declared_regions is not None:
             for bc in self.boundaries:
                 if bc.name not in self.declared_regions:
@@ -830,13 +822,13 @@ class ProblemIR:
                     )
 
         # ------------------------------------------------------------------
-        # P3-5: targeted validation for semantics that were previously
+        # Targeted validation for semantics that were previously
         # implicit. Each block below converts a class of silent acceptance
         # (a malformed IR that used to surface as a cryptic codegen / runtime
         # error) into a clear ValueError raised at construction time.
         # ------------------------------------------------------------------
 
-        # P3-5a: BC region names must be unique across the boundary tuple.
+        # BC region names must be unique across the boundary tuple.
         # Two BCs with the same `name` would either silently overwrite each
         # other or produce conflicting load assemblers downstream.
         seen_bc_names: set[str] = set()
@@ -850,7 +842,7 @@ class ProblemIR:
                 )
             seen_bc_names.add(bc.name)
 
-        # P3-5b: BC component indices must lie in [0, dim). Out-of-range
+        # BC component indices must lie in [0, dim). Out-of-range
         # values used to flow through to codegen and produce off-by-one
         # array slices or silent zero rows.
         for bc in self.boundaries:
@@ -862,7 +854,7 @@ class ProblemIR:
                         f"valid indices are 0..{self.dim - 1}."
                     )
 
-        # P3-5c: spatial and material coordinate names must be unique.
+        # Spatial and material coordinate names must be unique.
         # Repeated names produce ambiguous metadata downstream.
         if len(set(self.coord_spatial)) != len(self.coord_spatial):
             raise ValueError(
@@ -875,7 +867,7 @@ class ProblemIR:
                 "material coordinate labels must be unique."
             )
 
-        # P3-5d: declared field names must be unique. Two FieldSpec entries
+        # Declared field names must be unique. Two FieldSpec entries
         # with the same `name` are always a configuration bug.
         if self.fields:
             seen_field_names: set[str] = set()
@@ -887,7 +879,7 @@ class ProblemIR:
                     )
                 seen_field_names.add(f.name)
 
-            # P3-5e: BC `field_name` must reference a declared field when
+            # BC `field_name` must reference a declared field when
             # `fields` is populated. Catches typos like `field_name="ux"` vs
             # `FieldSpec(name="u")`.
             declared_field_names = {f.name for f in self.fields}
@@ -900,7 +892,7 @@ class ProblemIR:
                         f"FieldSpec with that name or correct the BC."
                     )
 
-        # P3-5f required-params check moved to `assert_mvp_stable()` — see
+        # The required-params check lives in `assert_mvp_stable()` — see
         # that method for the rationale. In-tree research code builds
         # minimal IRs for shape testing without touching the constitutive
         # path, so validating required params at every IR construction would
@@ -908,12 +900,12 @@ class ProblemIR:
         # compile-path boundary (`compile_latex(profile="mvp")` calls
         # `assert_mvp_stable()`).
 
-        # constitutive_latex P3-1: validate the derived-energy carrier at
-        # construction time (IR discipline). A no-op when None (the default,
-        # so every legacy constructor is unaffected); when present it must be
-        # a fully-formed energy model carrying symbolic PK2 stress and tangent
-        # so codegen can emit from it. Duck-typed to avoid importing the heavy
-        # symbolic.energy module at IR-construction time.
+        # Validate the derived-energy carrier at construction time (IR
+        # discipline). A no-op when None (the default, so every legacy
+        # constructor is unaffected); when present it must be a fully-formed
+        # energy model carrying symbolic PK2 stress and tangent so codegen can
+        # emit from it. Duck-typed to avoid importing the heavy symbolic.energy
+        # module at IR-construction time.
         if self.derived_energy is not None:
             de = self.derived_energy
             # Three recognised derivation shapes, each carrying the symbolic
@@ -935,10 +927,10 @@ class ProblemIR:
                     "(HGO); got an object missing all of their required attributes."
                 )
 
-        # constitutive_latex P5-1: validate the fiber-field carrier at
-        # construction time (IR discipline). A no-op when None (the default).
-        # Duck-typed to keep this cheap; FiberFieldSpec already validates its
-        # own families in its __post_init__.
+        # Validate the fiber-field carrier at construction time (IR
+        # discipline). A no-op when None (the default). Duck-typed to keep this
+        # cheap; FiberFieldSpec already validates its own families in its
+        # __post_init__.
         if self.fiber_field is not None and not hasattr(self.fiber_field, "families"):
             raise ValueError(
                 "fiber_field must be a mechdsl.ir.mechanics_ir.FiberFieldSpec "
@@ -960,9 +952,9 @@ class ProblemIR:
             "declared_regions": sorted(self.declared_regions) if self.declared_regions else None,
             "configuration": self.configuration.value,
             "dynamics_mode": self.dynamics_mode.value,
-            # Recovery-plan Phase 3 enrichment fields. Always emitted so
-            # consumers can round-trip them; legacy dicts without these keys
-            # are accepted in `from_dict` and rebuild with safe defaults.
+            # Enrichment fields. Always emitted so consumers can round-trip
+            # them; legacy dicts without these keys are accepted in `from_dict` and
+            # rebuild with safe defaults.
             "fields": [f.to_dict() for f in self.fields],
             "domain": self.domain.to_dict() if self.domain is not None else None,
             "mesh_contract": (
@@ -971,15 +963,15 @@ class ProblemIR:
             "residual_contract": (
                 self.residual_contract.to_dict() if self.residual_contract is not None else None
             ),
-            # fgram Phase 5 (P5-1) LaTeX-derived semantic record. Always
-            # emitted (None when absent) so consumers can round-trip it;
-            # legacy dicts without the key rebuild with `latex_semantics=None`.
+            # LaTeX-derived semantic record. Always emitted (None when absent)
+            # so consumers can round-trip it; legacy dicts without the key rebuild
+            # with `latex_semantics=None`.
             "latex_semantics": (
                 self.latex_semantics.to_dict() if self.latex_semantics is not None else None
             ),
-            # constitutive_latex P5-1: fiber field data. Emitted only when
-            # present so every existing (fiber-less) golden stays byte-identical;
-            # from_dict rebuilds None when the key is absent.
+            # Fiber field data. Emitted only when present so every existing
+            # (fiber-less) golden stays byte-identical; from_dict rebuilds None when
+            # the key is absent.
             **({"fiber_field": self.fiber_field.to_dict()} if self.fiber_field is not None else {}),
         }
 
@@ -994,16 +986,16 @@ class ProblemIR:
         raw_regions = d.get("declared_regions")
         declared_regions = frozenset(raw_regions) if raw_regions is not None else None
         # configuration is optional — when missing, auto-inferred from
-        # formulation in __post_init__ (Plan B §B1.5). Pre-P1-1 TL goldens
-        # without a "configuration" key auto-infer to REFERENCE (correct).
+        # formulation in __post_init__. Legacy TL goldens without a
+        # "configuration" key auto-infer to REFERENCE (correct).
         raw_cfg = d.get("configuration")
         configuration = Configuration(raw_cfg) if raw_cfg is not None else None
-        # dynamics_mode is optional — Plan B §B7 (P7-1).  Legacy dicts without
-        # the key auto-infer to STATIC in __post_init__ (Plan A default).
+        # dynamics_mode is optional — legacy dicts without the key
+        # auto-infer to STATIC in __post_init__.
         raw_dyn = d.get("dynamics_mode")
         dynamics_mode = DynamicsMode(raw_dyn) if raw_dyn is not None else None
-        # Phase-3 enrichment fields (recovery R2 / P3-1). All optional; missing
-        # keys rebuild as empty / None.
+        # Enrichment fields. All optional; missing keys rebuild as empty /
+        # None.
         raw_fields = d.get("fields", ())
         fields_tuple = tuple(FieldSpec.from_dict(f) for f in raw_fields) if raw_fields else ()
         raw_domain = d.get("domain")
@@ -1012,8 +1004,8 @@ class ProblemIR:
         mesh_contract = MeshContract.from_dict(raw_mesh) if raw_mesh else None
         raw_residual = d.get("residual_contract")
         residual_contract = ResidualContract.from_dict(raw_residual) if raw_residual else None
-        # fgram Phase 5 (P5-1) LaTeX semantic record. Optional; missing key
-        # rebuilds as None so every existing golden continues to round-trip.
+        # LaTeX semantic record. Optional; missing key rebuilds as None so
+        # every existing golden continues to round-trip.
         raw_latex = d.get("latex_semantics")
         latex_semantics = LatexSemantics.from_dict(raw_latex) if raw_latex else None
         raw_fiber = d.get("fiber_field")
@@ -1038,10 +1030,10 @@ class ProblemIR:
         )
 
     # ------------------------------------------------------------------
-    # Boundary / domain semantic helpers (recovery-plan P3-3).
+    # Boundary / domain semantic helpers.
     #
-    # Pre-P3-3, every downstream layer (lowering, codegen, solver, mesh
-    # validation) re-derived the same fact: "the BC name equals the mesh
+    # Every downstream layer (lowering, codegen, solver, mesh validation)
+    # used to re-derive the same fact: "the BC name equals the mesh
     # boundary tag". The two helpers below centralize that assumption on
     # the IR — the semantic center — so consumers read a single source of
     # truth instead of scattering the implicit contract across layers.
@@ -1079,7 +1071,7 @@ class ProblemIR:
         return MeshContract(region_tags=self.required_region_tags())
 
     # ------------------------------------------------------------------
-    # Frontend context-dict adapter (recovery-plan P3-2).
+    # Frontend context-dict adapter.
     # ------------------------------------------------------------------
 
     @classmethod
@@ -1150,7 +1142,7 @@ class ProblemIR:
         return FiberFieldSpec(families=tuple(families))
 
     # ------------------------------------------------------------------
-    # LaTeX-semantic adapter (fgram Phase 5 / P5-1).
+    # LaTeX-semantic adapter.
     # ------------------------------------------------------------------
 
     @classmethod
@@ -1337,7 +1329,7 @@ class ProblemIR:
         return lhs, role
 
     # ------------------------------------------------------------------
-    # MVP-stable subset contract (recovery-plan P3-4).
+    # MVP-stable subset contract.
     # ------------------------------------------------------------------
 
     def assert_mvp_stable(self) -> None:
@@ -1407,7 +1399,7 @@ class ProblemIR:
                 f"{tuple(c.value for c in MVP_STABLE_SUBSET.configurations)}. "
                 "Current-configuration kinematics are planned for Plan B phase B1."
             )
-        # P3-5f: known MVP material models require their full parameter set.
+        # Known MVP material models require their full parameter set.
         # Lives here (rather than in `__post_init__`) because in-tree
         # research code constructs minimal IRs for shape-only testing — the
         # check belongs to the production-readiness contract enforced by

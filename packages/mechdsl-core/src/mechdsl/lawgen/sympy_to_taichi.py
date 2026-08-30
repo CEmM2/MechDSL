@@ -1,6 +1,7 @@
 """Deterministic SymPy → Taichi scalar-expression lowerer (Task P2-1).
 
-MFront-mimic Cycle M0, Phase 2 (``dev/plans/mfront_cycleM0.md`` lines 76-78).
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier).
 
 This module is the foundation the rest of Phase 2 builds on: a *dedicated*,
 idiomatic SymPy printer that turns a scalar ``sympy.Expr`` into a Taichi source
@@ -65,18 +66,18 @@ from mechdsl.lawgen.guard_transforms import (
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
-# Small-integer ``Pow`` inlining threshold (P2-4).
+# Small-integer ``Pow`` inlining threshold.
 #
 # ``Pow(x, n)`` with ``n`` a **non-negative** integer and ``n <=
 # SMALL_INT_POW_LIMIT`` is inlined to repeated multiplication (``x**2`` →
 # ``x*x``); a larger magnitude, a negative exponent, or a symbolic/fractional
-# exponent keeps ``ti.pow`` / ``**`` (guarded per P2-3). ``4`` is chosen so the
-# worst inlined case unrolls to at most four factors (``x*x*x*x``) — comfortably
-# inside the JIT line budget (a ``ti.pow`` call is one line, so inlining trades
-# one call for up to three extra ``*`` ops, never a whole line) while covering
-# the common material-model powers (square/cube). It is a deliberately
-# conservative bound: raising it risks the "large unrolled multiplication" hazard
-# flagged in the P2-4 risks.
+# exponent keeps ``ti.pow`` / ``**`` (guarded by the guard-injection pass).
+# ``4`` is chosen so the worst inlined case unrolls to at most four factors
+# (``x*x*x*x``) — comfortably inside the JIT line budget (a ``ti.pow`` call is
+# one line, so inlining trades one call for up to three extra ``*`` ops, never
+# a whole line) while covering the common material-model powers (square/cube).
+# It is a deliberately conservative bound: raising it risks a large unrolled
+# multiplication.
 SMALL_INT_POW_LIMIT: int = 4
 
 
@@ -116,7 +117,7 @@ __all__ = [
 #   * ``codegen/energy_emitter._MATH_TO_TAICHI`` — the existing (regex-based)
 #     math→ti name table; we reuse the *mapping idea*, not its
 #     print-to-source-plus-regex mechanism.
-#   * ``lawgen/cli._ALLOWED_FUNCTIONS`` — P1-2's front-end parser allow-list
+#   * ``lawgen/cli._ALLOWED_FUNCTIONS`` — the front-end parser allow-list
 #     (``exp, log, sqrt, sin, cos, tan, sinh, cosh, tanh, Abs, Max, Min,
 #     sign``). Every function the CLI accepts into an R/H/Q expression MUST be
 #     lowerable here, or a legal law would parse but fail to emit.
@@ -126,9 +127,9 @@ __all__ = [
 # specially in ``_print_Pow`` (SymPy models it as ``Pow(x, 1/2)``, not a
 # ``Function``), but is listed here so the allowed-set is one table.
 #
-# NOTE (P2-4): a later task can converge this map with ``cli._ALLOWED_FUNCTIONS``
-# into one shared constant so the parser and the printer can never disagree.
-# Today they are two aligned literals; the alignment is asserted in the tests.
+# Today this map and ``cli._ALLOWED_FUNCTIONS`` are two aligned literals; the
+# alignment is asserted in the tests.
+# ---------------------------------------------------------------------------
 MATH_TO_TAICHI: dict[str, str] = {
     "exp": "ti.exp",
     "log": "ti.log",
@@ -684,7 +685,7 @@ def lower_expression(
     active_target = target if target is not None else TiconstitTarget()
     expr_list = _as_expr_list(exprs)
 
-    # Pre-pass (collect-all, R2): scan every expression for unsupported nodes and
+    # Pre-pass (collect-all): scan every expression for unsupported nodes and
     # budget breaches BEFORE any code is produced, accumulating a diagnostic for
     # each so multiple problems surface in one LawgenError (never fail-first, never
     # a silent drop). Emission below only runs on a fully clean law.
@@ -707,7 +708,7 @@ def lower_expression(
         active_printer = TaichiExprPrinter()
 
     # order='canonical' is mandatory — see the docstring. This is the single
-    # CSE call in lawgen (no MechDSL wrapper existed to reuse; REUSE.md).
+    # CSE call in lawgen.
     replacements, reduced = sp.cse(expr_list, order="canonical")
 
     temporaries = tuple(

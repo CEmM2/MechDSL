@@ -125,7 +125,7 @@ def check_convergence_rate(
 
 
 # ---------------------------------------------------------------------------
-# MMS (Method of Manufactured Solutions) driver  — Task P3-T2
+# MMS (Method of Manufactured Solutions) driver
 # ---------------------------------------------------------------------------
 
 
@@ -334,26 +334,26 @@ def _compute_consistent_nodal_forces(
 
     for e in range(conn.shape[0]):
         nodes = conn[e]
-        X_elem = coords[nodes]  # (8, 3)
+        X_elem = coords[nodes]
 
         for q in range(quad.n_points):
             xi, eta, zeta = quad.points[q]
             w_q = quad.weights[q]
 
             # Shape functions at this quad point
-            N_vals = basis.evaluate(xi, eta, zeta)  # (8,)
+            N_vals = basis.evaluate(xi, eta, zeta)
 
             # Shape function gradients in parametric space -> reference Jacobian
-            dN_dxi = basis.gradient(xi, eta, zeta)  # (8, 3)
-            J0 = X_elem.T @ dN_dxi  # (3, 3)
+            dN_dxi = basis.gradient(xi, eta, zeta)
+            J0 = X_elem.T @ dN_dxi
             detJ0 = float(np.linalg.det(J0))
 
             # Physical coordinates at this quad point
-            X_qp = N_vals @ X_elem  # (3,)
+            X_qp = N_vals @ X_elem
 
             # Body force at this quad point
             b_vals = bf_func(X_qp[0], X_qp[1], X_qp[2], lam, mu)
-            b_vec = np.array(b_vals, dtype=np.float64)  # (3,)
+            b_vec = np.array(b_vals, dtype=np.float64)
 
             # Scatter: f_ext[a, :] += w * det(J0) * N_a * b
             for a in range(8):
@@ -390,46 +390,46 @@ def _compute_l2_h1_errors(
 
     for e in range(conn.shape[0]):
         nodes = conn[e]
-        X_elem = coords[nodes]  # (8, 3)
-        u_elem = u_h[nodes]  # (8, 3)
+        X_elem = coords[nodes]
+        u_elem = u_h[nodes]
 
         for q in range(quad.n_points):
             xi, eta, zeta = quad.points[q]
             w_q = quad.weights[q]
 
             # Shape functions and gradients
-            N_vals = basis.evaluate(xi, eta, zeta)  # (8,)
-            dN_dxi = basis.gradient(xi, eta, zeta)  # (8, 3)
+            N_vals = basis.evaluate(xi, eta, zeta)
+            dN_dxi = basis.gradient(xi, eta, zeta)
 
             # Reference Jacobian
-            J0 = X_elem.T @ dN_dxi  # (3, 3)
+            J0 = X_elem.T @ dN_dxi
             detJ0 = float(np.linalg.det(J0))
             J0_inv = np.linalg.inv(J0)
 
             # Shape function gradients in reference coords: dN/dX = dN/dxi @ J0^{-1}
-            dN_dX = dN_dxi @ J0_inv  # (8, 3)
+            dN_dX = dN_dxi @ J0_inv
 
             # Physical coordinates at quad point
-            X_qp = N_vals @ X_elem  # (3,)
+            X_qp = N_vals @ X_elem
 
             # --- L2 error ---
             # Interpolated displacement at quad point
-            u_h_qp = N_vals @ u_elem  # (3,)
+            u_h_qp = N_vals @ u_elem
 
             # Exact displacement at quad point
             u_exact_vals = u_func(X_qp[0], X_qp[1], X_qp[2])
-            u_exact_qp = np.array(u_exact_vals, dtype=np.float64)  # (3,)
+            u_exact_qp = np.array(u_exact_vals, dtype=np.float64)
 
             diff_u = u_h_qp - u_exact_qp
             l2_sq += w_q * detJ0 * np.dot(diff_u, diff_u)
 
             # --- H1 error ---
             # Interpolated displacement gradient: grad(u_h) = u_elem^T @ dN_dX  -> (3, 3)
-            grad_u_h = u_elem.T @ dN_dX  # (3, 3)
+            grad_u_h = u_elem.T @ dN_dX
 
             # Exact displacement gradient at quad point
             grad_exact_vals = grad_func(X_qp[0], X_qp[1], X_qp[2])
-            grad_u_exact = np.array(grad_exact_vals, dtype=np.float64)  # (3, 3)
+            grad_u_exact = np.array(grad_exact_vals, dtype=np.float64)
 
             diff_grad = grad_u_h - grad_u_exact
             h1_sq += w_q * detJ0 * np.sum(diff_grad**2)

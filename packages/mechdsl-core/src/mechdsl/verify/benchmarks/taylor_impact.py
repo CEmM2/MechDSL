@@ -125,8 +125,8 @@ class TaylorImpactParameters:
 
     # --- Geometry (Johnson & Cook 1985 reference, SI units) ---
     length: float = 25.4e-3  # m, bar length along +z
-    width: float = 7.62e-3  # m, x-extent
-    height: float = 7.62e-3  # m, y-extent
+    width: float = 7.62e-3
+    height: float = 7.62e-3
     nx: int = 2
     ny: int = 2
     nz: int = 8

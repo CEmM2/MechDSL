@@ -1,0 +1,51 @@
+% Point-Jacobi preconditioner apply (PlanJune14 P4-1).
+%
+% Computes the Jacobi (diagonal) preconditioned vector:
+%
+%     z_I = r_I / max(d_I, eps)
+%
+% where ``d`` is the diagonal of the system matrix (point-Jacobi: M = diag(d)),
+% ``r`` is the residual vector, ``z`` is the output (M^{-1} r), and ``eps`` is a
+% small positive guard against near-zero diagonal entries. All operands are
+% degree-of-freedom vectors (one value per node or per component).
+%
+% Grammar note (2026-06-15, P4-1):
+% -----------------------------------
+% algo2code currently lowers vector/vector division (`z = r / d`) to the Python
+% expression `z = (r / d)`, which is not runnable for `ti.Vector.field` operands
+% (Taichi raises TypeError: unsupported operand type(s) for /: MatrixField /
+% MatrixField).  The grammar supports scalar operations and vector +/-/scale/
+% callable-matvec, but has no `vec_ediv` (elementwise divide) primitive.
+%
+% The clean fix is a new `vec_ediv(z, r, d, eps)` primitive in ti_runtime
+% vector_ops — exactly what P4-1 adds.  The generated body below is therefore
+% realised as a thin `@ti.data_oriented` adapter
+% (`mechdsl.solver.jacobi_preconditioner.GeneratedJacobiPreconditioner`) whose
+% `_apply` kernel calls `ti_runtime.vector_ops.ediv(z, r, d, eps)` — a
+% generated body in the sense that the algorithm is expressed in LaTeX and
+% realised via a structured adapter, not hand-coded heuristics.
+%
+% When algo2code gains a `vec_ediv` primitive (or scalar-field elementwise ops),
+% this box can be re-transpiled to a fully auto-generated driver with no adapter
+% shim.
+%
+% Inputs
+% ------
+%   r   : residual vector (numerator)
+%   d   : diagonal vector (denominator)
+%   eps : small positive guard (scalar)  -- assumed positive (SPD diagonal guard)
+%
+% Output
+% ------
+%   z   : preconditioned vector = M^{-1} r
+
+% algorithm jacobi_apply
+% backend taichi
+% args r:vector, d:vector, eps:scalar
+
+% type z vector
+
+\begin{algorithmic}
+\State $z_I = r_I \, / \, \max(d_I,\, \varepsilon)$   \Comment{elementwise; for all DOF indices $I$}
+\Return $z$
+\end{algorithmic}

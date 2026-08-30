@@ -71,7 +71,7 @@ def _make_j2_bundle() -> ArtifactBundle:
 
 
 # ============================================================================
-# P6-2: Lemaitre damage coupling + element deletion
+# Lemaitre damage coupling + element deletion
 # ============================================================================
 
 

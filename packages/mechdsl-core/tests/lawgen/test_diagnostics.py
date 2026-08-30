@@ -1,8 +1,8 @@
 """Unit tests for the collect-all lawgen diagnostics layer (Task P3-1).
 
-MFront-mimic Cycle M0, Phase 3 (``dev/plans/mfront_cycleM0.md`` lines 98-100).
+Part of the MechDSL lawgen test suite.
 
-Covers the four ``test_plan.cases``:
+Covers four diagnostics cases:
 
 1. Two distinct unsupported nodes → both surface in ONE ``LawgenError`` (no
    silent drop) — checked via lowering AND via a raw collector.
@@ -94,7 +94,7 @@ def test_two_unsupported_nodes_both_reported_via_lowering() -> None:
 
     nodes = sorted(d.node for d in exc.value.diagnostics)
     assert nodes == ["bar", "foo"]
-    # Both appear in the message AND in .args (the P3-1 acceptance surface).
+    # Both appear in the message AND in .args.
     message = str(exc.value)
     assert "foo" in message and "bar" in message
     arg_text = " ".join(str(a) for a in exc.value.args)
@@ -258,7 +258,7 @@ def test_lawgen_error_is_a_not_implemented_error() -> None:
     """``LawgenError`` IS-A ``NotImplementedError`` — Phase-2 fail-loud catchers still work."""
     assert issubclass(LawgenError, NotImplementedError)
     x = sp.Symbol("x")
-    with pytest.raises(NotImplementedError):  # the Phase-2 contract
+    with pytest.raises(NotImplementedError):
         lower_expression(sp.Function("foo")(x))
 
 

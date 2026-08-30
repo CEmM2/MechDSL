@@ -52,9 +52,9 @@ if TYPE_CHECKING:
 # Numerical constants
 # ---------------------------------------------------------------------------
 
-#: Upper bound on damage imposed during the return map.  Keeps the (1 - D)
-#: divisor numerically safe; element deletion at ``D_crit`` (default 0.95 in
-#: P6-2) happens well below this ceiling.
+# Upper bound on damage imposed during the return map.  Keeps the (1 - D)
+# divisor numerically safe; element deletion at ``D_crit`` happens well
+# below this ceiling.
 D_MAX = 1.0 - 1e-6
 
 

@@ -33,7 +33,7 @@ The generated module is written to a real ``.py`` file and imported (not
 # NOTE: no ``from __future__ import annotations`` — downstream callers wire this
 # into modules that define ``@ti.kernel`` bodies, and Taichi requires *eager*
 # annotation evaluation (PEP 563 stringifies ti.template() and breaks the JIT;
-# the PJ-0/PJ-1 finding, shared with seam_solve).
+# same constraint as seam_solve).
 
 import functools
 from collections.abc import Callable

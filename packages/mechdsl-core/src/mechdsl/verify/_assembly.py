@@ -111,7 +111,7 @@ def element_tangent_matvec(
     """
     from mechdsl.symbolic.models.svk import SVKMaterial, material_tangent_4th
 
-    C4 = material_tangent_4th(SVKMaterial(lam, mu))  # constant (3,3,3,3)
+    C4 = material_tangent_4th(SVKMaterial(lam, mu))
     Kv = np.zeros((8, 3), dtype=np.float64)
 
     for q in range(_QUAD.n_points):
@@ -121,14 +121,14 @@ def element_tangent_matvec(
         dN_dX, detJ0 = _shape_grad_reference(X_elem, xi, eta, zeta)
 
         # Current kinematics
-        grad_u = u_elem.T @ dN_dX  # (3, 3)
+        grad_u = u_elem.T @ dN_dX
         F = deformation_gradient(grad_u)
         E = green_lagrange(F)
         tr_E = np.trace(E)
         S = lam * tr_E * _I3 + 2.0 * mu * E  # PK2 stress
 
         # Linearisation in direction v
-        grad_v = v_elem.T @ dN_dX  # (3, 3)
+        grad_v = v_elem.T @ dN_dX
         dE = 0.5 * (F.T @ grad_v + grad_v.T @ F)  # linearised E
         dS = np.einsum("ijkl,kl->ij", C4, dE)  # linearised PK2
         dP = grad_v @ S + F @ dS  # linearised PK1

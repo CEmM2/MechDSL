@@ -8,7 +8,7 @@ This page takes you from a fresh clone to a transpiled algorithm.
 simplest way to get it is the workspace install:
 
 ```bash
-git clone https://github.com/SOSOVSKI/MechDSL.git
+git clone https://github.com/CEmM2/MechDSL.git
 cd MechDSL
 uv sync --all-packages --all-groups --all-extras
 ```

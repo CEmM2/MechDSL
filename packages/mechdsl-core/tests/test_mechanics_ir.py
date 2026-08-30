@@ -152,7 +152,7 @@ class TestJSONRoundTrip:
 
 
 # ------------------------------------------------------------------
-# 4. Invalid dim (dim=2) raises ValueError with plan phase reference
+# 4. Invalid dim (dim=2) raises ValueError
 # ------------------------------------------------------------------
 
 
@@ -185,7 +185,7 @@ class TestInvalidDim:
 
 
 # ------------------------------------------------------------------
-# 5. Invalid formulation raises with plan phase reference
+# 5. Invalid formulation raises
 # ------------------------------------------------------------------
 
 
@@ -241,7 +241,7 @@ class TestInvalidFormulation:
 
 
 # ------------------------------------------------------------------
-# 6. Invalid element type raises with plan phase reference
+# 6. Invalid element type raises
 # ------------------------------------------------------------------
 
 

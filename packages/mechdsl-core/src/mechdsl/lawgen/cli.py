@@ -1,6 +1,7 @@
-"""``mechdsl-lawgen`` command-line entry point (Task P1-2).
+"""``mechdsl-lawgen`` command-line entry point.
 
-MFront-mimic Cycle M0, Phase 1 (``dev/plans/mfront_cycleM0.md`` lines 59-62).
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier).
 
 This is the *skeleton* CLI: it wires the ``mechdsl-lawgen compile <law.yaml>
 --target ticonstit --out <dir>`` surface, parses a law YAML into a
@@ -55,8 +56,8 @@ from mechdsl.lawgen.manifest import (
 )
 from mechdsl.lawgen.test_emitter import emit_tests
 
-# The only ``--target`` value P1-2 accepts. Kept as a module constant so the
-# argparse ``choices`` and the error message agree.
+# The only ``--target`` value currently accepted. Kept as a module constant so
+# the argparse ``choices`` and the error message agree.
 _SUPPORTED_TARGETS: tuple[str, ...] = ("ticonstit",)
 
 # Required top-level keys in a law YAML document. ``variables`` and
@@ -65,12 +66,12 @@ _SUPPORTED_TARGETS: tuple[str, ...] = ("ticonstit",)
 _REQUIRED_KEYS: tuple[str, ...] = ("name", "parameters", "variables", "expressions")
 
 # Exactly the keys a law YAML may carry at the top level. Anything else is a
-# typo or an attempt to smuggle unexpected data — rejected (F6).
+# typo or an attempt to smuggle unexpected data — rejected.
 _ALLOWED_TOP_KEYS: frozenset[str] = frozenset(_REQUIRED_KEYS)
 
-# The math functions an R/H/Q expression may call. This is a deliberately
-# conservative set for the Phase-1 CLI front-end; P2-4 owns the full Taichi
-# allow-list (what the printer can actually lower).
+# The math functions an R/H/Q expression may call. A deliberately
+# conservative set for the CLI front-end; the printer owns the full Taichi
+# allow-list (what it can actually lower).
 _ALLOWED_FUNCTIONS: dict[str, object] = {
     "exp": sp.exp,
     "log": sp.log,
@@ -87,7 +88,7 @@ _ALLOWED_FUNCTIONS: dict[str, object] = {
     "sign": sp.sign,
 }
 
-# The *only* global namespace expressions are parsed against (F1). We do NOT
+# The *only* global namespace expressions are parsed against. We do NOT
 # use parse_expr's default global_dict (``exec('from sympy import *')``, which
 # also injects ``__builtins__`` — and thus ``__import__``). Instead:
 #   * ``"__builtins__": {}`` — set explicitly so ``eval_expr`` cannot re-inject
@@ -163,7 +164,7 @@ def load_carrier_source(law_path: Path) -> tuple[PlasticityCarrierSpec, dict[str
             f"{list(_REQUIRED_KEYS)}, got {type(doc).__name__}."
         )
 
-    # F6: reject any unexpected top-level key up front (typos, smuggled data).
+    # Reject any unexpected top-level key up front (typos, smuggled data).
     unknown_top = sorted(set(doc) - _ALLOWED_TOP_KEYS)
     if unknown_top:
         raise _LawError(f"law YAML has unknown top-level key(s): {', '.join(unknown_top)}")
@@ -175,7 +176,7 @@ def load_carrier_source(law_path: Path) -> tuple[PlasticityCarrierSpec, dict[str
     name = doc["name"]
     if not isinstance(name, str) or not name:
         raise _LawError("law YAML key 'name' must be a non-empty string")
-    # F4: name drives generated file/class names, so it must be a plain Python
+    # name drives generated file/class names, so it must be a plain Python
     # identifier — this rejects path separators/traversal ("../../escape") and
     # reserved words ("class").
     _require_identifier(name, kind="name")
@@ -183,7 +184,7 @@ def load_carrier_source(law_path: Path) -> tuple[PlasticityCarrierSpec, dict[str
     parameters = _as_str_list(doc["parameters"], key="parameters")
     variables = _as_str_list(doc["variables"], key="variables")
 
-    # F4: every parameter/variable name must be a valid identifier, with no
+    # Every parameter/variable name must be a valid identifier, with no
     # duplicates within a list and no parameter↔variable collision (a name can
     # only mean one thing in the symbol table).
     for param in parameters:
@@ -201,7 +202,7 @@ def load_carrier_source(law_path: Path) -> tuple[PlasticityCarrierSpec, dict[str
     expressions_raw = doc["expressions"]
     if not isinstance(expressions_raw, dict):
         raise _LawError("law YAML key 'expressions' must be a mapping of R/H/Q strings")
-    # F6: reject any expressions key outside the required R/H/Q roles.
+    # Reject any expressions key outside the required R/H/Q roles.
     unknown_roles = sorted(set(expressions_raw) - set(PlasticityCarrierSpec.REQUIRED_EXPRESSIONS))
     if unknown_roles:
         raise _LawError(
@@ -318,7 +319,7 @@ def _parse_expr(raw: object, *, role: str, locals_table: dict[str, sp.Symbol]) -
     if not isinstance(expr, sp.Expr):
         raise _LawError(f"expression {role!r} ({raw!r}) did not parse to a scalar expression")
 
-    # F2: any AppliedUndef is a call to a function that is not in the allow-list
+    # Any AppliedUndef is a call to a function that is not in the allow-list
     # (a typo like ``expp`` or an intentionally-unknown call).
     unknown_funcs = sorted({type(f).__name__ for f in expr.atoms(AppliedUndef)})
     if unknown_funcs:
@@ -490,8 +491,7 @@ def _emit(
     module = snake_case_module_name(spec.name)
 
     # The canonical generator-input formula whose verbatim SHA-256 is the manifest
-    # source_hash. Built from the raw YAML ``R`` string with the ``"R = "`` prefix,
-    # matching Cycle 0's ``"R = sigma0 + Q*(1-exp(-b*p)) + K*((p+p0)**n - p0**n)"``.
+    # source_hash. Built from the raw YAML ``R`` string with the ``"R = "`` prefix.
     input_formula = f"R = {raw_expressions['R']}"
     source_hash = compute_input_formula_hash(input_formula)
 
@@ -518,8 +518,8 @@ def _emit(
             # stale/mistyped formula would otherwise fingerprint the wrong law. Safe
             # to enable here because the emitted law is internally consistent (the
             # YAML spells the saturation param `Q` in both the formula and the
-            # parameter list). The Cycle 0 `Q` (formula) vs `Q_inf` (material card)
-            # divergence is a separate, manifest-parameter-name matter that this
+            # parameter list). A `Q` (formula) vs `Q_inf` (material card) divergence
+            # is a separate, manifest-parameter-name matter that this
             # formula<->spec check does not touch.
             check_matches_spec=True,
         )
@@ -555,9 +555,9 @@ def _emit(
     return 0
 
 
-#: The runtime contract the SwiftVoce carrier implements (Cycle 0 ``_manifest.json``
-#: ``target_contract``). This is the *runtime* contract name, deliberately distinct
-#: from ``TiconstitTarget.contract_id`` (the emission-contract id).
+# The runtime contract the SwiftVoce carrier implements (the ``target_contract``
+# recorded in the manifest). This is the *runtime* contract name, deliberately distinct
+# from ``TiconstitTarget.contract_id`` (the emission-contract id).
 _TICONSTIT_RUNTIME_CONTRACT: str = "VoceHardeningModel"
 
 #: The Voce base parameters that are always required. Any remaining spec parameter

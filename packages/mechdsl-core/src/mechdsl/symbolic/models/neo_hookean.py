@@ -162,7 +162,6 @@ def material_tangent_4th(mat: NeoHookeanMaterial, E_strain: NDArray) -> NDArray:
     # Kronecker outer products assembled via einsum
     # term1_IJKL = Cinv_KL * delta_IJ + delta_KL * Cinv_IJ
     term_cross = np.einsum("ij,kl->ijkl", eye3, Cinv) + np.einsum("ij,kl->ijkl", Cinv, eye3)
-    # term2_IJKL = Cinv_IJ * Cinv_KL
     term_cinv2 = np.einsum("ij,kl->ijkl", Cinv, Cinv)
     # term_sym_IJKL = Cinv_IK * Cinv_JL + Cinv_IL * Cinv_JK  (minor-symmetric)
     term_sym = np.einsum("ik,jl->ijkl", Cinv, Cinv) + np.einsum("il,jk->ijkl", Cinv, Cinv)

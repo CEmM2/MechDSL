@@ -29,10 +29,10 @@ class TestAlgoParser:
         algo = parse_algorithm(pcg_latex)
         # Should have: 4 assignments, 1 for loop, 1 return
         assert len(algo.body) == 6
-        assert isinstance(algo.body[0], Assign)  # r = ...
-        assert isinstance(algo.body[1], Assign)  # z = ...
-        assert isinstance(algo.body[2], Assign)  # p = ...
-        assert isinstance(algo.body[3], Assign)  # rho = ...
+        assert isinstance(algo.body[0], Assign)
+        assert isinstance(algo.body[1], Assign)
+        assert isinstance(algo.body[2], Assign)
+        assert isinstance(algo.body[3], Assign)
         assert isinstance(algo.body[4], ForLoop)
         assert isinstance(algo.body[5], Return)
 

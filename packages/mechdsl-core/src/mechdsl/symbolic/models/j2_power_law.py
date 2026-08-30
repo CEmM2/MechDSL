@@ -210,7 +210,7 @@ def assemble_j2_like_tangent(
         Algorithmic consistent tangent.
     """
     kappa = lam + 2.0 * mu / 3.0
-    beta = 1.0 - 3.0 * mu * dl / sigma_eq_trial  # == theta in task notation
+    beta = 1.0 - 3.0 * mu * dl / sigma_eq_trial
 
     P_dev = deviatoric_projector()
     n_flow = S_dev_trial / sigma_eq_trial  # flow direction, 2-norm = sqrt(2/3)
@@ -337,7 +337,7 @@ def radial_return(
         H_prime = yield_stress_derivative(mat, alpha_trial)
 
         f = sigma_eq_trial - 3.0 * mu * dl - sy
-        df = -3.0 * mu - H_prime  # df/d(dl)
+        df = -3.0 * mu - H_prime
 
         if abs(df) < 1e-30:
             if abs(f) > effective_tol:

@@ -1,6 +1,7 @@
 """Structured, collect-all diagnostics for the lawgen lowerer (Task P3-1).
 
-MFront-mimic Cycle M0, Phase 3 (``dev/plans/mfront_cycleM0.md`` lines 98-100).
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier).
 
 This module is the *reporting* layer that stands beside the Phase-2 gates
 (:mod:`mechdsl.lawgen.budgets`, P2-2; :mod:`mechdsl.lawgen.sympy_to_taichi`,
@@ -160,7 +161,7 @@ class LawgenError(NotImplementedError):
         self.diagnostics: tuple[LawgenDiagnostic, ...] = collected
         message = self._format(collected)
         # Put the message AND every diagnostic in ``args`` so a caller reading
-        # ``err.args`` sees all problems (P3-1 AC: "both appear in .args").
+        # ``err.args`` sees all problems.
         super().__init__(message, *collected)
 
     @staticmethod

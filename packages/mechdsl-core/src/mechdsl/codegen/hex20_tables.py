@@ -87,7 +87,7 @@ HEX20_NODE_COORDS: NDArray = np.array(
         [-1.0, +1.0, 0.0],  # N19 — midpoint N3-N7
     ],
     dtype=np.float64,
-)  # shape (20, 3)
+)
 
 # ---------------------------------------------------------------------------
 # Shape function evaluation
@@ -147,11 +147,11 @@ def shape_functions(xi: float, eta: float, zeta: float) -> NDArray:
 
     # Edge midpoint nodes 8..19
     for node_idx, xi_a, eta_a, zeta_a, zero_axis in _EDGE_DATA:
-        if zero_axis == 0:  # xi = 0
+        if zero_axis == 0:
             N[node_idx] = 0.25 * (1.0 - xi * xi) * (1.0 + eta_a * eta) * (1.0 + zeta_a * zeta)
-        elif zero_axis == 1:  # eta = 0
+        elif zero_axis == 1:
             N[node_idx] = 0.25 * (1.0 + xi_a * xi) * (1.0 - eta * eta) * (1.0 + zeta_a * zeta)
-        else:  # zeta = 0
+        else:
             N[node_idx] = 0.25 * (1.0 + xi_a * xi) * (1.0 + eta_a * eta) * (1.0 - zeta * zeta)
 
     return N
@@ -201,19 +201,19 @@ def shape_gradients(xi: float, eta: float, zeta: float) -> NDArray:
 
     # Edge midpoint nodes 8..19
     for node_idx, xi_a, eta_a, zeta_a, zero_axis in _EDGE_DATA:
-        if zero_axis == 0:  # xi = 0
+        if zero_axis == 0:
             B = 1.0 + eta_a * eta
             C = 1.0 + zeta_a * zeta
             G[node_idx, 0] = 0.25 * (-2.0 * xi) * B * C
             G[node_idx, 1] = 0.25 * (1.0 - xi * xi) * eta_a * C
             G[node_idx, 2] = 0.25 * (1.0 - xi * xi) * B * zeta_a
-        elif zero_axis == 1:  # eta = 0
+        elif zero_axis == 1:
             A = 1.0 + xi_a * xi
             C = 1.0 + zeta_a * zeta
             G[node_idx, 0] = 0.25 * xi_a * (1.0 - eta * eta) * C
             G[node_idx, 1] = 0.25 * A * (-2.0 * eta) * C
             G[node_idx, 2] = 0.25 * A * (1.0 - eta * eta) * zeta_a
-        else:  # zeta = 0
+        else:
             A = 1.0 + xi_a * xi
             B = 1.0 + eta_a * eta
             G[node_idx, 0] = 0.25 * xi_a * B * (1.0 - zeta * zeta)
@@ -237,12 +237,12 @@ _GW_1D = np.array([5.0 / 9.0, 8.0 / 9.0, 5.0 / 9.0], dtype=np.float64)
 HEX20_QUAD_POINTS: NDArray = np.array(
     [[xi, eta, zeta] for xi in _GP_1D for eta in _GP_1D for zeta in _GP_1D],
     dtype=np.float64,
-)  # shape (27, 3)
+)
 
 HEX20_QUAD_WEIGHTS: NDArray = np.array(
     [wx * wy * wz for wx in _GW_1D for wy in _GW_1D for wz in _GW_1D],
     dtype=np.float64,
-)  # shape (27,)
+)
 
 # ---------------------------------------------------------------------------
 # Pre-evaluated tables (computed once at module load time)
@@ -252,13 +252,13 @@ HEX20_QUAD_WEIGHTS: NDArray = np.array(
 SHAPE_AT_QUAD: NDArray = np.array(
     [shape_functions(float(pt[0]), float(pt[1]), float(pt[2])) for pt in HEX20_QUAD_POINTS],
     dtype=np.float64,
-)  # shape (27, 20)
+)
 
 # GRAD_AT_QUAD[q, a, i] = dN_a / d(xi_i) at quadrature point q
 GRAD_AT_QUAD: NDArray = np.array(
     [shape_gradients(float(pt[0]), float(pt[1]), float(pt[2])) for pt in HEX20_QUAD_POINTS],
     dtype=np.float64,
-)  # shape (27, 20, 3)
+)
 
 # ---------------------------------------------------------------------------
 # Physical-space gradient computation
@@ -296,7 +296,7 @@ def reference_gradient_at_physical(
     ValueError
         If det(J0) <= 0 — the element is inverted or degenerate.
     """
-    dN_dxi = GRAD_AT_QUAD[q]  # (20, 3)
+    dN_dxi = GRAD_AT_QUAD[q]
 
     # Reference Jacobian: J0 = dX/dxi = X^T @ dN/dxi  ->  (3, 3)
     J0 = X_elem.T @ dN_dxi
@@ -309,6 +309,6 @@ def reference_gradient_at_physical(
     J0_inv = np.linalg.inv(J0)
 
     # dN/dX = dN/dxi @ J0^{-1}
-    dNdX: NDArray = dN_dxi @ J0_inv  # (20, 3)
+    dNdX: NDArray = dN_dxi @ J0_inv
 
     return dNdX, detJ0

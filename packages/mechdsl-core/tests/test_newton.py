@@ -99,7 +99,7 @@ def elastic_setup() -> dict:
 
 
 # ============================================================================
-# P3-T1: newton_solve import/smoke
+# newton_solve import/smoke
 # ============================================================================
 
 
@@ -127,7 +127,7 @@ class TestNewtonSolveImport:
 
 
 # ============================================================================
-# P3-T2: Newton driver unit tests
+# Newton driver unit tests
 # ============================================================================
 
 
@@ -159,7 +159,6 @@ class TestNewtonSolveUnit:
 
         assert result.converged
         assert result.n_iterations < 20
-        # Residual should decrease monotonically (at least eventually)
         assert result.residual_history[-1] < result.residual_history[0]
 
     def test_divergence_returns_not_converged(self):
@@ -319,7 +318,7 @@ class TestNewtonSolveUnit:
 
 
 # ============================================================================
-# P3-T3: Newton + load_stepping integration test
+# Newton + load_stepping integration test
 # ============================================================================
 
 

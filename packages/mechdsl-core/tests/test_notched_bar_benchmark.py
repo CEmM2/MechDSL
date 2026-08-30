@@ -67,7 +67,7 @@ if TYPE_CHECKING:
 # Reference (self-consistent) mesh + parameters + load schedule
 # ---------------------------------------------------------------------------
 
-# Mesh: matches the P6-3 unit-test geometry exactly.
+# Mesh: must match the notched-bar unit-test geometry exactly.
 _N_LEN = 6
 _N_HEIGHT = 3
 _N_THICK = 1
@@ -78,13 +78,13 @@ _NOTCH_DEPTH = 0.75
 _NOTCH_HALFWIDTH = 1.0
 
 # Material (steel-like, MPa/mm), mirrors _lemaitre_acceptance defaults plus
-# the P6-3 notched-bar overrides (linear hardening + active damage).
+# the notched-bar overrides (linear hardening + active damage).
 _MATERIAL = {
     "E": 200.0e3,  # MPa
     "nu": 0.3,
     "sigma_y0": 200.0,  # MPa
     "K": 100.0,  # MPa, linear hardening modulus
-    "n": 1.0,  # linear hardening (n=1) -- see P6-3 docstring
+    "n": 1.0,  # linear hardening (n=1)
     "S_d": 2.0,  # MPa, Lemaitre damage denominator
     "s_d": 1.0,  # linear damage evolution
     "eps_D": 0.0,  # damage active as soon as alpha > 0
@@ -92,9 +92,8 @@ _MATERIAL = {
 }
 
 # Load schedule: 2% engineering strain in 8 equal steps (0.25% per step).
-# Matches the P6-2 Gate B forward-warning that the undamaged-J2 tangent
-# needs <=0.5 %/step for super-linear Newton convergence under active
-# damage.
+# The undamaged-J2 tangent needs <=0.5 %/step for super-linear Newton
+# convergence under active damage.
 _TARGET_ENG_STRAIN = 0.02
 _TOTAL_DISPLACEMENT = _TARGET_ENG_STRAIN * _L
 _N_STEPS = 8
@@ -136,7 +135,6 @@ _REFERENCE_LOAD = np.array(
     dtype=np.float64,
 )
 
-# Per-sample tolerance.  The task JSON specifies 10%.
 _LOAD_TOL_REL = 0.10
 
 

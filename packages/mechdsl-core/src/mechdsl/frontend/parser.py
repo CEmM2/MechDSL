@@ -241,8 +241,8 @@ def parse(source: str) -> dict[str, Any]:
     if "material_type" not in accum:
         raise ParseError("missing required '% mechanics material' directive")
 
-    # Delegate subset validation to build_context.  Anything outside the
-    # MVP subset raises UnsupportedError with a Plan B phase pointer.
+    # Delegate subset validation to build_context; anything outside the
+    # supported subset raises UnsupportedError.
     base = build_context(
         dim=accum["dim"],
         cell_type=accum["cell_type"],
@@ -253,8 +253,8 @@ def parse(source: str) -> dict[str, Any]:
         coord_system=accum.get("coord_system", "cartesian"),
         integration=accum.get("integration", "full"),
         hourglass=accum.get("hourglass"),
-        # constitutive_latex P5-1: the `% mechanics fiber` directive supplies the
-        # fiber field, satisfying build_context's anisotropic-requires-fiber gate.
+        # The `% mechanics fiber` directive supplies the fiber field,
+        # satisfying build_context's anisotropic-requires-fiber gate.
         fiber_families=accum.get("fiber_families"),
     )
 

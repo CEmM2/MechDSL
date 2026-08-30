@@ -16,7 +16,7 @@ from mechdsl.solver.newton import newton_solve
 _ROOT = Path(__file__).resolve().parents[3]
 _README = _ROOT / "README.md"
 _CHANGELOG = _ROOT / "CHANGELOG.md"
-_EXAMPLES = _ROOT / "dev" / "examples"
+_EXAMPLES = _ROOT / "examples"
 
 
 def _read_text(path: Path) -> str:
@@ -33,7 +33,7 @@ def _example_source(name: str) -> str:
 
 def _run_example(name: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["uv", "run", "python", f"dev/examples/{name}.py"],
+        ["uv", "run", "python", f"examples/{name}.py"],
         cwd=_ROOT,
         capture_output=True,
         text=True,
@@ -60,7 +60,9 @@ class TestTaskP5T1:
         """
         text = _read_text(_README)
         assert "## Installation" in text
-        assert "git clone https://github.com/SOSOVSKI/MechDSL.git" in text
+        import re
+
+        assert re.search(r"git clone https://github\.com/[\w-]+/MechDSL\.git", text)
         assert "uv sync" in text
 
     def test_readme_has_quickstart_section(self):
@@ -85,8 +87,9 @@ class TestTaskP5T1:
         assert "## Architecture" in text
         assert "Layer 1  Frontend" in text
         assert "Layer 6  Codegen" in text
-        assert "dev/design_docs/00-OVERVIEW.md" in text
-        assert "dev/design_docs/PLAN-B.md" in text
+        # Public-safe README: the design-doc set is referenced as the internal
+        # `dev/design_docs/` tree (plain text), not as repo-relative links.
+        assert "dev/design_docs" in text
 
 
 class TestTaskP5T2:
@@ -94,7 +97,7 @@ class TestTaskP5T2:
 
     def test_elastic_cantilever_script_exists(self):
         """
-        Verifies: dev/examples/elastic_cantilever.py exists.
+        Verifies: examples/elastic_cantilever.py exists.
         Acceptance criterion: all 5 scripts runnable with uv run python.
         Passes when: the elastic cantilever example file is present.
         """
@@ -115,7 +118,7 @@ class TestTaskP5T2:
         """
         Verifies: elastic_cantilever example runs without error.
         Acceptance criterion: all 5 scripts runnable with uv run python.
-        Passes when: uv run python dev/examples/elastic_cantilever.py exits successfully.
+        Passes when: uv run python examples/elastic_cantilever.py exits successfully.
         """
         result = _run_example("elastic_cantilever")
         assert result.returncode == 0, result.stderr
@@ -123,7 +126,7 @@ class TestTaskP5T2:
 
     def test_plastic_uniaxial_script_exists(self):
         """
-        Verifies: dev/examples/plastic_uniaxial.py exists.
+        Verifies: examples/plastic_uniaxial.py exists.
         Acceptance criterion: all 5 scripts runnable with uv run python.
         Passes when: the plastic uniaxial example file is present.
         """
@@ -144,7 +147,7 @@ class TestTaskP5T2:
         """
         Verifies: plastic_uniaxial example runs without error.
         Acceptance criterion: all 5 scripts runnable with uv run python.
-        Passes when: uv run python dev/examples/plastic_uniaxial.py exits successfully.
+        Passes when: uv run python examples/plastic_uniaxial.py exits successfully.
         """
         result = _run_example("plastic_uniaxial")
         assert result.returncode == 0, result.stderr
@@ -152,7 +155,7 @@ class TestTaskP5T2:
 
     def test_cook_membrane_script_exists(self):
         """
-        Verifies: dev/examples/cook_membrane.py exists.
+        Verifies: examples/cook_membrane.py exists.
         Acceptance criterion: all 5 scripts runnable with uv run python.
         Passes when: the Cook's membrane example file is present.
         """
@@ -173,7 +176,7 @@ class TestTaskP5T2:
         """
         Verifies: cook_membrane example runs without error.
         Acceptance criterion: all 5 scripts runnable with uv run python.
-        Passes when: uv run python dev/examples/cook_membrane.py exits successfully.
+        Passes when: uv run python examples/cook_membrane.py exits successfully.
         """
         result = _run_example("cook_membrane")
         assert result.returncode == 0, result.stderr
@@ -181,7 +184,7 @@ class TestTaskP5T2:
 
     def test_necking_bar_script_exists(self):
         """
-        Verifies: dev/examples/necking_bar.py exists.
+        Verifies: examples/necking_bar.py exists.
         Acceptance criterion: all 5 scripts runnable with uv run python.
         Passes when: the necking bar example file is present.
         """
@@ -202,7 +205,7 @@ class TestTaskP5T2:
         """
         Verifies: necking_bar example runs without error.
         Acceptance criterion: all 5 scripts runnable with uv run python.
-        Passes when: uv run python dev/examples/necking_bar.py exits successfully.
+        Passes when: uv run python examples/necking_bar.py exits successfully.
         """
         result = _run_example("necking_bar")
         assert result.returncode == 0, result.stderr
@@ -210,7 +213,7 @@ class TestTaskP5T2:
 
     def test_patch_test_script_exists(self):
         """
-        Verifies: dev/examples/patch_test.py exists.
+        Verifies: examples/patch_test.py exists.
         Acceptance criterion: all 5 scripts runnable with uv run python.
         Passes when: the patch_test example file is present.
         """
@@ -231,7 +234,7 @@ class TestTaskP5T2:
         """
         Verifies: patch_test example runs without error.
         Acceptance criterion: all 5 scripts runnable with uv run python.
-        Passes when: uv run python dev/examples/patch_test.py exits successfully.
+        Passes when: uv run python examples/patch_test.py exits successfully.
         """
         result = _run_example("patch_test")
         assert result.returncode == 0, result.stderr
@@ -333,16 +336,11 @@ class TestTaskP5T5:
         assert "Plan B phase B2" in frontend
         assert "Plan B phase B5" in frontend
         assert "B3 (viscoplasticity), B4 (advanced hyperelasticity), and B6 (damage)." in frontend
-        # mechanics_ir.py: subset guards for dim and cell type remain; B1.3 docstring
-        # pins the Configuration concept to Plan B phase B1. After P4-5, the
-        # hyperelastic families are in the allowlist, so the unknown-material
-        # message is scoped to "B6 (damage)" only.
         assert "Plan B phase B2" in mechanics_ir
         assert "Plan B §B1.3" in mechanics_ir
         assert "Plan B phase B5" in mechanics_ir
         assert "B6 (damage)" in mechanics_ir
-        # fe_localise still rejects Tet4/Tet10 and unknown materials; B1.3 threading
-        # is documented alongside. Same B3/B4 promotion applies.
-        assert "Plan B §B1.3" in localise
+        # fe_localise still rejects Tet4/Tet10 and unknown materials.
+        assert "Plan B phase B1" in localise
         assert "Plan B phase B5" in localise
         assert "B6 (damage)" in localise

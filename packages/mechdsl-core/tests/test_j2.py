@@ -350,7 +350,7 @@ def test_uniaxial_tension_elastic() -> None:
 
 
 # ---------------------------------------------------------------------------
-# R3.5.1 — Error path tests (T1, T2)
+# Error path tests
 # ---------------------------------------------------------------------------
 
 
@@ -373,7 +373,7 @@ class TestRadialReturnErrorPaths:
         try:
             result = radial_return(mat, E_strain, alpha_old=0.0)
             assert result.delta_lambda >= 0.0
-            assert result.is_plastic  # must have entered plastic regime
+            assert result.is_plastic
         except RuntimeError:
             pass  # Expected: stall or non-convergence
 
@@ -388,7 +388,7 @@ class TestRadialReturnErrorPaths:
 
 
 # ---------------------------------------------------------------------------
-# R3.5.3 — __post_init__ validation tests for J2PowerLawMaterial
+# __post_init__ validation tests for J2PowerLawMaterial
 # ---------------------------------------------------------------------------
 
 

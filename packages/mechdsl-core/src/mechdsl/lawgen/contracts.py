@@ -1,15 +1,15 @@
 """Lawgen emission contracts — the seam between the CLI and the Phase 2 lowerer.
 
-MFront-mimic Cycle M0, Phase 1 (``dev/plans/mfront_cycleM0.md`` lines 55-58).
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier).
 
-This module defines the two frozen dataclasses that every downstream Phase 2
-task and the Phase 4 end-to-end test consume:
+This module defines the two frozen dataclasses that every downstream lowerer
+task and the end-to-end test consume:
 
 * :class:`TiconstitTarget` — the ``ticonstit`` emission *target profile*: the
   frozen contract id, the generated-code package, the default Taichi scalar
-  type, and the six JIT budget knobs. The budget knob defaults are transcribed
-  from the plan (lines 79-82) and MUST stay in lock-step with P2-2's
-  ``budgets.py`` — P2-2 references these fields by name.
+  type, and the six JIT budget knobs. The budget-knob defaults MUST stay in
+  lock-step with ``budgets.py`` — which references these fields by name.
 * :class:`PlasticityCarrierSpec` — a single plasticity carrier law: its name,
   material parameters, the R/H/Q constitutive expressions, and the free-variable
   bindings (``p``, ``edot``, ``T``).
@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING
 
 # SymPy is imported at runtime because ``PlasticityCarrierSpec.__post_init__``
 # validates value types with ``isinstance(v, sp.Expr)`` / ``isinstance(v,
-# sp.Symbol)`` (F3). SymPy is a first-class mechdsl-core dependency, so the
+# sp.Symbol)``. SymPy is a first-class mechdsl-core dependency, so the
 # runtime import is cheap and expected.
 import sympy as sp
 
@@ -46,10 +46,10 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 TICONSTIT_CONTRACT_ID: str = "ticonstit.plasticity_carrier.v1"
-"""Canonical, frozen ticonstit emission-contract id (plan line 55)."""
+# Canonical, frozen ticonstit emission-contract id.
 
 TICONSTIT_PACKAGE: str = "ticonstit.generated"
-"""Default Python package for ticonstit-generated code (plan line 55)."""
+# Default Python package for ticonstit-generated code.
 
 
 # ---------------------------------------------------------------------------
@@ -70,17 +70,16 @@ class TiconstitTarget:
     (displacement diff < 1e-10) require double precision, so f64 is the
     sensible default scalar type for generated carriers.
 
-    The six budget-knob defaults are transcribed verbatim from
-    ``dev/plans/mfront_cycleM0.md`` (lines 79-82) and are frozen: P2-2's
-    ``budgets.py`` references these field names, so they must not be renamed or
-    have their defaults drift.
+    The six budget-knob defaults are defined by the MechDSL lawgen target
+    contract and are frozen: ``budgets.py`` references these field names, so
+    they must not be renamed or have their defaults drift.
     """
 
     contract_id: str = TICONSTIT_CONTRACT_ID
     package: str = TICONSTIT_PACKAGE
     ti_type_default: str = "ti.f64"
 
-    # --- JIT budget knobs (defaults frozen against P2-2; plan lines 79-82) ---
+    # --- JIT budget knobs (defaults frozen) ---
     max_expr_ops: int = 400
     max_cse_temps_per_func: int = 96
     max_func_lines: int = 220
@@ -89,7 +88,7 @@ class TiconstitTarget:
     max_pow_with_symbolic_exponent: int = 12
 
     def __post_init__(self) -> None:
-        # F5: the three identity fields must be non-empty *str* — a list or any
+        # The three identity fields must be non-empty *str* — a list or any
         # other truthy non-string is rejected, not silently accepted.
         for str_field in ("contract_id", "package", "ti_type_default"):
             value = getattr(self, str_field)
@@ -104,7 +103,7 @@ class TiconstitTarget:
                 f"canonical ticonstit contract id; the only accepted value is "
                 f"{TICONSTIT_CONTRACT_ID!r}."
             )
-        # F5: each budget knob must be a genuine positive int. ``type(v) is int``
+        # Each budget knob must be a genuine positive int. ``type(v) is int``
         # rejects ``bool`` (``type(True) is bool``) and ``float`` (``1.5``) that
         # an ``isinstance`` / ``> 0`` check would silently wave through.
         for knob in (
@@ -224,7 +223,7 @@ class PlasticityCarrierSpec:
         object.__setattr__(self, "expressions", _freeze_mapping(self.expressions))
         object.__setattr__(self, "variable_bindings", _freeze_mapping(self.variable_bindings))
 
-        # F3: validate value types after freezing. Keys must be non-empty
+        # Validate value types after freezing. Keys must be non-empty
         # strings; every expression value must be an ``sp.Expr`` and every
         # binding an ``sp.Symbol``. Requiring ``sp.Expr`` also closes the
         # alias-mutation hole — a mutable ``list``/``dict`` value is not an
@@ -252,7 +251,7 @@ class PlasticityCarrierSpec:
                     f"sympy.Symbol, got {type(sym).__name__} {sym!r}."
                 )
 
-        # F5: ``monotone_check`` is an emit-time flag, not a SymPy object; it must
+        # ``monotone_check`` is an emit-time flag, not a SymPy object; it must
         # be a genuine ``bool``. ``type(v) is bool`` rejects a truthy int/str that
         # an ``isinstance`` check would silently wave through.
         if type(self.monotone_check) is not bool:

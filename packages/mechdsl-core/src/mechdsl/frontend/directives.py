@@ -48,7 +48,6 @@ FLAG_OPTIONS: dict[str, frozenset[str]] = {
     "weak_form": frozenset({"residual"}),
     "verify": frozenset({"patch_test"}),
 }
-"""Command-scoped flag-only options accepted by the directive splitter."""
 
 
 # ---------------------------------------------------------------------------
@@ -304,8 +303,8 @@ def _mech_boundary(accum: dict[str, Any], args: ParsedArgs, line_no: int) -> Non
         elif key == "traction":
             bc["traction"] = _parse_traction(raw_value, line_no=line_no)
         elif key == "surface":
-            # post_recovery_plan P1-2: --surface tags the mesh sideset the BC
-            # acts on; routes through to BoundaryCondition.surface_tag.
+            # --surface tags the mesh sideset the BC acts on; routes through
+            # to BoundaryCondition.surface_tag.
             bc["surface_tag"] = raw_value
         else:
             bc[key] = _parse_scalar(raw_value)
@@ -742,9 +741,8 @@ HANDLERS: dict[str, Handler] = {
     "index": _mech_index,
     "assign": _mech_assign,
 }
-"""Registry of documented ``% mechanics`` directive handlers."""
 
 
-# Compatibility hook for older tests/importers. P3-1 promotes all documented
-# directive shapes into HANDLERS, so no command is currently deferred here.
+# Compatibility hook for older tests/importers. All documented
+# directive shapes live in HANDLERS, so no command is currently deferred here.
 DEFERRED_DIRECTIVES: dict[str, tuple[str, str]] = {}

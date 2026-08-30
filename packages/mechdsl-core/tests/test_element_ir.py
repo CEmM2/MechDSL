@@ -115,17 +115,14 @@ class TestGradientConsistency:
             # Finite difference for each direction
             grad_fd = np.empty((8, 3), dtype=np.float64)
 
-            # d/d(xi)
             vals_p = basis.evaluate(xi + h, eta, zeta)
             vals_m = basis.evaluate(xi - h, eta, zeta)
             grad_fd[:, 0] = (vals_p - vals_m) / (2.0 * h)
 
-            # d/d(eta)
             vals_p = basis.evaluate(xi, eta + h, zeta)
             vals_m = basis.evaluate(xi, eta - h, zeta)
             grad_fd[:, 1] = (vals_p - vals_m) / (2.0 * h)
 
-            # d/d(zeta)
             vals_p = basis.evaluate(xi, eta, zeta + h)
             vals_m = basis.evaluate(xi, eta, zeta - h)
             grad_fd[:, 2] = (vals_p - vals_m) / (2.0 * h)
@@ -276,7 +273,7 @@ class TestProblemIRFrozen:
 
 
 # ---------------------------------------------------------------------------
-# R3.5.3 — __post_init__ validation tests for QuadratureRule
+# __post_init__ validation tests for QuadratureRule
 # ---------------------------------------------------------------------------
 
 

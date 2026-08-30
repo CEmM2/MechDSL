@@ -351,7 +351,7 @@ class TestApplyDirichletToMatvec:
 
 
 # ---------------------------------------------------------------------------
-# R3.5.2 — T4: Invalid face name error path
+# Invalid face name error path
 # ---------------------------------------------------------------------------
 
 
@@ -374,7 +374,7 @@ class TestBoundaryCodegenErrorPaths:
 
 
 # ---------------------------------------------------------------------------
-# R3.5.3 — __post_init__ validation tests for DirichletBC/NeumannBC
+# __post_init__ validation tests for DirichletBC/NeumannBC
 # ---------------------------------------------------------------------------
 
 

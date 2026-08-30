@@ -1,9 +1,9 @@
 """Numerical-guard injection for the SymPy → Taichi lowerer (Task P2-3).
 
-MFront-mimic Cycle M0, Phase 2 (``dev/plans/mfront_cycleM0.md`` lines 83-86).
-This is the **key correctness task** of the phase (plan risk R2): the guards
-emitted here must reproduce the hand-authored guards in Cycle 0's
-``swift_voce.py`` so the P4-2 numerical-equivalence gate (``rtol=1e-10``) holds.
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier). Correctness-critical: the guards emitted here must match the
+hand-authored guards in the reference ``swift_voce.py`` so the
+numerical-equivalence check (``rtol=1e-10``) holds.
 
 Mechanism — a SymPy-tree rewrite pass with stand-in marker nodes
 ----------------------------------------------------------------
@@ -229,6 +229,6 @@ def _guard_pow(base: sp.Expr, exp: sp.Expr) -> sp.Expr:
             return sp.Pow(base, exp, evaluate=False)
         return sp.Pow(_signed_floor(base), exp, evaluate=False)
 
-    # 4. Non-negative integer power: no floor. Exact, and P2-4 inlines small ones
-    # to repeated multiplication.
+    # 4. Non-negative integer power: no floor. Exact, and the printer inlines
+    # small ones to repeated multiplication.
     return sp.Pow(base, exp, evaluate=False)

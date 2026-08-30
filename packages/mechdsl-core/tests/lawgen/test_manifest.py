@@ -1,8 +1,8 @@
 """Unit tests for the manifest emitter (Task P3-3).
 
-Covers the four ``test_plan.cases`` from ``dev/plans/mfront_cycleM0/json/P3-3.json``:
+Covers four manifest cases:
 
-1. the manifest entry for a SwiftVoce spec has all the Cycle 0 required fields;
+1. the manifest entry for a SwiftVoce spec has all the required fields;
 2. ``source_hash`` matches the compile's source hash — reconciled to Cycle 0's
    convention (the INPUT-formula hash, *not* P2-4's emitted-lines hash);
 3. ``generated_by`` contains ``"mechdsl-lawgen"``;
@@ -49,20 +49,21 @@ if TYPE_CHECKING:
 #
 # The canonical SwiftVoce ``R`` formula string and the published ``source_hash``
 # it must reproduce. These pin the manifest ``source_hash`` convention to Cycle
-# 0's: hash the INPUT formula string verbatim (UTF-8, no normalisation). P4-1
-# supplies this exact string from the law yaml; the value below is transcribed
-# from Cycle 0's ``_manifest.json`` (read as data, not imported — R3).
+# 0's: hash the INPUT formula string verbatim (UTF-8, no normalisation). The
+# value below is transcribed from Cycle 0's ``_manifest.json`` (read as data,
+# not imported).
 # ---------------------------------------------------------------------------
 
 CYCLE0_R_FORMULA = "R = sigma0 + Q*(1-exp(-b*p)) + K*((p+p0)**n - p0**n)"
 CYCLE0_R_SOURCE_HASH = "7b5af3a8bb79c2e44e0055a7076dd2c9de2ce8c75eb2e262b80bb4e0232d557f"
 
 # The REAL Cycle 0 SwiftVoce ``parameters`` block (transcribed verbatim from
-# NumerixWeave's ``_manifest.json`` — read as data, never imported: R3). Note the
+# NumerixWeave's ``_manifest.json`` — read as data, never imported). Note the
 # material-card names differ from the formula-string spelling: the card names the
 # saturation parameter ``Q_inf`` while the hashed R formula spells it ``Q``. The
 # realistic fixture below uses these exact names so the emitted ``parameters``
-# object is byte-identical to the hand-authored artifact P4-2 compares against.
+# object is byte-identical to the hand-authored artifact the parity tests compare
+# against.
 CYCLE0_REQUIRED = ["sigma0", "Q_inf", "b"]
 CYCLE0_OPTIONAL = ["K", "n", "p0", "edot0", "m", "alpha", "T_ref"]
 
@@ -117,7 +118,7 @@ def _cycle0_realistic_entry() -> dict[str, object]:
         target_contract="VoceHardeningModel",
         exports="SwiftVoce",
         source="swift_voce.py",
-        tests=["libs/ticonstit/tests/plan_tests/mfront_cycle0/test_P2-2.py"],
+        tests=["libs/ticonstit/tests/generated/test_swift_voce_P2-2.py"],
         required=CYCLE0_REQUIRED,
         optional=CYCLE0_OPTIONAL,
     )
@@ -325,7 +326,7 @@ class TestCycle0ParametersParity:
 
 # ---------------------------------------------------------------------------
 # formula ↔ spec consistency — the opt-in guard that closes the "hashed formula
-# is a different law than the spec" gap for P4-1.
+# is a different law than the spec" gap.
 # ---------------------------------------------------------------------------
 
 

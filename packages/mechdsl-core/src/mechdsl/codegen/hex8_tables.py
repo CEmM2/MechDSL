@@ -59,11 +59,8 @@ def shape_gradients(xi: float, eta: float, zeta: float) -> NDArray:
     grad = np.empty((8, 3), dtype=np.float64)
     for a in range(8):
         xi_a, eta_a, zeta_a = HEX8_NODE_COORDS[a]
-        # dN_a/d(xi)
         grad[a, 0] = 0.125 * xi_a * (1.0 + eta_a * eta) * (1.0 + zeta_a * zeta)
-        # dN_a/d(eta)
         grad[a, 1] = 0.125 * (1.0 + xi_a * xi) * eta_a * (1.0 + zeta_a * zeta)
-        # dN_a/d(zeta)
         grad[a, 2] = 0.125 * (1.0 + xi_a * xi) * (1.0 + eta_a * eta) * zeta_a
     return grad
 
@@ -77,9 +74,9 @@ _g: float = 1.0 / np.sqrt(3.0)
 HEX8_QUAD_POINTS: NDArray = np.array(
     [[xi, eta, zeta] for xi in (-_g, +_g) for eta in (-_g, +_g) for zeta in (-_g, +_g)],
     dtype=np.float64,
-)  # shape (8, 3)
+)
 
-HEX8_QUAD_WEIGHTS: NDArray = np.ones(8, dtype=np.float64)  # shape (8,)
+HEX8_QUAD_WEIGHTS: NDArray = np.ones(8, dtype=np.float64)
 
 # ---------------------------------------------------------------------------
 # Pre-evaluated tables (computed once at module load time)
@@ -89,13 +86,13 @@ HEX8_QUAD_WEIGHTS: NDArray = np.ones(8, dtype=np.float64)  # shape (8,)
 SHAPE_AT_QUAD: NDArray = np.array(
     [shape_functions(float(pt[0]), float(pt[1]), float(pt[2])) for pt in HEX8_QUAD_POINTS],
     dtype=np.float64,
-)  # shape (8, 8)
+)
 
 # GRAD_AT_QUAD[q, a, i] = dN_a / d(xi_i) at quadrature point q
 GRAD_AT_QUAD: NDArray = np.array(
     [shape_gradients(float(pt[0]), float(pt[1]), float(pt[2])) for pt in HEX8_QUAD_POINTS],
     dtype=np.float64,
-)  # shape (8, 8, 3)
+)
 
 # ---------------------------------------------------------------------------
 # Physical-space gradient computation
@@ -128,7 +125,7 @@ def reference_gradient_at_physical(
     detJ0 : float
         Determinant of the reference Jacobian.
     """
-    dN_dxi = GRAD_AT_QUAD[q]  # (8, 3)
+    dN_dxi = GRAD_AT_QUAD[q]
 
     # Reference Jacobian: J0 = dX/dxi = X^T @ dN/dxi  ->  (3, 3)
     J0 = X_elem.T @ dN_dxi
@@ -141,7 +138,7 @@ def reference_gradient_at_physical(
     J0_inv = np.linalg.inv(J0)
 
     # dN/dX = dN/dxi @ J0^{-1}
-    dNdX: NDArray = dN_dxi @ J0_inv  # (8, 3)
+    dNdX: NDArray = dN_dxi @ J0_inv
 
     return dNdX, detJ0
 
@@ -195,7 +192,7 @@ def current_gradient_at_physical(
         reference-config helper for numerical consistency.
     """
     del X_elem  # not used at F = I; retained for API symmetry (see docstring).
-    dN_dxi = GRAD_AT_QUAD[q]  # (8, 3)
+    dN_dxi = GRAD_AT_QUAD[q]
 
     # Current Jacobian: j = dx/dxi = x^T @ dN/dxi  ->  (3, 3)
     j = x_elem.T @ dN_dxi
@@ -212,6 +209,6 @@ def current_gradient_at_physical(
     j_inv = np.linalg.inv(j)
 
     # dN/dx = dN/dxi @ j^{-1}
-    dNdx: NDArray = dN_dxi @ j_inv  # (8, 3)
+    dNdx: NDArray = dN_dxi @ j_inv
 
     return dNdx, detj

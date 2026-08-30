@@ -245,7 +245,6 @@ class TestPatchTestFailureRoutes:
         coords, conn = generate_hex8_mesh(2, 2, 2, 1.0, 1.0, 1.0)
 
         rotation = np.eye(3, dtype=np.float64)
-        # Translation of 1000 units
         translation = np.array([1000.0, 2000.0, -3000.0], dtype=np.float64)
 
         result = run_rigid_body_test(coords, conn, LAM, MU, rotation, translation, tol=1e-12)
@@ -305,7 +304,6 @@ class TestPatchTestFailureRoutes:
         assert coords_irr.shape == coords_reg.shape
         assert conn_irr.shape == conn_reg.shape
 
-        # Connectivity is unchanged
         np.testing.assert_array_equal(conn_irr, conn_reg)
 
         # Boundary nodes are unchanged

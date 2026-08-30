@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# Mesh / module helpers (inlined per P7-3 spec: self-contained test file)
+# Mesh / module helpers (inlined: self-contained test file)
 # ---------------------------------------------------------------------------
 
 

@@ -659,7 +659,7 @@ verify = [
 [package.metadata]
 requires-dist = [
     { name = "algo2code", marker = "extra == 'verify'", editable = "packages/algo2code" },
-    { name = "nrpylatex", git = "https://github.com/SOSOVSKI/nrpylatex" },
+    { name = "nrpylatex", specifier = ">=1.4.0,<2" },
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "opt-einsum", specifier = ">=3.3" },
     { name = "pyyaml", specifier = ">=6.0.3" },
@@ -864,9 +864,14 @@ wheels = [
 [[package]]
 name = "nrpylatex"
 version = "1.4.0"
-source = { git = "https://github.com/SOSOVSKI/nrpylatex#8745b2b1f62546066c55b2a96769bd40082936f3" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "sympy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d5/7b/f374701590597a4b0a983599ba4db53dbfdc923b7ac48bc6f8492981ac04/nrpylatex-1.4.0.tar.gz", hash = "sha256:56685c58b62f90875bf7a75d0115f2b7b9154c2554f1e0968dee5786ac334b8c", size = 32828, upload-time = "2024-12-19T16:45:54.203Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9a/bc/ec27c8481714a73853d12fdde15b6a7321cec7a144e2df5e395f288ea491/nrpylatex-1.4.0-py2.py3-none-any.whl", hash = "sha256:a78943e579039c0371e90e3123afe2d35a4604c2c42fcdc857760f9e104b4a22", size = 36361, upload-time = "2024-12-19T16:45:50.941Z" },
+    { url = "https://files.pythonhosted.org/packages/46/72/7a5d62aa8a4bd964814ef65707319ab5dbc97fabb7b216f4bb9440f842e8/nrpylatex-1.4.0-py3-none-any.whl", hash = "sha256:786f1c8529df21ef0e6f2e3323fc8d1ef92e40151e70b5186a6052284756962d", size = 36327, upload-time = "2024-12-19T16:45:52.023Z" },
 ]
 
 [[package]]

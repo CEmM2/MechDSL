@@ -1,6 +1,6 @@
 # lawgen Reuse Map — MechDSL modules the `ticonstit` target composes
 
-**Task P1-3** (MFront-mimic Cycle M0, Phase 1). Doc-only, but load-bearing:
+Part of the MechDSL lawgen pipeline. Doc-only, but load-bearing:
 Phase 2 (P2-1 lowerer, P2-2 budgets, P2-3 emitter, P2-4 manifest) routes
 through the modules named here. AC3: *"No new code duplicates an existing
 MechDSL public function."* Where a genuine seam is missing, this doc flags it
@@ -8,7 +8,7 @@ as a **gap → P2-\*** rather than inventing a reuse.
 
 All MechDSL paths below are under `packages/mechdsl-core/src/mechdsl/`. The one
 exception is the **scaffold sketch**: it lives in the **NumerixWeave repo**
-(`SOSOVSKI/NumerixWeave`), *not* MechDSL — it is a read-only reference (gitignored
+(`CEmM2/NumerixWeave`), *not* MechDSL — it is a read-only reference (gitignored
 there), so every scaffold path in this doc is prefixed `NumerixWeave repo:`.
 
 ---

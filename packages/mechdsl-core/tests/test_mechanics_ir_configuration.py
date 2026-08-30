@@ -91,7 +91,7 @@ class TestTaskP1_1:
         assert ir.configuration is Configuration.REFERENCE
 
         d = ir.to_dict()
-        # Pre-P1-1 tests may not know about this key, but it MUST round-trip.
+        # Older tests may not know about this key, but it MUST round-trip.
         assert d["configuration"] == "reference"
 
         ir_round = ProblemIR.from_dict(d)
@@ -190,7 +190,6 @@ class TestTaskP1_1:
         Acceptance criterion: "Plan A rejection tests kept as a regression guard pinning
         reference configuration behaviour" — the other rejection surfaces remain in effect.
         """
-        # dim=2 still rejected (Plan B phase B2)
         with pytest.raises(UnsupportedError, match="Plan B phase B2"):
             build_context(
                 dim=2,
@@ -200,8 +199,8 @@ class TestTaskP1_1:
                 params={"E": 1.0, "nu": 0.3},
                 boundaries=[],
             )
-        # tet4 + reduced integration still rejected (Plan B phase B5).
-        # tet4 with the default full integration is supported after P5-6.
+        # tet4 + reduced integration is rejected.
+        # tet4 with the default full integration is supported.
         with pytest.raises(UnsupportedError, match="Plan B phase B5"):
             build_context(
                 dim=3,

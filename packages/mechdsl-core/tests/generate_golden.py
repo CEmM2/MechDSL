@@ -19,7 +19,7 @@ import numpy as np
 
 # Ensure the tests directory is importable when running as a standalone script.
 _TESTS_DIR = Path(__file__).resolve().parent
-_PKG_DIR = _TESTS_DIR.parent  # packages/mechdsl-core
+_PKG_DIR = _TESTS_DIR.parent
 if str(_PKG_DIR) not in sys.path:
     sys.path.insert(0, str(_PKG_DIR))
 
@@ -83,7 +83,7 @@ def generate_golden_elastic(golden_dir: Path) -> Path:
         & (np.abs(coords[:, 2] - Lz) < 1e-12)
     )[0]
     assert len(right_top) == 1
-    f_ext[right_top[0], 2] = -10.0  # downward in z
+    f_ext[right_top[0], 2] = -10.0
 
     u, residual_history = solve_elastic(
         coords,
@@ -229,11 +229,11 @@ def generate_golden_plastic(golden_dir: Path) -> Path:
 # smallest mesh that still exhibits necking localization near z=L/2. The
 # fine-mesh self-convergence study is deferred to offline analysis — generating
 # a 4x4x16 golden takes ~90 min per run, which is infeasible on every ref-solver
-# modification. P3-4 compares the generated Taichi output to this regression
-# snapshot; literature-value comparison (Simo & Hughes 1998) is performed
-# separately at the benchmark level with 2% tolerance.
+# modification. Generated Taichi output is compared to this regression snapshot;
+# literature-value comparison (Simo & Hughes 1998) is performed separately at
+# the benchmark level with 2% tolerance.
 #
-# Material: steel-like J2 with power-law hardening (from plan sprint3.md §140)
+# Material: steel-like J2 with power-law hardening
 _NB_E = 206.9e3  # MPa
 _NB_NU = 0.29
 _NB_SIGMA_Y0 = 450.0  # MPa

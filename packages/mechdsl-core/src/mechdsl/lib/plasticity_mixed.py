@@ -269,8 +269,9 @@ def radial_return_mixed(
     # ||2*mu*dl*nf||_eq = 3*mu*dl, the Prager back-stress advances by
     # ||(2/3)*H_kin*dl*nf||_eq = H_kin*dl, and the radius grows by
     # sigma_y(alpha+dl) - sigma_y(alpha) — so ||xi||_eq returns exactly to the
-    # (expanded) yield surface. Same flow-normal convention as P6-2; using
-    # xi/||xi||_eq directly would mis-scale both the return and the back-stress.
+    # (expanded) yield surface. Same flow-normal convention as the kinematic
+    # return map; using xi/||xi||_eq directly would mis-scale both the return
+    # and the back-stress.
     nf = 1.5 * xi_trial / xi_eq_trial
 
     S_dev_updated = S_dev_trial - 2.0 * mu * dl * nf

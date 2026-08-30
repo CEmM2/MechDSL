@@ -1,0 +1,80 @@
+% post_recovery_plan Phase 5 (P5-1): J2 radial-return algpseudocode source.
+%
+% Scalar Newton inner loop for J2 plasticity with power-law isotropic
+% hardening. Solves for the plastic multiplier increment dl given the
+% trial von Mises equivalent stress, the prior accumulated equivalent
+% plastic strain, and the material parameters:
+%
+%     sigma_y(alpha) = sigy0 + K * alpha^n
+%
+% The scalar loop operates on the trial-stress / hardening axes only;
+% all tensor algebra (deviatoric stress, von Mises, return-mapping
+% reconstruction, algorithmic tangent) is orchestrated in Python by the
+% mechdsl-core wrapper at packages/mechdsl-core/src/mechdsl/lib/plasticity.py.
+%
+% This is the production algo2code source consumed by
+% ``mechdsl.lib.plasticity.radial_return`` via ``algo2code.transpile``
+% (post_recovery_plan Phase 5 P5-3 — algo2code expr_parser bugs that
+% previously deferred direct emission landed in the same phase under
+% P5-1's parser fix). Bit-equality with the imported reference path is
+% asserted by
+% ``packages/mechdsl-core/tests/test_j2_radial_return_parity.py`` (P5-4).
+%
+% Inputs
+% ------
+%   sigma_eq : von Mises equivalent of the trial deviatoric stress
+%   alpha    : alpha_old, prior accumulated equivalent plastic strain
+%   mu       : shear modulus (second Lame parameter)
+%   K        : isotropic hardening modulus
+%   n        : power-law exponent
+%   sigy0    : initial yield stress
+%   tol      : Newton residual tolerance (passed through; the fixed-
+%              iteration loop converges quadratically and the wrapper
+%              applies the imported reference tolerance externally)
+%   max_iter : Newton max iterations
+%
+% Outputs
+% -------
+%   plastic   : 1 if plastic flow occurred, 0 if elastic step
+%   alpha_new : alpha_old + delta_lambda (when plastic)
+%   dl        : plastic multiplier increment (delta_lambda)
+
+% algorithm radial_return_j2
+% backend taichi
+% args sigma_eq:scalar, alpha:scalar, mu:scalar, K:scalar, n:scalar, sigy0:scalar, tol:scalar, max_iter:scalar
+
+% type sy scalar
+% type f scalar
+% type dl scalar
+% type k scalar
+% type Hp scalar
+% type res scalar
+% type denom scalar
+% type ap scalar
+% type plastic scalar
+% type alpha_new scalar
+
+\begin{algorithmic}
+\State $sy = sigy0 + K \cdot \alpha^{n}$
+\State $f = sigma_eq - sy$
+\If{$f < 0$}
+    \Return $0, \alpha, 0$
+\EndIf
+\State $dl = 0$
+\For{$k = 1, 2, \ldots, max_iter$}
+    \State $ap = \alpha + dl$
+    \If{$ap < tol$}
+        \State $sy = sigy0$
+        \State $Hp = 0$
+    \Else
+        \State $sy = sigy0 + K \cdot ap^{n}$
+        \State $Hp = K \cdot n \cdot ap^{n - 1}$
+    \EndIf
+    \State $res = sigma_eq - 3 \cdot \mu \cdot dl - sy$
+    \State $denom = 3 \cdot \mu + Hp$
+    \State $dl = dl + res / denom$
+\EndFor
+\State $alpha_new = \alpha + dl$
+\State $plastic = 1$
+\Return $plastic, alpha_new, dl$
+\end{algorithmic}

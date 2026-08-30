@@ -749,7 +749,6 @@ def _verify_ad_oracle_svk(params: dict) -> dict:
             "nu": float(params.get("nu", 0.25)),
         }
     else:
-        # Default: unit Lamé parameters
         mat_params = {"lam": 1.0, "mu": 1.0}
 
     n_samples = int(params.get("n_samples", 100))
@@ -867,8 +866,8 @@ def _verify_benchmark(params: dict) -> dict:
     rel_error = _coerce_finite(extras.get("relative_error"))
     reference_checked = rel_error is not None
 
-    # Tolerance: prefer the benchmark's own published bar, else 2% — the
-    # benchmark convergence tolerance from .claude/rules/tests.md.
+    # Tolerance: prefer the benchmark's own published bar, else default
+    # to 2% relative error.
     tol_raw = _coerce_finite(extras.get("tip_tolerance", extras.get("rel_error_tol")))
     tolerance = tol_raw if tol_raw is not None else 0.02
 

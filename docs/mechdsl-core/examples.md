@@ -1,7 +1,7 @@
 # Examples gallery
 
 Every example here is a runnable script in
-[`dev/examples/`](https://github.com/SOSOVSKI/MechDSL/tree/main/dev/examples). They share
+[`examples/`](https://github.com/CEmM2/MechDSL/tree/main/examples). They share
 a `gen_meshes.py` helper that builds the small structured meshes they use.
 
 !!! tip "Run them with `uv`"
@@ -14,7 +14,7 @@ The MVP-stable, documentation-preferred path. Parses `% mechanics` directives an
 all six layers.
 
 ```bash
-uv run python dev/examples/run_compile_latex.py
+uv run python examples/run_compile_latex.py
 ```
 
 See [Getting started](getting-started.md) for a line-by-line walk-through of what this
@@ -35,17 +35,17 @@ exercise classic FEM verification benchmarks.
 | `run_pipeline.py` | SVK + J2 end-to-end; writes the emitted Taichi source to disk |
 
 ```bash
-uv run python dev/examples/elastic_cantilever.py
-uv run python dev/examples/cook_membrane.py
-uv run python dev/examples/necking_bar.py
-uv run python dev/examples/plastic_uniaxial.py
-uv run python dev/examples/patch_test.py
-uv run python dev/examples/run_pipeline.py
+uv run python examples/elastic_cantilever.py
+uv run python examples/cook_membrane.py
+uv run python examples/necking_bar.py
+uv run python examples/plastic_uniaxial.py
+uv run python examples/patch_test.py
+uv run python examples/run_pipeline.py
 ```
 
 ## LaTeX energy snippets
 
-The `.tex` files under `dev/examples/` are the exact strain-energy inputs the parser
+The `.tex` files under `examples/` are the exact strain-energy inputs the parser
 accepts for the derive-from-energy path:
 
 | File | Model |
@@ -59,7 +59,7 @@ accepts for the derive-from-energy path:
 ```python
 from mechdsl import compile_latex
 
-bundle = compile_latex(problem_source, energy_file="dev/examples/mooney_rivlin_energy.tex")
+bundle = compile_latex(problem_source, energy_file="examples/mooney_rivlin_energy.tex")
 ```
 
 ## Cyclic plasticity & the Bauschinger effect
@@ -69,7 +69,7 @@ The J2 kinematic and mixed hardening models (`mechdsl.lib.plasticity_kinematic` 
 (loading → unloading → reverse) in the test suite. The kinematic/mixed models re-yield in
 reverse *below* the forward yield magnitude — the Bauschinger effect — which the isotropic
 model cannot reproduce. See
-[`packages/mechdsl-core/tests/plan_tests/constitutive_latex/`](https://github.com/SOSOVSKI/MechDSL/tree/main/packages/mechdsl-core/tests/plan_tests/constitutive_latex)
+[`packages/mechdsl-core/tests/plan_tests/constitutive_latex/`](https://github.com/CEmM2/MechDSL/tree/main/packages/mechdsl-core/tests/plan_tests/constitutive_latex)
 for the cyclic differential tests and the reduction cross-checks, and the
 [constitutive model catalog](constitutive-models.md#j2-plasticity-kinematic-prager-hardening)
 for the API.

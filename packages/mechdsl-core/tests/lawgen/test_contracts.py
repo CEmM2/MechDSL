@@ -1,6 +1,6 @@
 """Unit tests for the lawgen emission contracts (Task P1-1).
 
-Covers the four ``test_plan.cases`` from ``dev/plans/mfront_cycleM0/json/P1-1.json``:
+Covers four contract cases:
 
 1. instantiate ``TiconstitTarget`` with all defaults
 2. instantiate ``TiconstitTarget`` with overridden budget knobs

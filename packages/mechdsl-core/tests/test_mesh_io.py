@@ -189,7 +189,7 @@ class TestNoDegenerate:
         """All elements have positive Jacobian determinant at center."""
         mesh = generate_hex8_mesh(nx, ny, nz)
         for e in range(mesh.n_elem):
-            X_elem = mesh.coords[mesh.connectivity[e]]  # (8, 3)
+            X_elem = mesh.coords[mesh.connectivity[e]]
             # Compute Jacobian at element center (xi=eta=zeta=0)
             # dN/dxi at center for Hex8
             dN_dxi = (
@@ -208,7 +208,7 @@ class TestNoDegenerate:
                 )
                 / 8.0
             )
-            J0 = X_elem.T @ dN_dxi  # (3, 3)
+            J0 = X_elem.T @ dN_dxi
             detJ0 = np.linalg.det(J0)
             assert detJ0 > 0.0, f"Element {e} has non-positive Jacobian ({detJ0:.6e})"
 
@@ -276,7 +276,7 @@ class TestReferenceCompatibility:
 
 
 # ---------------------------------------------------------------------------
-# R3.5.3 — __post_init__ validation tests for HexMesh
+# __post_init__ validation tests for HexMesh
 # ---------------------------------------------------------------------------
 
 
@@ -325,7 +325,7 @@ class TestHexMeshValidation:
 
 
 # ------------------------------------------------------------------
-# Cook's membrane mesh (P2-1, P2-2)
+# Cook's membrane mesh
 # ------------------------------------------------------------------
 
 
@@ -409,15 +409,9 @@ class TestCookMembraneGeometry:
 
         for e in range(mesh.n_elem):
             nodes = conn[e]  # 8 node indices
-            pts = coords[nodes]  # (8, 3)
-            # Centroid of element in reference (xi=eta=zeta=0)
-            # Approximate Jacobian using corner differences
-            # dX/dxi ~ (x1-x0+x5-x4+x2-x3+x6-x7)/4  etc.
-            # Simpler: compute volume via cross products of edge vectors
-            # Use the standard tri-linear Jacobian at xi=eta=zeta=0
-            # J = 1/8 * [sum of partial derivatives at center]
-            # For simplicity use the 8-node mean Jacobian approximation:
-            # det(J) at center ~ vol / 8 (must be > 0)
+            pts = coords[nodes]
+            # Positive-orientation check: det(J) at the element centre is approximated
+            # by the mean tri-linear Jacobian, det(J) ~ vol/8, and must be > 0.
             x = pts[:, 0]
             y = pts[:, 1]
             z = pts[:, 2]
@@ -527,7 +521,7 @@ class TestCookMembraneGeometry:
 
 
 # ---------------------------------------------------------------------------
-# Phase 3: Necking bar mesh geometry (P3-1 / P3-2)
+# Necking bar mesh geometry
 # ---------------------------------------------------------------------------
 
 
@@ -664,7 +658,7 @@ class TestNeckingBarGeometry:
 
         for e in range(mesh.n_elem):
             nodes = conn[e]
-            pts = coords[nodes]  # (8, 3)
+            pts = coords[nodes]
             x = pts[:, 0]
             y = pts[:, 1]
             z = pts[:, 2]

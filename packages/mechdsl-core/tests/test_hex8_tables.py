@@ -140,15 +140,12 @@ class TestGradientFiniteDifference:
             grad_analytic = shape_gradients(xi, eta, zeta)
             grad_fd = np.empty((8, 3), dtype=np.float64)
 
-            # d/dxi
             grad_fd[:, 0] = (
                 shape_functions(xi + h, eta, zeta) - shape_functions(xi - h, eta, zeta)
             ) / (2.0 * h)
-            # d/deta
             grad_fd[:, 1] = (
                 shape_functions(xi, eta + h, zeta) - shape_functions(xi, eta - h, zeta)
             ) / (2.0 * h)
-            # d/dzeta
             grad_fd[:, 2] = (
                 shape_functions(xi, eta, zeta + h) - shape_functions(xi, eta, zeta - h)
             ) / (2.0 * h)
@@ -216,16 +213,16 @@ class TestPatchTest:
         A = rng.uniform(-0.05, 0.05, size=(3, 3))
 
         # Unit cube element
-        X_elem = (HEX8_NODE_COORDS + 1.0) / 2.0  # (8, 3)
+        X_elem = (HEX8_NODE_COORDS + 1.0) / 2.0
 
         # Nodal displacements from linear field: u_a = A @ X_a
-        u_elem = X_elem @ A.T  # (8, 3)
+        u_elem = X_elem @ A.T
 
         for q in range(8):
             dNdX, _detJ0 = reference_gradient_at_physical(X_elem, q)
 
             # Displacement gradient at quad point: du/dX = u^T @ dN/dX
-            grad_u = u_elem.T @ dNdX  # (3, 3)
+            grad_u = u_elem.T @ dNdX
 
             np.testing.assert_allclose(
                 grad_u,
@@ -263,7 +260,7 @@ class TestTableShapes:
 
 
 # ---------------------------------------------------------------------------
-# R3.5.2 — T3: Degenerate element error path
+# Degenerate element error path
 # ---------------------------------------------------------------------------
 
 

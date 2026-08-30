@@ -1,0 +1,23 @@
+% MechDSL -- Elastic cantilever beam (St. Venant-Kirchhoff)
+%
+% This is an example LaTeX input file for the MechDSL compiler.
+% The parser (Phase 2) is not yet implemented; these directives
+% document the intended input syntax for the MVP.
+%
+% Problem: 3D cantilever beam with fixed left face, downward traction on
+% the right face.  Material: SVK with E = 200 GPa, nu = 0.3.
+
+% mechanics dim 3
+% mechanics cell hex8
+% mechanics coord spatial x y z
+% mechanics coord material X Y Z
+% mechanics material svk --E 200e3 --nu 0.3
+% mechanics formulation total_lagrangian
+% mechanics boundary fix --type dirichlet --field u --components 0 1 2 --value 0
+% mechanics boundary load --type neumann --traction "0 0 -1000"
+
+% After compilation, the generated Taichi solver will:
+%   1. Initialise a structured Hex8 mesh
+%   2. Apply Dirichlet BC (fix) on face x = 0
+%   3. Apply Neumann BC (load) on face x = L
+%   4. Solve via Newton-Raphson with CG linear solver

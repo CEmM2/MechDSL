@@ -95,9 +95,6 @@ def _two_element_hex8_stretched() -> tuple[np.ndarray, np.ndarray]:
     return coords, conn
 
 
-# ── Test class for P7-2 ──────────────────────────────────────────────────────
-
-
 class TestTaskP7_2:
     """Tests for Task P7-2: Critical time step computation.
 
@@ -126,8 +123,8 @@ class TestTaskP7_2:
         rho = 1.0
         safety = 0.9
 
-        c_d = math.sqrt((lam + 2.0 * mu) / rho)  # sqrt(3)
-        expected = safety * 1.0 / c_d  # 0.9 / sqrt(3)
+        c_d = math.sqrt((lam + 2.0 * mu) / rho)
+        expected = safety * 1.0 / c_d
 
         dt = critical_timestep(coords, conn, lam, mu, rho, ElementType.HEX8, safety=safety)
 
@@ -161,12 +158,10 @@ class TestTaskP7_2:
 
         # Characteristic length of the thin element (elem 0): V=0.1
         L_min = (0.1) ** (1.0 / 3.0)
-        # The computed dt must be at most safety * L_min / c_d
         dt_upper = safety * L_min / c_d
 
         dt = critical_timestep(coords, conn, lam, mu, rho, ElementType.HEX8, safety=safety)
 
-        # dt must be positive
         assert dt > 0.0, f"dt must be positive; got {dt}"
 
         # dt must be controlled by the smallest element (within float tolerance)

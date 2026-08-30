@@ -64,9 +64,8 @@ def _make_elastic_problem_ir() -> ProblemIR:
     )
 
 
-# post_recovery_plan Phase 6 (P6-1, P6-2): _import_generated_module is
-# now sourced from the shared _e2e_helpers module so all e2e tests
-# share a single helper definition.
+# _import_generated_module is sourced from the shared _e2e_helpers module
+# so all e2e tests share a single helper definition.
 from tests._e2e_helpers import _import_generated_module  # noqa: E402
 
 
@@ -160,7 +159,7 @@ def _newton_with_bc(
 
 
 # ===========================================================================
-# P6-T1: End-to-end Taichi execution tests
+# End-to-end Taichi execution tests
 # ===========================================================================
 
 
@@ -207,7 +206,7 @@ class TestE2ETaichiExecution:
         f_ext = np.zeros((n_nodes, 3), dtype=np.float64)
         right_nodes = np.where(np.abs(coords[:, 0] - 1.0) < 1e-12)[0]
         for n_idx in right_nodes:
-            f_ext[n_idx, 0] = 1.0  # tension in x-direction
+            f_ext[n_idx, 0] = 1.0
 
         # 5. Solve with generated Taichi kernels + BC enforcement
         u_gen, residuals_gen = _newton_with_bc(mod, coords, bc_mask, f_ext, LAM, MU)
@@ -221,7 +220,6 @@ class TestE2ETaichiExecution:
             f"Generated vs reference displacement mismatch: max diff = {max_diff:.3e}"
         )
 
-        # Sanity: solution is non-trivial
         assert float(np.max(np.abs(u_gen))) > 1e-10, "Solution is trivially zero"
         assert len(residuals_gen) >= 2, "Should take at least 1 Newton iteration"
 

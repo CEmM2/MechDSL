@@ -69,7 +69,7 @@ def deformation_gradient(grad_u: Mat33) -> Mat33:
 
 
 # ---------------------------------------------------------------------------
-# Updated Lagrangian (Plan B §B1.1) primitives
+# Updated Lagrangian primitives
 #
 # These mirror their reference-configuration counterparts used by the TL path:
 #   J0 = X^T @ dN/dxi            (reference Jacobian)
@@ -79,7 +79,7 @@ def deformation_gradient(grad_u: Mat33) -> Mat33:
 # (deformed) element nodes ``x = X + u``. Both helpers are shape-generic so
 # they work for any element type, not just Hex8 — the per-element assembler
 # passes the appropriate ``dN_dxi`` table from ``mechdsl.codegen.hex8_tables``
-# (or its element-specific equivalent in later Plan B phases).
+# (or its element-specific equivalent).
 # ---------------------------------------------------------------------------
 
 

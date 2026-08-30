@@ -96,7 +96,6 @@ def _kinematics(E_strain: NDArray) -> tuple[NDArray, float, float, float, NDArra
         raise ValueError(f"det(C) must be > 0 for a valid deformation, got {det_C:.3e}")
     J = float(np.sqrt(det_C))
     I1 = float(np.trace(C))
-    # I2 = 0.5 * (I1^2 - tr(C @ C))
     I2 = 0.5 * (I1 * I1 - float(np.trace(C @ C)))
     Cinv = np.linalg.inv(C)
     return C, J, I1, I2, Cinv
@@ -153,13 +152,10 @@ def material_tangent_4th(mat: MooneyRivlinMaterial, E_strain: NDArray) -> NDArra
     II = np.einsum("ij,kl->ijkl", eye3, eye3)
     # minor-symmetric identity: (1/2)(delta_IK*delta_JL + delta_IL*delta_JK)
     I_sym = 0.5 * (np.einsum("ik,jl->ijkl", eye3, eye3) + np.einsum("il,jk->ijkl", eye3, eye3))
-    # Cinv_KL*delta_IJ + delta_KL*Cinv_IJ
     cross_cinv_eye = np.einsum("ij,kl->ijkl", eye3, Cinv) + np.einsum("ij,kl->ijkl", Cinv, eye3)
-    # Cinv_IJ*Cinv_KL
     cinv2 = np.einsum("ij,kl->ijkl", Cinv, Cinv)
     # Cinv_IK*Cinv_JL + Cinv_IL*Cinv_JK  (minor-symmetric in IJ, KL and major-symmetric)
     cinv_sym = np.einsum("ik,jl->ijkl", Cinv, Cinv) + np.einsum("il,jk->ijkl", Cinv, Cinv)
-    # Cinv_KL*C_IJ + C_KL*Cinv_IJ
     cross_cinv_C = np.einsum("ij,kl->ijkl", C, Cinv) + np.einsum("ij,kl->ijkl", Cinv, C)
 
     # --- C1 contribution (Neo-Hookean iso with mu = 2*C1) ---

@@ -69,15 +69,15 @@ def _consistent_mass_hex8(coords: np.ndarray, conn: np.ndarray, rho: float) -> n
     ndof = 3 * n_nodes
     M = np.zeros((ndof, ndof), dtype=np.float64)
     for e in range(conn.shape[0]):
-        X_elem = coords[conn[e]]  # (8, 3)
+        X_elem = coords[conn[e]]
         for q in range(SHAPE_AT_QUAD.shape[0]):
             J0 = X_elem.T @ GRAD_AT_QUAD[q]
             detJ0 = float(np.linalg.det(J0))
             w = float(HEX8_QUAD_WEIGHTS[q])
-            N = SHAPE_AT_QUAD[q]  # (8,)
+            N = SHAPE_AT_QUAD[q]
             # M_ab = integral rho * N_a * N_b dV -- scalar per node pair,
             # replicated across the 3 spatial DoFs (isotropic translational mass).
-            Me_scalar = rho * np.outer(N, N) * detJ0 * w  # (8, 8)
+            Me_scalar = rho * np.outer(N, N) * detJ0 * w
             for a in range(8):
                 for b in range(8):
                     for i in range(3):
@@ -193,7 +193,6 @@ class TestTaskP7_1:
         static_src = _emit(DynamicsMode.STATIC)
         explicit_src = _emit(DynamicsMode.EXPLICIT)
 
-        # Sources must differ.
         assert static_src != explicit_src
 
         # STATIC: Newton driver present, explicit driver absent.

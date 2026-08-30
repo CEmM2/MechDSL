@@ -351,7 +351,7 @@ def radial_return(
     # --- 6. Update alpha ---
     alpha_new = alpha_old + dl
 
-    # --- Algorithmic consistent tangent (P3-3) ---
+    # --- Algorithmic consistent tangent ---
     #
     # Derived from linearisation of the Perzyna return-map residual at convergence
     # (Simo & Hughes 1998, §3.4, Box 3.5 extended for viscoplasticity).

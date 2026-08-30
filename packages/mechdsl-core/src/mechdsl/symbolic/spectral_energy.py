@@ -15,7 +15,7 @@ The barred (isochoric) principal stretches are authored as bare scalar symbols
 ``\\mathrm{lbar1}``, ``\\mathrm{lbar2}``, ``\\mathrm{lbar3}`` and the Jacobian as
 ``\\mathrm{Jdet}`` — the same ``\\mathrm{..}`` escape the named-invariant path
 uses (nrpylatex emits them as scalar symbols with no index contraction). See
-``dev/examples/ogden_energy.tex``.
+``examples/ogden_energy.tex``.
 
 ================  ============================================================
 authored as       meaning (substituted before differentiation)
@@ -108,7 +108,7 @@ class SpectralEnergyModel:
     """
 
     psi: sp.Expr
-    stretch_symbols: tuple[sp.Symbol, sp.Symbol, sp.Symbol]  # lambda_1, _2, _3
+    stretch_symbols: tuple[sp.Symbol, sp.Symbol, sp.Symbol]
     principal_pk2: tuple[sp.Expr, sp.Expr, sp.Expr]  # S_i(lambda_1, _2, _3, *params)
     parameters: dict[sp.Symbol, str]  # sanitised symbol -> original LaTeX name
     param_symbols: tuple[sp.Symbol, ...]  # sorted parameter symbols (eval order)

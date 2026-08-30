@@ -57,7 +57,7 @@ _SUPPORTED_MODELS: frozenset[str] = frozenset(
 )
 
 
-# Reference-cell volumes (∫_ref 1 dV). Used by `_enrich_element_ir` (P4-3) to
+# Reference-cell volumes (∫_ref 1 dV). Used by `_enrich_element_ir` to
 # populate `GeometrySummary.reference_volume`. Hex variants live on the
 # canonical [-1,1]^3 reference; the tet variants sit on the unit reference
 # tetrahedron (volume 1/6).
@@ -72,7 +72,7 @@ _REFERENCE_CELL_VOLUME: dict[str, float] = {
 # Material models whose algorithmic consistent tangent is symmetric. SVK is
 # strictly symmetric (hyperelastic ∂²Ψ/∂E²); the J2 + power-law return map
 # is algorithmically symmetric for associative flow with a smooth yield
-# surface. Plan B's rate-dependent / non-associative models (perzyna,
+# surface. The rate-dependent / non-associative models (perzyna,
 # johnson_cook, lemaitre) ship non-symmetric tangents and are flagged here
 # accordingly.
 _SYMMETRIC_TANGENT_MODELS: frozenset[str] = frozenset({"svk", "j2_power_law"})
@@ -131,7 +131,7 @@ def _enrich_element_ir(legacy_ir: ElementIR, problem_ir: ProblemIR) -> ElementIR
         contraction_sketch="qaI,qIJKL,qbK->qaJbL",  # B^T C B
     )
 
-    # constitutive_latex P5-1: carry fiber-orientation field data down from the
+    # Carry fiber-orientation field data down from the
     # ProblemIR to the Element IR (anisotropic models, HGO). Lossless copy of
     # the declared family directions — no layer bypass; None for isotropic.
     fiber_field = problem_ir.fiber_field.families if problem_ir.fiber_field is not None else None
@@ -202,7 +202,7 @@ class LocalisationResult:
 
     element_ir: ElementIR
     einsum_specs: tuple[EinsumSpec, ...]
-    problem_ir: ProblemIR  # back-reference
+    problem_ir: ProblemIR
 
     @classmethod
     def from_element_ir(
@@ -262,8 +262,8 @@ def _check_stable_path_combo(problem_ir: ProblemIR) -> None:
        (formulation → element → material) so error messages stay stable
        across runs.
     """
-    # Formulation: both TL and UL are valid in the IR after Plan B §B1.3,
-    # but anything outside the canonical pair is a hard reject.
+    # Formulation: both TL and UL are valid in the IR, but anything
+    # outside the canonical pair is a hard reject.
     if problem_ir.formulation not in (
         Formulation.TOTAL_LAGRANGIAN,
         Formulation.UPDATED_LAGRANGIAN,
@@ -275,15 +275,14 @@ def _check_stable_path_combo(problem_ir: ProblemIR) -> None:
             "Plan B phase B1."
         )
     # Element type: only Hex8 is wired into the lowering pass today;
-    # Tet4 / Tet10 / Hex20 are valid in the IR but Plan B §B5 owns their
-    # localisation.
+    # Tet4 / Tet10 / Hex20 are valid in the IR but their localisation is not
+    # wired up yet.
     if problem_ir.element_type != ElementType.HEX8:
         raise LocalisationError(
             f"Element type {problem_ir.element_type.value!r} not supported "
             "for localisation. Only hex8 is wired into the lowering pass "
             "today; Tet4 / Tet10 / Hex20 support is planned for Plan B phase B5."
         )
-    # Material model: must be on the lowering pass's allowlist.
     if problem_ir.material.model not in _SUPPORTED_MODELS:
         raise LocalisationError(
             f"Material model {problem_ir.material.model!r} not supported "
@@ -317,15 +316,15 @@ def localise(problem_ir: ProblemIR) -> LocalisationResult:
         Plan-B phase that adds support.
     """
     # -- Validate formulation/element compatibility ----------------------
-    # Both TL and UL are valid after Plan B §B1.3. The configuration enum on
-    # ProblemIR is already guaranteed consistent with the formulation by
+    # Both TL and UL are valid. The configuration enum on ProblemIR is
+    # already guaranteed consistent with the formulation by
     # ProblemIR.__post_init__.
     _check_stable_path_combo(problem_ir)
 
     # -- Create element IR -----------------------------------------------
     # Thread formulation + configuration through the element IR so downstream
-    # emitters (P1-3 residual, P1-4 tangent) can branch on element_ir.configuration
-    # rather than sniffing ProblemIR again. See Plan B §B1.3.
+    # emitters (residual, tangent) can branch on element_ir.configuration
+    # rather than sniffing ProblemIR again.
     configuration_str = (
         Configuration.CURRENT.value
         if problem_ir.formulation == Formulation.UPDATED_LAGRANGIAN
@@ -335,9 +334,9 @@ def localise(problem_ir: ProblemIR) -> LocalisationResult:
         formulation=problem_ir.formulation.value,
         configuration=configuration_str,
     )
-    # P4-3: lowering emits the enriched ElementIR first, then derives the
-    # einsum optimizer view from it. Pre-P4-3, the bare IR was returned and
-    # downstream layers re-derived these contract facts inline.
+    # Lowering emits the enriched ElementIR first, then derives the
+    # einsum optimizer view from it; downstream layers no longer re-derive
+    # these contract facts inline.
     element_ir = _enrich_element_ir(legacy_ir, problem_ir)
 
     # -- Derive optimizer view from the enriched IR ----------------------

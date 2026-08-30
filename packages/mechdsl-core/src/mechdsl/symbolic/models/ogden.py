@@ -122,12 +122,11 @@ def _principal_stresses(
 
     tau_iso = np.zeros(3, dtype=np.float64)
     for mu_p, alpha_p in zip(mus, alphas, strict=True):
-        lb_a = lam_bar**alpha_p  # (3,)
+        lb_a = lam_bar**alpha_p
         mean_lb_a = float(lb_a.sum()) / 3.0
         tau_iso += mu_p * (lb_a - mean_lb_a)
 
     tau_vol = kappa * J * (J - 1.0)
-    # S_i = (tau_iso_i + tau_vol) / e_i
     S_prin = (tau_iso + tau_vol) / e_safe
     return S_prin, J
 

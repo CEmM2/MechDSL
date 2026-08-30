@@ -267,7 +267,7 @@ def run_patch_test(
     n_elements = conn.shape[0]
 
     # Compute analytical displacement field: u = E @ X
-    u_analytical = patch_test_reference(coords, strain)  # (n_nodes, 3)
+    u_analytical = patch_test_reference(coords, strain)
 
     # Compute internal force with the analytical displacement applied to all nodes
     f_int = assemble_internal_force(u_analytical, coords, conn, lam, mu)
@@ -324,7 +324,7 @@ def run_patch_test(
 
 
 # ---------------------------------------------------------------------------
-# Parametric patch test (Plan B phase B5 — all element factory triples)
+# Parametric patch test (all element factory triples)
 # ---------------------------------------------------------------------------
 
 
@@ -427,7 +427,7 @@ def run_patch_test_parametric(
         )
 
     # u = E @ X per node  (constant Green-Lagrange strain kinematic state)
-    u_nodes = X_nodes @ strain.T  # (n_nodes, 3)
+    u_nodes = X_nodes @ strain.T
 
     # SVK internal force for this element family.
     f_int = element_svk_internal_force(element_ir, u_nodes, X_nodes, lam, mu)
@@ -507,7 +507,7 @@ def run_rigid_body_test(
     n_elements = conn.shape[0]
 
     # Compute rigid body displacement field: u = (R - I) @ X + t
-    u_rigid = rigid_body_reference(coords, rotation, translation)  # (n_nodes, 3)
+    u_rigid = rigid_body_reference(coords, rotation, translation)
 
     # Compute internal force directly (no Newton solve needed)
     f_int = assemble_internal_force(u_rigid, coords, conn, lam, mu)

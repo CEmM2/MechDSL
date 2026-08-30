@@ -65,7 +65,7 @@ if TYPE_CHECKING:
     from mechdsl.codegen.artifact import ArtifactBundle
 
 # ---------------------------------------------------------------------------
-# Voigt convention conversion helpers (Plan B §8 / 07-CONVENTIONS.md)
+# Voigt convention conversion helpers (see 07-CONVENTIONS.md)
 # ---------------------------------------------------------------------------
 
 # Shear component indices in the shared [xx, yy, zz, xy, xz, yz] ordering.
@@ -73,7 +73,7 @@ _SHEAR_INDICES: tuple[int, ...] = (3, 4, 5)
 
 
 # ---------------------------------------------------------------------------
-# P9-2: Per-family emitters (MFEM backend)
+# Per-family emitters (MFEM backend)
 # ---------------------------------------------------------------------------
 #
 # MFEM emission is largely structural — the integrator-class skeleton is
@@ -82,7 +82,7 @@ _SHEAR_INDICES: tuple[int, ...] = (3, 4, 5)
 # contraction (all inside AssembleElementVector / AssembleElementGrad).
 # Each helper owns one shape; the call sites below dispatch through the
 # :data:`family_emitters` table so the happy path actually exercises the
-# table (P8-3 Gate B lesson).
+# table (define-but-don't-call is a silent failure).
 
 
 def _emit_family_displacement_gradient_mfem(ctx: EmissionContext) -> None:
@@ -495,7 +495,7 @@ def emit_force_integrator(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
             ctx.emit("el.CalcDShape(ip, DSh);")
             ctx.emit("Mult(DSh, Jinv, DS);")
             ctx.emit("")
-            # P9-2: DISPLACEMENT_GRADIENT dispatch ('qaI,ai->qiI' shape).
+            # DISPLACEMENT_GRADIENT dispatch ('qaI,ai->qiI' shape).
             if not _dispatch_family(Family.DISPLACEMENT_GRADIENT, ctx):
                 ctx.emit("// F = I + grad(u)")
                 ctx.emit("F = 0.0;")
@@ -517,7 +517,7 @@ def emit_force_integrator(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
             ctx.emit("const double w = ip.weight * Ttr.Weight();")
             ctx.emit("DenseMatrix FS(dim, dim);")
             ctx.emit("Mult(F, S, FS);")
-            # P9-2: FORCE_INTEGRATION dispatch ('qaI,qiI->qai' shape).
+            # FORCE_INTEGRATION dispatch ('qaI,qiI->qai' shape).
             if not _dispatch_family(Family.FORCE_INTEGRATION, ctx):
                 ctx.emit("for (int a = 0; a < dof; ++a) {")
                 with ctx.indent_block():
@@ -613,7 +613,7 @@ def emit_tangent_integrator(ctx: EmissionContext) -> None:
             ctx.emit("// CB = C_eng * B, then elmat += w * B^T * CB.")
             ctx.emit("Mult(C_eng, B, CB);")
             ctx.emit("const double w = ip.weight * Ttr.Weight();")
-            # P9-2: MATERIAL_TANGENT_CONTRACTION dispatch
+            # MATERIAL_TANGENT_CONTRACTION dispatch
             # ('qaI,qiIjJ,qbJ->qaibj' collapsed to Voigt B^T C_eng B).
             if not _dispatch_family(Family.MATERIAL_TANGENT_CONTRACTION, ctx):
                 ctx.emit("for (int p = 0; p < ndof_total; ++p) {")

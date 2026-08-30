@@ -284,8 +284,8 @@ class TestElementForceSymmetry:
         np.testing.assert_allclose(f_bot_z, -f_top_z, atol=1e-10)
 
         # By symmetry about y=0.5 plane, y-forces should be antisymmetric
-        front_nodes = [0, 1, 4, 5]  # y=0
-        back_nodes = [2, 3, 6, 7]  # y=1
+        front_nodes = [0, 1, 4, 5]
+        back_nodes = [2, 3, 6, 7]
         f_front_y = f_int[front_nodes, 1].sum()
         f_back_y = f_int[back_nodes, 1].sum()
         np.testing.assert_allclose(f_front_y, -f_back_y, atol=1e-10)
@@ -465,7 +465,7 @@ class TestCantileverBeam:
             & (np.abs(coords[:, 2] - Lz) < 1e-12)
         )[0]
         assert len(right_top) == 1, f"Expected 1 corner node, found {len(right_top)}"
-        f_ext[right_top[0], 2] = -10.0  # downward in z
+        f_ext[right_top[0], 2] = -10.0
 
         return {
             "coords": coords,

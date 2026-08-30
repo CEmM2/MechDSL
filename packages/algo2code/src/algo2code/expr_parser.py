@@ -67,9 +67,6 @@ TOKEN_PATTERNS = [
     # algorithm scratch identifiers like ``pq``, ``sn``, ``rho_new`` can
     # tokenise as a single Var instead of an implicit product. Single
     # letters still tokenise to LETTER for back-compat (``x``, ``a``).
-    # post_recovery_plan Phase 5: parser fix landed alongside the
-    # algo2code radial-return substitution so ``algo2code.transpile``
-    # can consume the algpseudocode without manual rewriting.
     (r"[a-zA-Z][a-zA-Z0-9]*", "LETTER"),
     # Whitespace
     (r"\s+", "WS"),
@@ -361,8 +358,8 @@ class ExprParser:
             self.advance()
             return UnaryOp(op="transpose", operand=base)
 
-        # Bare ^T transpose alias (issue #307 F7): a lone uppercase T after ^
-        # means transpose in linear-algebra notation, same as ^\top and ^{T}.
+        # Bare ^T transpose alias: a lone uppercase T after ^ means transpose
+        # in linear-algebra notation, same as ^\top and ^{T}.
         tok = self.peek()
         if tok is not None and tok.kind == "LETTER" and tok.value == "T":
             self.advance()
@@ -397,7 +394,7 @@ class ExprParser:
             # A norm may carry an order subscript: ||r||_2, ||r||_1, ||r||_\infty.
             # The generated _norm kernel computes the Euclidean (2-)norm, so the
             # default and ``_2`` are fine; any other order must fail loud rather
-            # than silently compute the wrong norm (F6).
+            # than silently compute the wrong norm.
             if self.at("UNDERSCORE"):
                 self.advance()
                 order = self._parse_subscript_text()
@@ -521,7 +518,7 @@ def parse_latex_expr(latex: str) -> Expr:
         raise SyntaxError(f"Empty expression: {latex!r}")
     parser = ExprParser(tokens)
     result = parser.parse()
-    # Fail-loud (F6): the parser must consume the whole expression. A leftover
+    # Fail-loud: the parser must consume the whole expression. A leftover
     # token means a prefix parsed and the rest was silently dropped (e.g. an
     # unhandled operator). Surface it instead of emitting a truncated AST.
     if parser.pos != len(tokens):

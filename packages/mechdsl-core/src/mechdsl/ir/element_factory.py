@@ -138,7 +138,7 @@ class ElementFactory:
             )
 
         # -- 2. Combination validation -----------------------------------
-        # Reduced integration is currently hex8-only (Plan B §B5.4 / P5-4).
+        # Reduced integration is currently hex8-only.
         if integration == "reduced" and topology != "hex8":
             raise ValueError(
                 f"Reduced integration is only implemented for hex8, got "
@@ -152,7 +152,7 @@ class ElementFactory:
                 f"reduced integration; got integration={integration!r}. "
                 f"See {_PLAN_REF} (§B5.5)."
             )
-        # Flanagan-Belytschko is hex8-specific (Plan B §B5.5 / P5-5).
+        # Flanagan-Belytschko is hex8-specific.
         if hourglass == "flanagan_belytschko" and topology != "hex8":
             raise ValueError(
                 f"Hourglass scheme 'flanagan_belytschko' is hex8-specific, "
