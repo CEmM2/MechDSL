@@ -86,7 +86,7 @@ def _svk_stress_cartesian(
 
 
 # ---------------------------------------------------------------------------
-# P2-5: Curvilinear patch test + Cartesian equivalence
+# Curvilinear patch test + Cartesian equivalence
 # ---------------------------------------------------------------------------
 
 
@@ -196,7 +196,7 @@ class TestTaskP2_5CurvilinearPatchTest:
         (max difference < 1e-12).
         """
         lam, mu = 1.0, 1.0
-        G_ref_cartesian = np.eye(3)  # Cartesian: G_ref = I
+        G_ref_cartesian = np.eye(3)
 
         # Test multiple deformation states
         deformation_cases = {
@@ -253,7 +253,6 @@ class TestTaskP2_5CurvilinearPatchTest:
             # Explicit Cartesian G_ref_vecs = I
             g_explicit = compute_convected_metric(F_sym, G_ref_vecs=sp.eye(3))
 
-            # Must be identical
             diff_sym = sp.simplify(g_fast - g_explicit)
             assert diff_sym == sp.zeros(3), (
                 f"{name}: symbolic g differs between fast and explicit paths"

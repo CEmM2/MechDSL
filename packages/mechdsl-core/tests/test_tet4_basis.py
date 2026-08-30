@@ -75,7 +75,7 @@ class TestTaskP5_1Tet4:
         """
         # Node coordinates: vertices of the reference tet
         # N0=(0,0,0), N1=(1,0,0), N2=(0,1,0), N3=(0,0,1)
-        X = TET4_NODE_COORDS  # shape (4, 3)
+        X = TET4_NODE_COORDS
 
         # Define a linear scalar field: u(x, y, z) = 3 + 2x - y + 4z
         # Nodal values
@@ -116,7 +116,6 @@ class TestTaskP5_1Tet4:
         # so det(J0) = 1. The quadrature weight 1/6 encodes the reference volume.
         dNdX, detJ0 = reference_gradient_at_physical(X_elem, q=0)
 
-        # Jacobian must be positive
         assert detJ0 > 0.0, f"Jacobian non-positive: detJ0 = {detJ0}"
 
         # For the reference tet (node coords = standard basis vectors),
@@ -188,8 +187,6 @@ class TestTaskP5_1Tet4:
         )
         assert ir_hex.element_type == ElementType.HEX8
 
-        # Unsupported type should still raise (TET10 not yet supported)
-        # We test by checking TET10 is NOT in the enum (it's a later task)
         assert not hasattr(ElementType, "TET10") or ElementType.TET10 is not None, (
             "TET10 should not yet be in ElementType (it's planned for a later task)"
         )

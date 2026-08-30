@@ -113,16 +113,11 @@ class TestValidCombinations:
     def test_declared_regions_matching_all_bcs(self) -> None:
         bcs = (
             BoundaryCondition(name="fix", bc_type=BCType.DIRICHLET),
-            # Neumann BCs require a traction spec since post_recovery_plan P1-1.
+            # Neumann BCs require a traction spec.
             BoundaryCondition(name="load", bc_type=BCType.NEUMANN, traction="t_bar"),
         )
         ir = _valid_ir(boundaries=bcs, declared_regions=frozenset({"fix", "load"}))
         assert ir.declared_regions == frozenset({"fix", "load"})
-
-
-# ---------------------------------------------------------------------------
-# Invalid dimension — Plan B phase B2 (2-D support)
-# ---------------------------------------------------------------------------
 
 
 class TestInvalidDimension:
@@ -135,11 +130,6 @@ class TestInvalidDimension:
     def test_dim_1_raises_with_plan_b2_message(self) -> None:
         with pytest.raises(ValueError, match="Plan B phase B2"):
             _valid_ir(dim=1)
-
-
-# ---------------------------------------------------------------------------
-# Invalid formulation — Plan B phase B1 (Updated Lagrangian)
-# ---------------------------------------------------------------------------
 
 
 class TestFormulationGuard:
@@ -183,11 +173,6 @@ class TestFormulationGuard:
             )
 
 
-# ---------------------------------------------------------------------------
-# Invalid element type — Plan B phase B5 (Tet4/Tet10)
-# ---------------------------------------------------------------------------
-
-
 class TestElementTypeGuard:
     """Element type guard message references Plan B phase B5."""
 
@@ -214,7 +199,7 @@ class TestElementTypeGuard:
 
 
 # ---------------------------------------------------------------------------
-# Invalid material models — Plan B phases B3, B4, B6
+# Invalid material models
 # ---------------------------------------------------------------------------
 
 
@@ -273,15 +258,15 @@ class TestCoordinateMetadata:
 
     def test_too_few_spatial_coords_raises(self) -> None:
         with pytest.raises(ValueError, match="spatial"):
-            _valid_ir(coord_spatial=("x", "y"))  # 2, not 3
+            _valid_ir(coord_spatial=("x", "y"))
 
     def test_too_many_spatial_coords_raises(self) -> None:
         with pytest.raises(ValueError, match="spatial"):
-            _valid_ir(coord_spatial=("x", "y", "z", "w"))  # 4, not 3
+            _valid_ir(coord_spatial=("x", "y", "z", "w"))
 
     def test_too_few_material_coords_raises(self) -> None:
         with pytest.raises(ValueError, match="material"):
-            _valid_ir(coord_material=("X",))  # 1, not 3
+            _valid_ir(coord_material=("X",))
 
     def test_correct_coord_lengths_pass(self) -> None:
         ir = _valid_ir(coord_spatial=("x1", "x2", "x3"), coord_material=("X1", "X2", "X3"))

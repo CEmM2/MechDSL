@@ -20,8 +20,7 @@ import pytest
 from mechdsl.ir.element_factory import ElementFactory
 from mechdsl.verify.patch_test import PatchTestResult, run_patch_test_parametric
 
-# SVK material: mild-stiffness steel, nu = 0.3 (well away from Tet4's volumetric
-# locking regime at nu -> 0.5). See Plan B phase B5 §B5.1 risk note.
+# SVK material: mild-stiffness steel, nu = 0.3 (well away from Tet4's volumetric locking regime at nu -> 0.5).
 _YOUNG = 200.0e9
 _NU = 0.3
 _LAM = _YOUNG * _NU / ((1.0 + _NU) * (1.0 - 2.0 * _NU))

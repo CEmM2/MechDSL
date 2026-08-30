@@ -32,7 +32,7 @@ from mechdsl.symbolic.anisotropic_energy import derive_from_anisotropic_energy
 if TYPE_CHECKING:
     from pathlib import Path
 
-# Single-family HGO, the committed example energy (dev/examples/hgo_energy.tex).
+# Single-family HGO, the committed example energy (examples/hgo_energy.tex).
 _HGO_ENERGY = r"""
 % declare metric gDD --dim 3
 % declare EDD --dim 3

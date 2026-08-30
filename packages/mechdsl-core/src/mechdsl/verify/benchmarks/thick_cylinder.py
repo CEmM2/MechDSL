@@ -79,8 +79,8 @@ class QuarterCylinderMesh:
         indices in CCW order when viewed from outside (i.e. from the fluid).
     """
 
-    coords: NDArray  # (n_nodes, 3)
-    connectivity: NDArray  # (n_elem, 8)
+    coords: NDArray
+    connectivity: NDArray
     n_nodes: int
     n_elem: int
     inner_nodes: NDArray
@@ -349,30 +349,30 @@ def apply_inner_pressure_as_nodal_forces(
 
     for face in mesh.inner_faces:
         # face is (n0, n1, n2, n3) - four corner node global indices
-        X_face = mesh.coords[list(face)]  # (4, 3)
+        X_face = mesh.coords[list(face)]
 
         for si, wi in zip(_G2_PTS, _G2_WTS, strict=True):
             for ti, wt in zip(_G2_PTS, _G2_WTS, strict=True):
-                N = face_N(si, ti)  # (4,)
-                dN_ds = face_dN_ds(si, ti)  # (4,)
-                dN_dt = face_dN_dt(si, ti)  # (4,)
+                N = face_N(si, ti)
+                dN_ds = face_dN_ds(si, ti)
+                dN_dt = face_dN_dt(si, ti)
 
                 # Physical tangent vectors
-                dx_ds = X_face.T @ dN_ds  # (3,)
-                dx_dt = X_face.T @ dN_dt  # (3,)
+                dx_ds = X_face.T @ dN_ds
+                dx_dt = X_face.T @ dN_dt
 
                 # Face node ordering (bl, br, tr, tl) gives s varying in +theta_hat
                 # and t varying in +z_hat, so cross(dx_ds, dx_dt) = theta_hat x z_hat = +r_hat.
                 # This is the direction from fluid (r < r_inner) into solid,
                 # and hence the direction of the surface traction under internal
                 # pressure p (force on solid per unit area = p * r_hat).
-                normal_raw = np.cross(dx_ds, dx_dt)  # points in +r_hat
+                normal_raw = np.cross(dx_ds, dx_dt)
                 dA = np.linalg.norm(normal_raw)
                 n_hat = normal_raw / dA  # unit normal in +r_hat direction
 
                 # Traction on solid: p * n_hat (pushes shell outward under
                 # internal pressure, per Cauchy stress convention)
-                traction = pressure * n_hat  # (3,)
+                traction = pressure * n_hat
 
                 # Nodal force contributions: f_a += w_s * w_t * N_a * traction * dA
                 for a in range(4):

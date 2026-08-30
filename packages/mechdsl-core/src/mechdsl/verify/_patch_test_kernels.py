@@ -115,8 +115,8 @@ def _shape_grad_reference(
     centroid) that are not pre-tabulated in the per-family GRAD_AT_QUAD
     arrays.
     """
-    dN_dxi = element_ir.basis.gradient(xi, eta, zeta)  # (n_nodes, 3)
-    J0 = X_elem.T @ dN_dxi  # (3, 3)
+    dN_dxi = element_ir.basis.gradient(xi, eta, zeta)
+    J0 = X_elem.T @ dN_dxi
     detJ0 = float(np.linalg.det(J0))
     if detJ0 <= 0.0:
         msg = (
@@ -125,7 +125,7 @@ def _shape_grad_reference(
         )
         raise ValueError(msg)
     J0_inv = np.linalg.inv(J0)
-    dN_dX = dN_dxi @ J0_inv  # (n_nodes, 3)
+    dN_dX = dN_dxi @ J0_inv
     return dN_dX, detJ0
 
 
@@ -174,7 +174,7 @@ def element_svk_internal_force(
         w_q = float(quad.weights[q])
 
         dN_dX, detJ0 = _shape_grad_reference(element_ir, X_elem, xi, eta, zeta)
-        grad_u = u_elem.T @ dN_dX  # (3, 3)
+        grad_u = u_elem.T @ dN_dX
         F = deformation_gradient(grad_u)
         E = green_lagrange(F)
         tr_E = float(np.trace(E))

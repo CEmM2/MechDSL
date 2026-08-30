@@ -303,7 +303,6 @@ class AlgPseudocodeParser:
     def _parse_for(self, line: str) -> ForLoop:
         """Parse \\For{$k = 0, 1, \\ldots, N$}  body  \\EndFor"""
         arg = self._extract_brace_arg(line, '\\For')
-        # Remove $ delimiters if present
         arg = arg.strip('$ ')
 
         var, start, end_expr = self._parse_for_range(arg)
@@ -449,7 +448,6 @@ class AlgPseudocodeParser:
     def _parse_state(self, line: str, comment: str) -> Stmt | None:
         """Parse \\State $lhs = rhs$"""
         stripped = self._strip_comment(line)
-        # Remove \State prefix
         stripped = re.sub(r'^\\State\s*', '', stripped).strip()
         # Extract math content
         math = self._extract_math(stripped)

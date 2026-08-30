@@ -26,7 +26,7 @@ __all__ = [
 ]
 
 
-# Feature flag for the P9-2 rollout. Kept here (not in
+# Feature flag for the family-emitter rollout. Kept here (not in
 # ``einsum_optimizer.py``) so that importing the registry does not
 # trigger any heavy imports from the optimiser.
 FAMILY_EMITTERS_ENABLED: bool = True
@@ -207,7 +207,7 @@ def classify_einsum_string(
     :attr:`Family.FALLBACK`; P9-2 will refine the pattern-matching
     using operand shapes to split coarser families if needed.
     """
-    _ = operand_shapes  # reserved for P9-2 refinement
+    _ = operand_shapes  # reserved for future refinement
     if einsum_string in _EXACT_MATCH:
         return _EXACT_MATCH[einsum_string]
 

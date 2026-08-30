@@ -59,7 +59,7 @@ def _make_mvp_problem(**overrides: object) -> ProblemIR:
 
 
 # ======================================================================
-# P5.2: Element IR <-> optimizer integration
+# Element IR <-> optimizer integration
 # ======================================================================
 
 
@@ -284,7 +284,7 @@ class TestArtifactBundleFromPipeline:
 
 
 # ======================================================================
-# P5.3: CI budget regression fixtures
+# CI budget regression fixtures
 # ======================================================================
 
 

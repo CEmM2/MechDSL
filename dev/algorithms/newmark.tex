@@ -1,0 +1,99 @@
+% Newmark-beta implicit time integration — single step (PlanJune14 P6-1).
+%
+% The canonical Newmark-beta step authored for the **all-Taichi on-device
+% time-integration seam path** (the temporal analogue of the matrix-free PCG in
+% ``pcg.tex``): the per-step acceleration solve ``solve_a`` is a *callable*
+% (matrix-free), so this box transpiles via
+% ``algo2code.transpile(..., runtime='ti_runtime')`` into a body that advances a
+% dynamic state ``(u, v, a)`` one step over ``ti.Vector.field`` DOF vectors
+% **without NumPy in the hot path** — every update is a ``ti_runtime.vector_ops``
+% AXPBY/copy call and the only non-primitive call is the injected ``solve_a``.
+%
+% Scheme (Hughes 2000, Box 9.1; Newmark 1959)
+% -------------------------------------------
+% For the semidiscrete equation of motion ``M a + C v + K u = F`` the Newmark
+% family advances ``(u_n, v_n, a_n) -> (u_{n+1}, v_{n+1}, a_{n+1})`` via the
+% predictor/corrector split:
+%
+%   predictors (known from step n):
+%       u_pred = u_n + dt*v_n + dt^2*(1/2 - beta)*a_n
+%       v_pred = v_n + dt*(1 - gamma)*a_n
+%
+%   acceleration solve (the only system solve — folded into the callable):
+%       a_{n+1} = solve_a(u_pred, v_pred)
+%       i.e. solve  (M + gamma*dt*C + beta*dt^2*K) a_{n+1}
+%                       = F_{n+1} - C*v_pred - K*u_pred
+%
+%   correctors:
+%       u_{n+1} = u_pred + beta*dt^2 * a_{n+1}
+%       v_{n+1} = v_pred + gamma*dt  * a_{n+1}
+%
+% gamma = 1/2 gives second-order accuracy; beta = 1/4 (with gamma = 1/2) is the
+% average-acceleration / trapezoidal rule — unconditionally stable, no numerical
+% damping. HHT-alpha is a one-parameter generalisation (alpha-weighted residual);
+% it reuses the same predictor/corrector skeleton and is intentionally NOT
+% authored here — Newmark-beta is the P6-1 deliverable, HHT is optional/next.
+%
+% Seam contract (mirrors ti_runtime.seams.TimeIntegrationContext)
+% ---------------------------------------------------------------
+%   solve_a(u_pred, v_pred, a_out)   — acceleration solve: a_out = a_{n+1}
+%                                      (out LAST; the in-place callable convention,
+%                                       same shape as the PCG operator A(out, x)).
+% The callable owns the mass / damping / stiffness / external-force data; the box
+% is mass-/material-agnostic, exactly like ``pcg.tex`` is operator-agnostic.
+%
+% Grammar note (2026-06-15, P6-1)
+% -------------------------------
+% This box transpiles **directly** through algo2code in ``runtime='ti_runtime'``
+% mode with no grammar gap: the predictor/corrector updates are all
+% ``scalar*vector`` and ``vector +/- vector`` (fused ``_v.vec_add`` AXPBY calls),
+% the scalar coefficients ``c0..c3`` are plain scalar arithmetic, and the
+% acceleration solve is an in-place ``callable`` (``solve_a``) — the matrix-free
+% seam form (11-ALGO2CODE §8.3). No NumPy, no dense ``_matvec``. (Verified: the
+% emitted ``newmark_step`` body contains only ``_v.vec_add`` / ``_v.copy`` /
+% ``solve_a(...)``.)
+%
+% The two predictor scalar coefficients are precomputed into named scalars
+% (``c0``, ``c1``) and the corrector coefficients into (``c2``, ``c3``) so each
+% vector update fuses to a single AXPBY; ``dt`` itself is the predictor velocity
+% coefficient (``u + dt*v``).
+%
+% Inputs
+% ------
+%   u       : displacement vector at step n (carries the state; updated in place)
+%   v       : velocity     vector at step n (updated in place)
+%   a       : acceleration vector at step n (updated in place)
+%   solve_a : acceleration solve (callable, in-place ``solve_a(u_pred, v_pred, a_out)``)
+%   dt      : time step (scalar)
+%   beta    : Newmark beta  (scalar; 1/4 = average acceleration)
+%   gamma   : Newmark gamma (scalar; 1/2 = second order, no algorithmic damping)
+%
+% Output
+% ------
+%   u, v, a  — the advanced state (u_{n+1}, v_{n+1}, a_{n+1})
+
+% algorithm newmark_step
+% backend taichi
+% args u:vector, v:vector, a:vector, solve_a:callable, dt:scalar, beta:scalar, gamma:scalar
+
+% type u_pred vector
+% type v_pred vector
+% type a_new vector
+% type c_0 scalar
+% type c_1 scalar
+% type c_2 scalar
+% type c_3 scalar
+
+\begin{algorithmic}
+\State $c_0 = dt \cdot dt \cdot (0.5 - \beta)$                              % scalar
+\State $c_1 = dt \cdot (1 - \gamma)$                                        % scalar
+\State $c_2 = \beta \cdot dt \cdot dt$                                      % scalar
+\State $c_3 = \gamma \cdot dt$                                              % scalar
+\State $u_{\text{pred}} = u + dt \cdot v + c_0 \cdot a$                     % vector
+\State $v_{\text{pred}} = v + c_1 \cdot a$                                  % vector
+\State $a_{\text{new}} = \text{solve\_a}(u_{\text{pred}}, v_{\text{pred}})$ % vector
+\State $u = u_{\text{pred}} + c_2 \cdot a_{\text{new}}$                     % vector
+\State $v = v_{\text{pred}} + c_3 \cdot a_{\text{new}}$                     % vector
+\State $a = a_{\text{new}}$                                                 % vector
+\Return $u, v, a$
+\end{algorithmic}

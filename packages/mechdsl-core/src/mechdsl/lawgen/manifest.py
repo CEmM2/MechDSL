@@ -1,6 +1,7 @@
 """Manifest emitter — writes ``_manifest.json`` matching Cycle 0's schema (Task P3-3).
 
-MFront-mimic Cycle M0, Phase 3 (``dev/plans/mfront_cycleM0.md`` lines 104-106).
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier).
 
 :func:`emit_manifest` produces one *laws entry* — and, via :func:`write_manifest`,
 merges it into the ``{"_schema": {...}, "laws": [...]}`` file that
@@ -66,9 +67,9 @@ __all__ = [
     "write_manifest",
 ]
 
-#: The nine fields of a Cycle 0 ``laws`` entry, in the order the real
-#: ``_manifest.json`` lists them. Used to validate/emit a byte-stable entry and
-#: as the schema-fidelity key set P4-2 byte-compares against.
+# The nine fields of a Cycle 0 ``laws`` entry, in the order the real
+# ``_manifest.json`` lists them. Used to validate/emit a byte-stable entry and
+# as the schema-fidelity key set the byte-compare tests check against.
 LAWS_ENTRY_FIELDS: tuple[str, ...] = (
     "name",
     "kind",
@@ -81,8 +82,8 @@ LAWS_ENTRY_FIELDS: tuple[str, ...] = (
     "tests",
 )
 
-#: ``generated_by`` value for M0. Cycle 0 (hand-authored) used
-#: ``"mfront_mimic Cycle 0 (hand-authored)"``; the MechDSL lawgen emitter stamps
+#: ``generated_by`` value. Legacy hand-authored carriers used a placeholder
+#: generator tag; the MechDSL lawgen emitter now stamps
 #: ``"mechdsl-lawgen/<version>"`` with the mechdsl-core package version, so the
 #: manifest records *which* generator + version produced the law.
 GENERATED_BY: str = f"mechdsl-lawgen/{_MECHDSL_VERSION}"
@@ -151,7 +152,7 @@ def formula_matches_spec(input_formula: str, spec: PlasticityCarrierSpec) -> boo
         unparseable formula is itself a defect worth surfacing when a caller asks
         for the check.
     """
-    import re  # identifier tokenising for the parse — NOT a codegen path (R4 is about the lowerer)
+    import re  # identifier tokenising for the parse — not a codegen path
 
     import sympy as sp  # local import: only the opt-in consistency check needs SymPy
 
@@ -334,8 +335,8 @@ def emit_manifest(
         "parameters": parameters,
         "tests": tests_list,
     }
-    # Invariant: the entry key set is exactly the Cycle 0 laws-entry field set.
-    # Guards against a future field drift that P4-2's byte-compare would catch.
+    # Invariant: the entry key set is exactly the Cycle 0 laws-entry field
+    # set, guarding against future field drift.
     assert set(entry) == set(LAWS_ENTRY_FIELDS), (
         f"emit_manifest entry keys {sorted(entry)} drifted from the Cycle 0 "
         f"laws-entry schema {sorted(LAWS_ENTRY_FIELDS)}."

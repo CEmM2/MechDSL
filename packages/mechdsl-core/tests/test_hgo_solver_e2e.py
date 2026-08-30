@@ -31,7 +31,7 @@ from mechdsl import compile_latex
 if TYPE_CHECKING:
     from types import ModuleType
 
-_EXAMPLES_DIR = Path(__file__).resolve().parents[3] / "dev" / "examples"
+_EXAMPLES_DIR = Path(__file__).resolve().parents[3] / "examples"
 _HGO_TEX = _EXAMPLES_DIR / "hgo_energy.tex"
 
 # Single-family HGO; fiber along x. The energy derives params {k1, k2, kappa, mu}.
@@ -98,7 +98,7 @@ def test_emitted_solver_gathers_fiber_and_is_parameterised(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Slow e2e tests — the generated solver runs under Taichi JIT (the real gate)
+# Slow e2e tests — the generated solver actually runs under Taichi JIT
 # ---------------------------------------------------------------------------
 
 

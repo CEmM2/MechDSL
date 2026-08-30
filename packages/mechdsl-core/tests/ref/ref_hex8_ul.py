@@ -77,7 +77,7 @@ def _shape_grad_current(
     x_elem = X_elem + u_elem
 
     # Current Jacobian: j = x^T @ dN/d(xi)  ->  (3, 3)
-    j = x_elem.T @ dN_dxi  # (3, 3)
+    j = x_elem.T @ dN_dxi
 
     detj = float(np.linalg.det(j))
     if detj <= 0.0:
@@ -87,7 +87,7 @@ def _shape_grad_current(
     j_inv = np.linalg.inv(j)
 
     # dN/dx = dN/d(xi) @ j^{-1}
-    dN_dx = dN_dxi @ j_inv  # (8, 3)
+    dN_dx = dN_dxi @ j_inv
 
     return dN_dx, detj
 
@@ -131,10 +131,10 @@ def element_internal_force_ul(
         dN_dxi = _BASIS.gradient(xi, eta, zeta)
         J0 = X_elem.T @ dN_dxi
         J0_inv = np.linalg.inv(J0)
-        dN_dX = dN_dxi @ J0_inv  # (8, 3)
+        dN_dX = dN_dxi @ J0_inv
 
         # 3. Displacement gradient and deformation gradient
-        grad_u = u_elem.T @ dN_dX  # (3, 3)
+        grad_u = u_elem.T @ dN_dX
         F = deformation_gradient(grad_u)
         J = float(np.linalg.det(F))
 
@@ -149,7 +149,7 @@ def element_internal_force_ul(
         # 6. Integrate over current config: f_a += w_q * det(j) * dN_dx @ sigma^T
         #    dN_dx is (8, 3); sigma^T is (3, 3)
         #    For node a: dN_dx[a, :] @ sigma^T  -> (3,)
-        f_int += w_q * detj * (dN_dx @ sigma.T)  # (8, 3)
+        f_int += w_q * detj * (dN_dx @ sigma.T)
 
     return f_int
 
@@ -193,7 +193,7 @@ def element_tangent_matvec_ul(
     Kv : (8, 3)
         Tangent stiffness matvec result.
     """
-    C4 = material_tangent_4th(SVKMaterial(lam, mu))  # constant (3,3,3,3)
+    C4 = material_tangent_4th(SVKMaterial(lam, mu))
     Kv = np.zeros((8, 3), dtype=np.float64)
 
     for q in range(_QUAD.n_points):
@@ -222,7 +222,7 @@ def element_tangent_matvec_ul(
         c_tau = truesdell_tangent(C4, sigma, F=F)
 
         # 5. Velocity gradient in current config: grad_v = v^T @ dN_dx
-        grad_v = v_elem.T @ dN_dx  # (3, 3)
+        grad_v = v_elem.T @ dN_dx
 
         # 6. Material contribution: dsigma_mat_{ij} = c^tau_{ijkl} * grad_v_{kl}
         dsigma_mat = np.einsum("ijkl,kl->ij", c_tau, grad_v)
@@ -421,7 +421,6 @@ def solve_elastic_ul(
                 # Already at equilibrium
                 break
 
-        # Convergence check
         assert R0_norm is not None
         if R_norm < tol * R0_norm:
             break
@@ -441,7 +440,6 @@ def solve_elastic_ul(
         # Ensure constrained DOFs are not modified
         du[bc_mask] = 0.0
 
-        # Update
         u = u + du
     else:
         raise RuntimeError(

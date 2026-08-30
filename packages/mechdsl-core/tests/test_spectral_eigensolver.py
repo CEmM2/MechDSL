@@ -30,7 +30,7 @@ from mechdsl.symbolic.spectral_energy import derive_from_spectral_energy
 if TYPE_CHECKING:
     from pathlib import Path
 
-# Two-term compressible Ogden, the committed example energy (dev/examples/ogden_energy.tex).
+# Two-term compressible Ogden, the committed example energy (examples/ogden_energy.tex).
 _OGDEN_ENERGY = r"""
 % declare metric gDD --dim 3
 % declare EDD --dim 3

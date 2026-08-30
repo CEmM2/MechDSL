@@ -19,7 +19,7 @@ other's (private) boundary:
 # NOTE: no ``from __future__ import annotations`` — kept consistent with the seam
 # modules that consume this helper and wire imported generated code into
 # ``@ti.kernel`` bodies needing eager annotation evaluation (PEP 563 breaks the
-# JIT; the PJ-0/PJ-1 finding).
+# JIT).
 
 import importlib.util
 import re
@@ -31,7 +31,7 @@ from types import ModuleType
 # Matches a module-level ``ti.init(...)`` line regardless of indentation/spacing,
 # so :func:`strip_ti_init` can never miss it. A missed init line would
 # re-initialise Taichi at import and free the caller's already-allocated DOF
-# fields (the P2-2 finding).
+# fields.
 TI_INIT_LINE = re.compile(r"^\s*ti\.init\s*\(")
 
 

@@ -1,6 +1,6 @@
 """Integration tests for the ``mechdsl-lawgen compile`` CLI (Task P1-2).
 
-Covers the three ``test_plan.cases`` from ``dev/plans/mfront_cycleM0/json/P1-2.json``:
+Covers three CLI cases:
 
 1. dry-run on a minimal fixture YAML prints the expected plan lines and writes
    no files (the ``--out`` dir stays empty);

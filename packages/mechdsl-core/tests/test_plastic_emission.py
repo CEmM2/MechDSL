@@ -405,11 +405,6 @@ class TestTangentForBoth:
         )
 
 
-# ---------------------------------------------------------------------------
-# Phase 4 audit stubs
-# ---------------------------------------------------------------------------
-
-
 class TestTaskP4T1Audit:
     """Task P4-T1: Audit J2 constitutive emission against symbolic model.
 

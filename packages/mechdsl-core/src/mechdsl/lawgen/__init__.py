@@ -1,9 +1,12 @@
 """MechDSL lawgen — constitutive-law emission for the ticonstit target.
 
-MFront-mimic Cycle M0. Phase 1 lands the emission *contracts* here; Phase 2
-adds the lowerer that consumes them. The two public contracts,
-:class:`TiconstitTarget` (target profile) and :class:`PlasticityCarrierSpec`
-(one carrier law), are the sole shared types between the CLI and the lowerer.
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier). The two public contracts, :class:`TiconstitTarget` (target
+profile) and :class:`PlasticityCarrierSpec` (one carrier law), are the sole
+shared types between the CLI and the lowerer.
+
+MechDSL lawgen is an independent implementation; it does not implement or
+translate MFront/TFEL. See ``lawgen/README.md`` for the scope statement.
 """
 
 from __future__ import annotations

@@ -1,0 +1,18 @@
+% St. Venant-Kirchhoff strain-energy density, authored as LaTeX for the
+% LaTeX-to-code constitutive pipeline (symbolic/energy.py).
+%
+%   Psi = (lambda/2) (tr E)^2 + mu (E : E)
+%
+% Written with strict upper/lower Einstein contractions (nrpylatex
+% requirement): the reference metric gDD raises indices so that
+%   tr E   = E^I_I            (mixed contraction via the metric)
+%   E : E  = E^{IJ} E_{IJ}    (one raised, one lowered)
+% For the Cartesian MVP the metric is pinned to the identity downstream.
+%
+% \lambda is sanitised to \aleph before nrpylatex codegen (its bare name
+% collides with the Python keyword `lambda`); see symbolic/energy.py.
+
+% declare metric gDD --dim 3
+% declare EDD --dim 3
+% declare \lambda \mu --const
+\Psi = \frac{\lambda}{2} E^{I}_{I} E^{J}_{J} + \mu E^{I J} E_{I J}

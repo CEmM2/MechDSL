@@ -23,7 +23,7 @@ from mechdsl.symbolic.convected import (
 )
 
 # ---------------------------------------------------------------------------
-# P2-1: Covariant/contravariant bases + metric tensors
+# Covariant/contravariant bases + metric tensors
 # ---------------------------------------------------------------------------
 
 
@@ -77,7 +77,7 @@ class TestTaskP2_1MetricTensors:
         G_metric = G_ref.T @ G_ref  # = diag(1, r^2, 1)
 
         # Use a simple diagonal F with a known stretch
-        lam = sp.Rational(3, 2)  # stretch = 1.5
+        lam = sp.Rational(3, 2)
         F_sym = sp.diag(lam, lam, lam)
 
         # g_IJ = G_ref^T (F^T F) G_ref = G_ref^T (lam^2 I) G_ref = lam^2 G_metric
@@ -184,7 +184,6 @@ class TestTaskP2_1MetricTensors:
         cov = covariant_bases(F, G_ref_vecs=G_ref)
         assert len(cov) == 3
 
-        # g_I = F @ col_I(G_ref)
         for i in range(3):
             expected = F @ G_ref.col(i)
             assert sp.simplify(cov[i] - expected) == sp.zeros(3, 1)
@@ -250,7 +249,7 @@ class TestTaskP2_1MetricTensors:
 
 
 # ---------------------------------------------------------------------------
-# P2-2: Christoffel symbols from metric
+# Christoffel symbols from metric
 # ---------------------------------------------------------------------------
 
 
@@ -410,7 +409,7 @@ class TestTaskP2_2ChristoffelSymbols:
 
 
 # ---------------------------------------------------------------------------
-# P2-3: Covariant derivatives (vectors and tensors)
+# Covariant derivatives (vectors and tensors)
 # ---------------------------------------------------------------------------
 
 

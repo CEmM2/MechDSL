@@ -1,6 +1,6 @@
 # Swift-Voce isotropic hardening law — authoritative MechDSL source.
 #
-# MFront-mimic Cycle M0, Phase 4 (dev/plans/mfront_cycleM0.md lines 114-116).
+# MechDSL lawgen example law spec (Swift-Voce isotropic hardening).
 #
 # This YAML is the single source of truth for the SwiftVoce hardening carrier.
 # ``mechdsl-lawgen compile laws/plasticity/swift_voce.yaml --target ticonstit

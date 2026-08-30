@@ -130,10 +130,10 @@ class LinearSolveContext:
         self.preconditioner.apply(z, r)
 
 
-# ── Time-integration seam (PlanJune14 P6-1) ──────────────────────────────────
+# ── Time-integration seam ────────────────────────────────────────────────────
 #
 # The temporal analogue of LinearSolveContext: a generated *time integrator*
-# (e.g. the Newmark-beta step transpiled from dev/algorithms/newmark.tex) plugs
+# (e.g. a Newmark-beta step transpiled from its LaTeX algorithm spec) plugs
 # into a stable wrapper here, exactly as a generated linear solver plugs into
 # set_solver. The wrapper is integrator-agnostic — it applies *whatever* step
 # body was injected (Newmark-beta, central difference, HHT, ...).
@@ -148,7 +148,7 @@ class LinearSolveContext:
 IntegratorStep = Callable[..., object]
 
 # accel_solve(u_pred, v_pred, a_out): a_out = a_{n+1}, in place (out LAST).
-# Returns an optional status (WI-3): ``None`` for a solve that cannot fail
+# Returns an optional status: ``None`` for a solve that cannot fail
 # (e.g. an elementwise SDOF/diagonal-mass solve), or a convergence flag for an
 # iterative solve (a falsy flag == not converged). TimeIntegrationContext.step
 # consumes it to roll back and fail loud rather than advancing on a bad solve.
@@ -196,7 +196,7 @@ class AccelSolve:
     def apply(self, u_pred, v_pred, a_out) -> object:
         if self._apply is None:
             raise RuntimeError("AccelSolve has no body injected; call set_accel_solve(...) first.")
-        # Forward the injected solve's return value (WI-3): a convergence status
+        # Forward the injected solve's return value: a convergence status
         # when the solve is iterative, else ``None``. The caller (step) decides.
         return self._apply(u_pred, v_pred, a_out)
 
@@ -274,7 +274,7 @@ class TimeIntegrationContext:
         try:
             result = self.integrator.step(u, v, a, accel_solve, self.dt, self.beta, self.gamma)
         except Exception:
-            # A raising solve (e.g. the WI-2 seam PCG) may have left state
+            # A raising solve (e.g. the seam-injected PCG) may have left state
             # half-advanced -- restore before propagating.
             _restore()
             raise

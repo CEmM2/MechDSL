@@ -78,7 +78,6 @@ _MATERIAL = HGOMaterial(
 # stays well-behaved on a 1-element mesh.
 _STRETCHES = (1.02, 1.05, 1.08, 1.12)
 
-# 5% relative-error envelope from the task JSON.
 _REL_ERR_TOL = 0.05
 
 

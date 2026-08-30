@@ -1,6 +1,7 @@
 """Spec-driven Taichi carrier-class emitter (Task P4-1).
 
-MFront-mimic Cycle M0, Phase 4 (``dev/plans/mfront_cycleM0.md`` lines 114-116).
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier).
 
 This is the *class emitter* the Phase-2 handoff (note 4) deferred to Phase 3/4:
 the piece that assembles a complete, self-contained Taichi module — a
@@ -89,13 +90,13 @@ __all__ = [
 # The free-variable name each method differentiates / evaluates against, and the
 # Taichi argument name that variable is emitted as. R/dR are functions of the
 # accumulated plastic strain (spec variable ``p``, emitted as ``peeq`` to match
-# Cycle 0's method signature); H/dH of the plastic strain rate ``edot``; Q/dQ of
+# the consumer's method signature); H/dH of the plastic strain rate ``edot``; Q/dQ of
 # the temperature ``T``. R/H/Q are three INDEPENDENT factors — dR is d(R)/d(peeq),
 # NOT H — each auto-differentiated w.r.t. its own primary variable.
 METHOD_PRIMARY_VARIABLE: dict[str, str] = {"R": "p", "H": "edot", "Q": "T"}
 
 # The Taichi method-argument name each primary free variable is emitted as. The
-# spec binds ``p`` (accumulated plastic strain); Cycle 0's ``get_R``/``get_dR``
+# spec binds ``p`` (accumulated plastic strain); the consumer's ``get_R``/``get_dR``
 # name that argument ``peeq``. ``edot``/``T`` keep their spec names.
 _VARIABLE_ARGUMENT_NAME: dict[str, str] = {"p": "peeq", "edot": "edot", "T": "T"}
 
@@ -104,7 +105,7 @@ _VARIABLE_ARGUMENT_NAME: dict[str, str] = {"p": "peeq", "edot": "edot", "T": "T"
 _I1 = "    "
 _I2 = "        "
 
-# The ``ti.f64`` yield-scale annotation Cycle 0's get_R/get_dR use on the
+# The ``ti.f64`` yield-scale annotation get_R/get_dR use on the
 # ``yield_scale`` argument.
 _YIELD_SCALE_SIG = "yield_scale: ti.f64 = 1.0"
 
@@ -377,7 +378,7 @@ def emit_carrier(
         derivative = sp.diff(factor, diff_symbol)
         lowered_by_method[f"d{role}"] = _lower_rebound(derivative, rebind, active_target)
 
-    # --- Frozen Phase-2 budget gate (fail-loud BEFORE emission) --------------
+    # --- Budget gate (fail-loud BEFORE emission) --------------
     # Keyed by method name so a breach names the offending function. The
     # expression map drives the per-expression knobs; the lowered map the
     # per-function / whole-class knobs.
@@ -416,8 +417,8 @@ def emit_carrier(
     return CarrierEmitResult(source=source, lowered_by_method=lowered_by_method)
 
 
-# Modules the generated runtime carrier must never import (INV-DG-1 / R3): the
-# offline generator (SymPy, MechDSL) and the consumer (ticonstit / NumerixWeave).
+# Modules the generated runtime carrier must never import: the offline
+# generator (SymPy, MechDSL) and the consumer (ticonstit / NumerixWeave).
 _FORBIDDEN_IMPORT_TOKENS: tuple[str, ...] = ("sympy", "mechdsl", "ticonstit", "numerixweave")
 
 

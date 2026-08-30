@@ -116,10 +116,10 @@ def compute_lumped_mass(
     # With partition of unity sum_b N_b = 1 the element mass sum equals rho * V_e
     # (within float tolerance), so the row-sum lumping conserves total mass.
     for e in range(n_elem):
-        X_elem = coords[conn[e]]  # (8, 3)
+        X_elem = coords[conn[e]]
         for q in range(SHAPE_AT_QUAD.shape[0]):
             # Reference Jacobian J0 = X^T @ dN/dxi
-            J0 = X_elem.T @ GRAD_AT_QUAD[q]  # (3, 3)
+            J0 = X_elem.T @ GRAD_AT_QUAD[q]
             detJ0 = float(np.linalg.det(J0))
             if detJ0 <= 0.0:
                 raise ValueError(
@@ -129,7 +129,7 @@ def compute_lumped_mass(
             w = float(HEX8_QUAD_WEIGHTS[q])
             # Row-sum: m_a += integral rho * N_a * (sum_b N_b) dV
             #                = integral rho * N_a dV  (partition of unity).
-            N_q = SHAPE_AT_QUAD[q]  # (8,)
+            N_q = SHAPE_AT_QUAD[q]
             contrib = rho * N_q * detJ0 * w
             for a in range(8):
                 m_node[conn[e, a]] += contrib[a]

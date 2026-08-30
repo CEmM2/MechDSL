@@ -90,7 +90,7 @@ def _run_full_pipeline(problem_ir: ProblemIR) -> tuple[ArtifactBundle, str]:
 
 
 # ===========================================================================
-# P9.1: Full pipeline e2e test
+# Full pipeline e2e test
 # ===========================================================================
 
 

@@ -95,11 +95,10 @@ from mechdsl.verify.benchmarks import (
 
 # --- Frozen regression baseline (see module docstring) ---------------------
 #
-# Computed from ``_taylor_impact_reference_params()`` below on commit
-# ``4c89098`` (2026-04-26). NOT independently sourced from Johnson & Cook
-# (1985). These guard against semantic regressions in the Phase E7 explicit
-# Taylor runtime + Phase E8 public runner; they are intentionally tight
-# (5 % / 5 % / 10 %) per the original test names.
+# Computed from ``_taylor_impact_reference_params()`` below; NOT independently
+# sourced from Johnson & Cook (1985). These guard against semantic regressions
+# in the explicit Taylor runtime and public benchmark runner; they are
+# intentionally tight (5 % / 5 % / 10 %) per the test names.
 
 _REFERENCE_FINAL_LENGTH: float = 0.02521  # m
 _REFERENCE_MUSHROOM_RADIUS: float = 0.005564278964663555  # m
@@ -187,7 +186,6 @@ class TestTaskP10_7:
 
         actual = result.extras["mushroom_diameter"]
         assert math.isfinite(actual), f"mushroom_diameter is not finite: {actual!r}"
-        # Consistency: diameter must equal twice the radius (no schema drift).
         assert actual == pytest.approx(2.0 * result.extras["mushroom_radius"]), (
             "mushroom_diameter is not 2 * mushroom_radius — extras schema drifted."
         )

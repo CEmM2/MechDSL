@@ -42,7 +42,7 @@ class ContractionPlan:
     contraction_path: list[tuple[int, ...]] = field(default_factory=list)
     estimated_flops: int = 0
     tier: int = 0  # 1, 2, or 3 — 0 means unclassified
-    family: str = "FALLBACK"  # P9-2: enum-name string (see Family registry)
+    family: str = "FALLBACK"  # enum-name string (see Family registry)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise to a JSON-compatible dict."""
@@ -116,26 +116,27 @@ class ArtifactBundle:
     contraction_plans: tuple[ContractionPlan, ...] = ()
     emitted_source: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
-    # P4-5: canonical ElementIR contract-surface dict. Default empty so
-    # pre-P4-5 bundles deserialise cleanly without the new key.
+    # Canonical ElementIR contract-surface dict. Default empty so older
+    # bundles deserialise cleanly without the new key.
     element_ir_dict: dict[str, Any] = field(default_factory=dict)
-    # post_recovery_plan P1-5: optional source for the Neumann ``f_ext``
-    # initialisation kernel(s). ``None`` when the problem has no Neumann BCs
-    # with numeric traction (legacy symbolic-string traction stays handled
-    # by the existing imported numeric injection path). Kept off the
-    # ``content_hash`` for the same reason ``emitted_source`` is — its
-    # contents are derived from ``problem_ir_dict``'s boundary list.
+    # Optional source for the Neumann ``f_ext`` initialisation kernel(s).
+    # ``None`` when the problem has no Neumann BCs with numeric traction
+    # (legacy symbolic-string traction stays handled by the existing
+    # imported numeric injection path). Kept off the ``content_hash`` for
+    # the same reason ``emitted_source`` is — its contents are derived
+    # from ``problem_ir_dict``'s boundary list.
     f_ext_kernel: str | None = None
 
-    # constitutive_latex P3-1: parallel Python-object channel carrying the
-    # LaTeX-derived symbolic energy model (PK2 stress + material tangent) so
-    # the Taichi printer can emit the constitutive ``@ti.func`` from the
-    # derived energy instead of the hard-coded named-model switch. Held off
-    # the JSON path entirely (`to_dict`, `from_dict`, `content_hash`, and the
-    # `to_json`/`from_json` round-trip): the model carries SymPy expressions
-    # that do not serialise cleanly, and golden files compare the JSON-able
-    # semantic surface only. ``None`` for every named-model bundle so the JSON
-    # path and content hash are byte-identical to pre-P3-1 bundles.
+    # Parallel Python-object channel carrying the LaTeX-derived symbolic
+    # energy model (PK2 stress + material tangent) so the Taichi printer
+    # can emit the constitutive ``@ti.func`` from the derived energy
+    # instead of the hard-coded named-model switch. Held off the JSON path
+    # entirely (`to_dict`, `from_dict`, `content_hash`, and the
+    # `to_json`/`from_json` round-trip): the model carries SymPy
+    # expressions that do not serialise cleanly, and golden files compare
+    # the JSON-able semantic surface only. ``None`` for every named-model
+    # bundle so the JSON path and content hash are byte-identical to
+    # bundles without a derived energy.
     derived_energy: EnergyModel | None = field(default=None, compare=False)
 
     # ------------------------------------------------------------------
@@ -176,11 +177,11 @@ class ArtifactBundle:
             "dim": element_ir.dim,
             "n_quadrature_points": element_ir.quadrature.n_points,
             "formulation": element_ir.formulation,
-            # P4-3: surface the P4-1 execution-contract enrichment when
-            # present so downstream consumers (and golden artifacts) see
-            # the enriched ElementIR's contract blocks. Each key stays at
-            # None when the corresponding descriptor is unset, preserving
-            # round-trip compatibility with pre-P4-3 bundles.
+            # Surface the execution-contract enrichment when present so
+            # downstream consumers (and golden artifacts) see the enriched
+            # ElementIR's contract blocks. Each key stays at None when the
+            # corresponding descriptor is unset, preserving round-trip
+            # compatibility with older bundles.
             "geometry": (
                 element_ir.geometry.to_dict() if element_ir.geometry is not None else None
             ),
@@ -195,17 +196,17 @@ class ArtifactBundle:
             ),
         }
 
-        # P4-5: store the canonical ElementIR contract surface alongside
-        # the legacy summary. The summary stays for golden-file back-compat;
-        # `element_ir_dict` is the post-P4-5 primary semantic carrier.
+        # Store the canonical ElementIR contract surface alongside the legacy
+        # summary. The summary stays for golden-file back-compat;
+        # `element_ir_dict` is the primary semantic carrier.
         return cls(
             problem_ir_dict=problem_ir.to_dict(),
             element_ir_summary=element_ir_summary,
             contraction_plans=contraction_plans,
             emitted_source=emitted_source,
             element_ir_dict=element_ir.to_dict(),
-            # P3-1: carry the LaTeX-derived energy (if any) into codegen via
-            # the Python-object channel. ``None`` for named-model IRs.
+            # Carry the LaTeX-derived energy (if any) into codegen via the
+            # Python-object channel. ``None`` for named-model IRs.
             derived_energy=problem_ir.derived_energy,
         )
 

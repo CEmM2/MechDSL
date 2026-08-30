@@ -148,6 +148,6 @@ class Algorithm:
     """A complete parsed algorithm."""
     name: str = ""
     backend: str = "taichi"
-    args: list[tuple[str, VarType]] = field(default_factory=list)   # (name, type)
+    args: list[tuple[str, VarType]] = field(default_factory=list)
     body: list[Stmt] = field(default_factory=list)
     type_annotations: dict[str, VarType] = field(default_factory=dict)  # var_name -> type

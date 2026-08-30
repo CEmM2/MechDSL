@@ -206,15 +206,11 @@ class TestVoigtTangentConsistency:
         """Spot-check known entries of isotropic tangent in Voigt form."""
         C6 = material_tangent_voigt(simple_mat)
         lam, mu = simple_mat.lam, simple_mat.mu
-        # C6[0,0] = lam + 2*mu
         assert C6[0, 0] == pytest.approx(lam + 2 * mu)
-        # C6[0,1] = lam
         assert C6[0, 1] == pytest.approx(lam)
         # C6[3,3] = mu (shear modulus, unscaled)
         assert C6[3, 3] == pytest.approx(mu)
-        # C6[4,4] = mu
         assert C6[4, 4] == pytest.approx(mu)
-        # C6[5,5] = mu
         assert C6[5, 5] == pytest.approx(mu)
         # Off-diagonal shear-normal coupling = 0
         assert C6[0, 3] == pytest.approx(0.0, abs=1e-15)
@@ -233,7 +229,7 @@ class TestSVKInputValidation:
 
 
 # ---------------------------------------------------------------------------
-# R3.5.3 — __post_init__ validation tests for SVKMaterial
+# __post_init__ validation tests for SVKMaterial
 # ---------------------------------------------------------------------------
 
 

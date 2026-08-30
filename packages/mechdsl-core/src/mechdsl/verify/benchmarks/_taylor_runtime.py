@@ -224,7 +224,7 @@ def _reduced_hex8_svk_internal_force(
         Element internal force in the same sign convention as the rest of
         the codebase (resisting force; add to the residual).
     """
-    dN_dxi = shape_gradients(0.0, 0.0, 0.0)  # (8, 3)
+    dN_dxi = shape_gradients(0.0, 0.0, 0.0)
     J0 = X_elem.T @ dN_dxi
     detJ0 = float(np.linalg.det(J0))
     if detJ0 <= 0.0:
@@ -234,9 +234,9 @@ def _reduced_hex8_svk_internal_force(
         )
         raise ValueError(msg)
     J0_inv = np.linalg.inv(J0)
-    dN_dX = dN_dxi @ J0_inv  # (8, 3)
+    dN_dX = dN_dxi @ J0_inv
 
-    grad_u = u_elem.T @ dN_dX  # (3, 3)
+    grad_u = u_elem.T @ dN_dX
     F = np.eye(3) + grad_u
     E = 0.5 * (F.T @ F - np.eye(3))
     tr_E = float(np.trace(E))
@@ -444,8 +444,8 @@ def explicit_step(
     state.time = float(state.time) + float(dt)
 
     # Energy accumulation — use absolute work so the diagnostic stays a
-    # non-negative dissipation budget (the AC-1 ratio test reads it as a
-    # bound, not as a signed integral).
+    # non-negative dissipation budget (the energy-ratio acceptance test reads
+    # it as a bound, not as a signed integral).
     state.internal_energy = float(state.internal_energy) + float(np.abs(np.sum(f_int * du)))
     state.hourglass_energy = float(state.hourglass_energy) + float(
         hourglass_energy_increment(du, f_hg)
@@ -476,21 +476,21 @@ def apply_rigid_wall_contact(
     normal = wall.normal
 
     # Signed distances of all nodes to the wall plane.
-    rel = state.coords - point  # (n_nodes, 3)
-    sd = rel @ normal  # (n_nodes,)
+    rel = state.coords - point
+    sd = rel @ normal
 
     pen_mask = sd < 0.0
     if not np.any(pen_mask):
         return state
 
     # 1) Position correction: x' = x - s n  (only for penetrating nodes)
-    correction = sd[pen_mask, None] * normal[None, :]  # (n_pen, 3)
+    correction = sd[pen_mask, None] * normal[None, :]
     state.coords[pen_mask] -= correction
     state.displacement[pen_mask] -= correction
 
     # 2) Velocity correction: zero (or reflect) the inward normal component.
     v_pen = state.velocity[pen_mask]
-    vn = v_pen @ normal  # (n_pen,)
+    vn = v_pen @ normal
     inward = vn < 0.0  # nodes still moving into the wall
     if np.any(inward):
         idxs = np.where(pen_mask)[0][inward]
@@ -530,7 +530,7 @@ def hourglass_energy_increment(du: NDArray[np.float64], f_hg: NDArray[np.float64
 
 
 # ---------------------------------------------------------------------------
-# Johnson-Cook explicit runtime (P7-2)
+# Johnson-Cook explicit runtime
 # ---------------------------------------------------------------------------
 
 
@@ -561,7 +561,7 @@ def _reduced_hex8_jc_internal_force(
         Element internal force in the same sign convention as the rest of
         the codebase (resisting force; add to the residual).
     """
-    dN_dxi = shape_gradients(0.0, 0.0, 0.0)  # (8, 3)
+    dN_dxi = shape_gradients(0.0, 0.0, 0.0)
     J0 = X_elem.T @ dN_dxi
     detJ0 = float(np.linalg.det(J0))
     if detJ0 <= 0.0:
@@ -571,9 +571,9 @@ def _reduced_hex8_jc_internal_force(
         )
         raise ValueError(msg)
     J0_inv = np.linalg.inv(J0)
-    dN_dX = dN_dxi @ J0_inv  # (8, 3)
+    dN_dX = dN_dxi @ J0_inv
 
-    grad_u = u_elem.T @ dN_dX  # (3, 3)
+    grad_u = u_elem.T @ dN_dX
     F = np.eye(3) + grad_u
     P = F @ S
     f_int: NDArray[np.float64] = 8.0 * detJ0 * (dN_dX @ P.T)
@@ -821,7 +821,7 @@ def explicit_step_jc(
 
     state.time = float(state.time) + float(dt)
 
-    # --- 5. Energy bookkeeping (absolute work, matches P7-1 convention) ---
+    # --- 5. Energy bookkeeping (absolute work, matches explicit_step) ---
     state.internal_energy = float(state.internal_energy) + float(np.abs(np.sum(f_int * du)))
     state.hourglass_energy = float(state.hourglass_energy) + float(
         hourglass_energy_increment(du, f_hg)
@@ -831,7 +831,7 @@ def explicit_step_jc(
 
 
 # ---------------------------------------------------------------------------
-# Postprocessing helpers (P7-2)
+# Postprocessing helpers
 # ---------------------------------------------------------------------------
 
 

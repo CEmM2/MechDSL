@@ -80,7 +80,7 @@ class TestTaskP7_1:
         # Initial velocity: small uniform v0 on top face into z (-z direction)
         v0 = np.zeros_like(mesh.coordinates)
         top_nodes = mesh.boundary_nodes["z_max"]
-        v0[top_nodes, 2] = -10.0  # m/s
+        v0[top_nodes, 2] = -10.0
 
         state = init_taylor_runtime(
             mesh,

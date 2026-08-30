@@ -549,7 +549,7 @@ def run_notched_bar_benchmark(
     wallclock_s = time.perf_counter() - t0
 
     # --- Damage post-processing ---
-    damage_qp = mod.damage_D.to_numpy()  # (n_elem, n_qp)
+    damage_qp = mod.damage_D.to_numpy()
     if damage_qp.shape != (n_elem, 8):
         msg = f"Unexpected damage_D shape {damage_qp.shape}; expected ({n_elem}, 8)"
         raise RuntimeError(msg)
@@ -557,7 +557,7 @@ def run_notched_bar_benchmark(
     max_damage = float(damage_elem.max())
     damage_argmax = int(np.argmax(damage_elem))
 
-    centroids = coords[conn].mean(axis=1)  # (n_elem, 3)
+    centroids = coords[conn].mean(axis=1)
     d_to_root = np.linalg.norm(centroids - mesh.notch_root_xyz, axis=1)
     notch_root_elem = int(np.argmin(d_to_root))
     h = max(

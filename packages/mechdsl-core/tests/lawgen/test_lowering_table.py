@@ -1,8 +1,8 @@
 """Unit tests for the Taichi-safe lowering table + source hash (Task P2-4).
 
-MFront-mimic Cycle M0, Phase 2 (``dev/plans/mfront_cycleM0.md`` lines 87-90).
+Part of the MechDSL lawgen test suite.
 
-Covers the six ``test_plan.cases`` of P2-4:
+Covers six lowering cases:
 
 1. ``sp.exp(x)`` → ``ti.exp(x)`` in the lowered output (no bare ``exp(``).
 2. A 3-branch ``Piecewise`` → a right-nested ``ti.select`` chain.
@@ -147,7 +147,7 @@ def test_piecewise_nine_branches_raises_budget_error() -> None:
     (diag,) = exc.value.diagnostics
     assert diag.node == "max_piecewise_branches"
     assert "max_piecewise_branches budget exceeded: 9 > 8" in diag.reason
-    assert "9" in diag.reason and "8" in diag.reason  # measured + limit
+    assert "9" in diag.reason and "8" in diag.reason
     assert diag.fix.strip()
 
 
@@ -249,7 +249,7 @@ def test_standalone_negative_pow_is_not_inlined() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Case 4 (Gate-B regression) — division-by-power must NOT collapse to ``a/x*x``.
+# Case 4 (regression) — division-by-power must NOT collapse to ``a/x*x``.
 # ---------------------------------------------------------------------------
 #
 # ``a/x**2`` = ``Mul(a, Pow(x, -2))``. SymPy's ``_print_Mul`` splits the
@@ -268,7 +268,7 @@ def test_division_by_square_is_parenthesised_not_collapsed() -> None:
 
     raw = _lower_one(a / x**2, guards=False)
     assert raw == "a/(x*x)"
-    # The Gate-B collapse: unparenthesised ``/x*x`` must NOT appear ...
+    # The collapse: unparenthesised ``/x*x`` must NOT appear ...
     assert "/x*x" not in raw
     # ... and it must not have degenerated to the bare numerator ``a``.
     assert raw != "a"
@@ -363,7 +363,6 @@ def test_source_hash_input_is_emitted_lines_in_order() -> None:
     shared = sp.exp(-b * p)
     result = lower_expression([sigma0 + shared, Q * shared])
 
-    # CSE lifts the shared exp → one temporary + two returns, in emission order.
     assert result.temporaries == ("x0 = ti.exp(-b*p)",)
     assert result.returns == ("sigma0 + x0", "Q*x0")
 

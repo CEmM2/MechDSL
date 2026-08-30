@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ti-runtime"
 version = "0.2.0"
-description = "Neutral Taichi runtime: vector primitives, Tier-1 @ti.func helpers, and solver/operator injection seams for MechDSL-generated code (PlanJune14 PJ-0)"
+description = "Neutral Taichi runtime: vector primitives, Tier-1 @ti.func helpers, and solver/operator injection seams for MechDSL-generated code"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11,<3.14"
@@ -34,7 +34,7 @@ dependencies = [
 exclude-newer = "2026-02-20T00:00:00Z"
 
 [project.urls]
-Repository = "https://github.com/SOSOVSKI/MechDSL"
+Repository = "https://github.com/CEmM2/MechDSL"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ti_runtime"]

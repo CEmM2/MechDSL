@@ -1,0 +1,112 @@
+% constitutive_latex Phase 6 (P6-3): J2 MIXED-hardening radial-return
+% algpseudocode source.
+%
+% Scalar return-map inner solve for J2 plasticity with MIXED hardening:
+% the yield surface BOTH translates (linear kinematic back-stress beta,
+% Prager — from P6-2) AND expands (power-law isotropic radius growth
+% sigma_y(alpha) = sigy0 + K*alpha^n — from P6-1), simultaneously. Yield
+% is measured on the RELATIVE (shifted) stress xi = dev(S) - beta against
+% the EXPANDING radius sigma_y(alpha):
+%
+%     f = ||xi||_eq - sigma_y(alpha),   ||xi||_eq = sqrt(3/2 * xi:xi)
+%     sigma_y(alpha) = sigy0 + K * alpha^n
+%
+% Because the isotropic part is a NONLINEAR power law in
+% alpha = alpha_old + dl, the discrete consistency condition is NONLINEAR
+% in the plastic-multiplier increment dl, so — unlike the pure-linear
+% kinematic variant (P6-2, closed form) — this needs the scalar NEWTON
+% loop of the isotropic variant (P6-1). The kinematic part contributes a
+% LINEAR term (3*mu + H_kin)*dl exactly as in P6-2; the isotropic part
+% contributes the nonlinear sigma_y(alpha_old + dl) exactly as in P6-1.
+%
+% Consistency residual (root in dl):
+%
+%     r(dl) = ||xi_trial||_eq - (3*mu + H_kin)*dl - sigma_y(alpha_old + dl)
+%
+% Newton derivative:
+%
+%     r'(dl) = -(3*mu + H_kin) - K*n*(alpha_old + dl)^(n-1)
+%
+% so the Newton update is  dl <- dl + r / (3*mu + H_kin + Hp)  with
+% Hp = K*n*ap^(n-1) the isotropic slope d(sigma_y)/d(alpha). This reduces
+% to P6-1 when H_kin = 0 (xi_eq == sigma_eq, beta == 0) and to P6-2 when
+% K = 0 (sigma_y(alpha) == sigy0, constant radius, linear residual).
+%
+% The alpha->0 guard mirrors j2_power_law.py / radial_return_j2.tex: for
+% hardening exponents n < 1 the slope K*n*ap^(n-1) diverges as ap -> 0+,
+% so below the tolerance ap < tol the radius is held at sigy0 and the
+% slope Hp at 0.
+%
+% This scalar source owns ONLY the plastic-multiplier solve. All tensor
+% algebra (deviatoric split, relative stress xi, von Mises of xi, radial
+% stress reconstruction, plastic-strain / Prager back-stress / accumulated
+% plastic-strain alpha updates, algorithmic tangent) is orchestrated in
+% Python by ``mechdsl.lib.plasticity_mixed`` — the same division of labour
+% as the isotropic (``mechdsl.lib.plasticity``) and kinematic
+% (``mechdsl.lib.plasticity_kinematic``) variants. The flow normal and
+% back-stress factors are identical to P6-2:
+%
+%     nf = (3/2) * xi / ||xi||_eq         (von Mises gradient)
+%     dEp     = dl * nf                    (plastic strain increment)
+%     beta   += (2/3) * H_kin * dl * nf    (Prager back-stress, linear)
+%     alpha  += dl                         (accumulated equivalent plastic strain)
+%
+% Inputs
+% ------
+%   xi_eq    : von Mises equivalent of the trial RELATIVE stress xi_trial
+%   alpha    : alpha_old, prior accumulated equivalent plastic strain
+%   mu       : shear modulus (second Lame parameter)
+%   K        : isotropic hardening modulus (power-law coefficient)
+%   n        : isotropic hardening exponent
+%   H_kin    : linear kinematic-hardening (Prager) modulus
+%   sigy0    : initial yield stress
+%   tol      : alpha->0 guard threshold / residual tolerance (passed
+%              through; the Newton loop converges quadratically and the
+%              wrapper applies the reference tolerance externally)
+%   max_iter : Newton max iterations
+%
+% Outputs
+% -------
+%   plastic   : 1 if plastic flow occurred, 0 if elastic step
+%   alpha_new : alpha_old + delta_lambda (when plastic)
+%   dl        : plastic multiplier increment (delta_lambda)
+
+% algorithm radial_return_j2_mixed
+% backend taichi
+% args xi_eq:scalar, alpha:scalar, mu:scalar, K:scalar, n:scalar, H_kin:scalar, sigy0:scalar, tol:scalar, max_iter:scalar
+
+% type sy scalar
+% type f scalar
+% type dl scalar
+% type k scalar
+% type Hp scalar
+% type res scalar
+% type denom scalar
+% type ap scalar
+% type plastic scalar
+% type alpha_new scalar
+
+\begin{algorithmic}
+\State $sy = sigy0 + K \cdot \alpha^{n}$
+\State $f = xi_eq - sy$
+\If{$f < 0$}
+    \Return $0, \alpha, 0$
+\EndIf
+\State $dl = 0$
+\For{$k = 1, 2, \ldots, max_iter$}
+    \State $ap = \alpha + dl$
+    \If{$ap < tol$}
+        \State $sy = sigy0$
+        \State $Hp = 0$
+    \Else
+        \State $sy = sigy0 + K \cdot ap^{n}$
+        \State $Hp = K \cdot n \cdot ap^{n - 1}$
+    \EndIf
+    \State $res = xi_eq - 3 \cdot \mu \cdot dl - H_kin \cdot dl - sy$
+    \State $denom = 3 \cdot \mu + H_kin + Hp$
+    \State $dl = dl + res / denom$
+\EndFor
+\State $alpha_new = \alpha + dl$
+\State $plastic = 1$
+\Return $plastic, alpha_new, dl$
+\end{algorithmic}

@@ -30,7 +30,7 @@ from mechdsl import compile_latex
 if TYPE_CHECKING:
     from types import ModuleType
 
-_EXAMPLES_DIR = Path(__file__).resolve().parents[3] / "dev" / "examples"
+_EXAMPLES_DIR = Path(__file__).resolve().parents[3] / "examples"
 _OGDEN_TEX = _EXAMPLES_DIR / "ogden_energy.tex"
 
 # Two-term compressible Ogden. Positive exponents keep the directive scalars free

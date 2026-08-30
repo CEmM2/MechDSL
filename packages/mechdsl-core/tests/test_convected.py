@@ -128,7 +128,6 @@ class TestGreenLagrangeConvected:
 
         E = green_lagrange_convected(g=g, G=G)
 
-        # E = 0.5 * (g - I)
         expected = sp.Rational(1, 2) * (g - G)
         assert sp.simplify(E - expected) == sp.zeros(3)
 

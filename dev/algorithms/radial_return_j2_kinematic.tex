@@ -1,0 +1,83 @@
+% constitutive_latex Phase 6 (P6-2): J2 kinematic linear-hardening
+% radial-return algpseudocode source.
+%
+% Scalar return-map inner solve for J2 plasticity with LINEAR KINEMATIC
+% hardening (Prager). The yield surface translates (back-stress beta)
+% instead of expanding: yield is measured on the RELATIVE (shifted)
+% stress xi = dev(S) - beta, with a CONSTANT yield radius sigma_y0
+% (no isotropic hardening — all hardening lives in beta).
+%
+% Yield function (von Mises of the relative stress):
+%
+%     f = ||xi||_eq - sigma_y0,   ||xi||_eq = sqrt(3/2 * xi:xi)
+%
+% For LINEAR kinematic hardening the discrete consistency condition is
+% LINEAR in the plastic-multiplier increment, so dl has a CLOSED FORM:
+%
+%     ||xi_trial||_eq - sigma_y0 - (3*mu + H_kin)*dl = 0
+%       =>  dl = (||xi_trial||_eq - sigma_y0) / (3*mu + H_kin)
+%
+% This scalar source is authored as the SAME fixed-iteration loop
+% structure as the isotropic power-law variant
+% (``dev/algorithms/radial_return_j2.tex``) for transpile-pattern
+% consistency: the residual ``res = xi_eq - (3*mu + H_kin)*dl - sigy0``
+% is linear in dl, so the Newton update (denominator ``3*mu + H_kin``)
+% converges in a single step and every subsequent iteration leaves dl
+% unchanged at the exact root (res = 0 => the closed form above).
+% Authoring it as a loop
+% keeps P6-1/P6-2/P6-3 on one structural pattern that algo2code already
+% transpiles end-to-end.
+%
+% Back-stress update (Prager, discrete) is performed in TENSOR space by
+% the mechdsl-core wrapper:
+%
+%     beta_new = beta_old + (2/3)*H_kin*dl*N_flow,   N_flow = xi/||xi||
+%
+% with ||N_flow||_eq = 1, so |dbeta|_eq = (2/3)*H_kin*dl and the
+% relative stress contracts at rate (3*mu + H_kin)*dl per the closed
+% form above. All tensor algebra (deviatoric split, relative stress,
+% von Mises of xi, stress reconstruction, plastic-strain and back-stress
+% update, algorithmic tangent) is orchestrated in Python by
+% ``mechdsl.lib.plasticity_kinematic``. This scalar source owns ONLY the
+% plastic-multiplier solve, exactly as the isotropic variant does.
+%
+% Inputs
+% ------
+%   xi_eq    : von Mises equivalent of the trial RELATIVE stress xi_trial
+%   mu       : shear modulus (second Lame parameter)
+%   H_kin    : linear kinematic-hardening (Prager) modulus
+%   sigy0    : (constant) yield stress
+%   tol      : residual tolerance (passed through; the linear solve is
+%              exact so the loop converges in one iteration)
+%   max_iter : iteration cap (>= 1 suffices; kept for pattern symmetry)
+%
+% Outputs
+% -------
+%   plastic : 1 if plastic flow occurred, 0 if elastic step
+%   dl      : plastic multiplier increment (delta_lambda)
+
+% algorithm radial_return_j2_kinematic
+% backend taichi
+% args xi_eq:scalar, mu:scalar, H_kin:scalar, sigy0:scalar, tol:scalar, max_iter:scalar
+
+% type f scalar
+% type dl scalar
+% type k scalar
+% type res scalar
+% type denom scalar
+% type plastic scalar
+
+\begin{algorithmic}
+\State $f = xi_eq - sigy0$
+\If{$f < 0$}
+    \Return $0, 0$
+\EndIf
+\State $dl = 0$
+\State $denom = 3 \cdot \mu + H_kin$
+\For{$k = 1, 2, \ldots, max_iter$}
+    \State $res = xi_eq - 3 \cdot \mu \cdot dl - H_kin \cdot dl - sigy0$
+    \State $dl = dl + res / denom$
+\EndFor
+\State $plastic = 1$
+\Return $plastic, dl$
+\end{algorithmic}

@@ -37,13 +37,11 @@ class NewtonConfig:
     """Relative tolerance: converged when ``||R|| < tol * ||R_0||``."""
 
     max_iter: int = 50
-    """Maximum Newton iterations."""
 
     cg_tol: float = 1e-10
     """Relative tolerance for the CG linear solver."""
 
     cg_max_iter: int = 2000
-    """Maximum CG iterations."""
 
 
 @dataclass
@@ -51,13 +49,10 @@ class NewtonResult:
     """Result of a Newton-Raphson solve."""
 
     converged: bool
-    """Whether the solve converged within tolerance."""
 
     n_iterations: int
-    """Number of Newton iterations performed."""
 
     residual_history: list[float] = field(default_factory=list)
-    """Residual norm at each iteration."""
 
 
 def newton_solve(
@@ -136,7 +131,7 @@ def newton_solve(
 
         # Fail-loud on a non-finite residual. A NaN/Inf ``||R||`` means the
         # assembled residual is poisoned -- e.g. the generated J2 return map
-        # set ``dl = NaN`` on non-convergence (WI-1, taichi_printer) and it
+        # set ``dl = NaN`` on non-convergence (see taichi_printer) and it
         # propagated through stress -> internal force -> R. A magnitude-only
         # convergence test cannot catch this: ``NaN < tol`` is False, so the
         # loop would silently exhaust ``max_iter`` (or, on a backend that

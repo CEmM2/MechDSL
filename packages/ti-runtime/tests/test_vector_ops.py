@@ -37,7 +37,7 @@ def test_xpay():
     rng = np.random.default_rng(2)
     xv, yv = rng.standard_normal((4, 3)), rng.standard_normal((4, 3))
     x, y = _vfield(xv), _vfield(yv)
-    v.xpay(x, -0.5, y)  # x = -0.5*x + y
+    v.xpay(x, -0.5, y)
     np.testing.assert_allclose(x.to_numpy(), -0.5 * xv + yv, rtol=1e-12)
 
 

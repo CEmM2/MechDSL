@@ -62,11 +62,6 @@ def _compile_from_context(ctx: dict[str, Any]) -> str:
     return emit(bundle)
 
 
-# ---------------------------------------------------------------------------
-# P1-6 Tests
-# ---------------------------------------------------------------------------
-
-
 class TestTaskP1_6FormulationSwitching:
     """
     Tests for Task P1-6: Formulation switching (directive + codegen dispatch)
@@ -141,8 +136,8 @@ class TestTaskP1_6FormulationSwitching:
                 boundaries=_MVP_BOUNDARIES,
             )
 
-        # tet4 + reduced integration still rejected (Plan B phase B5).
-        # tet4 + full is now accepted after the P5-6 ElementFactory wiring.
+        # tet4 + reduced integration is still rejected; tet4 + full is accepted
+        # (ElementFactory wiring).
         with pytest.raises(UnsupportedError, match="Plan B"):
             build_context(
                 dim=3,
@@ -154,7 +149,7 @@ class TestTaskP1_6FormulationSwitching:
                 integration="reduced",
             )
 
-        # lemaitre_damage still rejected (damage lands in Plan B phase B6)
+        # lemaitre_damage (damage models) still rejected
         with pytest.raises(UnsupportedError, match="lemaitre_damage"):
             build_context(
                 dim=3,

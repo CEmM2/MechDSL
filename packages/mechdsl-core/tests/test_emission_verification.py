@@ -111,14 +111,14 @@ def _count_pattern(source: str, pattern: str) -> int:
 
 
 # ===========================================================================
-# P6.3: Elastic constitutive emission tests
+# Elastic constitutive emission tests
 # ===========================================================================
 
 
 class TestElasticConstitutiveEmission:
     """P6.3 — Verify the SVK constitutive function emission is mathematically correct."""
 
-    # -- P6.3.1: SVK stress formula --
+    # -- SVK stress formula --
 
     def test_svk_stress_formula_complete(self, svk_source: str) -> None:
         """SVK stress: S = lam * tr_E * I + 2 * mu * E must be present."""
@@ -134,7 +134,7 @@ class TestElasticConstitutiveEmission:
         """The mu term must have the factor 2.0 (not 1.0 or missing)."""
         assert "2.0 * mu * E" in svk_source
 
-    # -- P6.3.2: Deformation gradient --
+    # -- Deformation gradient --
 
     def test_deformation_gradient_identity_plus_grad_u(self, svk_source: str) -> None:
         """Constitutive receives F; the kernel computes F = I + grad_u."""
@@ -147,7 +147,7 @@ class TestElasticConstitutiveEmission:
         """Emitted code documents F = I + grad_u semantics."""
         assert "Deformation gradient F = I + grad_u" in svk_source
 
-    # -- P6.3.3: Green-Lagrange strain --
+    # -- Green-Lagrange strain --
 
     def test_green_lagrange_strain(self, svk_source: str) -> None:
         """E = 0.5 * (C - I) must be computed in the constitutive function."""
@@ -159,7 +159,7 @@ class TestElasticConstitutiveEmission:
         func_src = _get_source_lines_for_function(svk_source, "constitutive_update")
         assert "0.5 * (C" in func_src
 
-    # -- P6.3.4: Right Cauchy-Green tensor --
+    # -- Right Cauchy-Green tensor --
 
     def test_right_cauchy_green(self, svk_source: str) -> None:
         """C = F^T @ F must be present in constitutive function."""
@@ -173,14 +173,14 @@ class TestElasticConstitutiveEmission:
         pos_e = func_src.find("E = 0.5 * (C - I3)")
         assert pos_c < pos_e, "C must be computed before E"
 
-    # -- P6.3.5: Identity matrix --
+    # -- Identity matrix --
 
     def test_identity_matrix_3x3(self, svk_source: str) -> None:
         """Constitutive uses a properly sized 3x3 identity."""
         func_src = _get_source_lines_for_function(svk_source, "constitutive_update")
         assert "ti.Matrix.identity(ti.f64, 3)" in func_src
 
-    # -- P6.3.6: CSE opportunity — tr_E computed once and reused --
+    # -- CSE opportunity — tr_E computed once and reused --
 
     def test_trace_computed_once(self, svk_source: str) -> None:
         """tr_E should be computed exactly once (CSE opportunity)."""
@@ -203,7 +203,7 @@ class TestElasticConstitutiveEmission:
         # Should not have E.trace() — we use the precomputed tr_E
         assert "E.trace()" not in func_src
 
-    # -- P6.3.7: Constitutive function signature and decorator --
+    # -- Constitutive function signature and decorator --
 
     def test_constitutive_is_ti_func(self, svk_ast: ast.Module) -> None:
         """constitutive_update must be decorated with @ti.func."""
@@ -242,7 +242,7 @@ class TestElasticConstitutiveEmission:
         func_src = _get_source_lines_for_function(svk_source, "constitutive_update")
         assert "return S" in func_src
 
-    # -- P6.3.8: Cross-reference with symbolic model --
+    # -- Cross-reference with symbolic model --
 
     def test_svk_matches_symbolic_kinematics_chain(self, svk_source: str) -> None:
         """The constitutive function follows the kinematics chain F -> C -> E -> S.
@@ -264,14 +264,14 @@ class TestElasticConstitutiveEmission:
 
 
 # ===========================================================================
-# P6.4: Internal force kernel emission tests
+# Internal force kernel emission tests
 # ===========================================================================
 
 
 class TestInternalForceEmission:
     """P6.4 — Verify the internal force kernel emission is structurally correct."""
 
-    # -- P6.4.1: Element loop is present and uses runtime range --
+    # -- Element loop is present and uses runtime range --
 
     def test_element_loop_runtime(self, svk_source: str) -> None:
         """Element loop must use runtime range (not ti.static)."""
@@ -283,7 +283,7 @@ class TestInternalForceEmission:
         kernel_src = _get_source_lines_for_function(svk_source, "compute_internal_force")
         assert "ti.static(range(n_elem))" not in kernel_src
 
-    # -- P6.4.2: Quadrature loop is present --
+    # -- Quadrature loop is present --
 
     def test_quadrature_loop_static(self, svk_source: str) -> None:
         """Quadrature loop uses ti.static (N_QP=8 is element-type constant)."""
@@ -299,7 +299,7 @@ class TestInternalForceEmission:
         assert pos_q >= 0, "Quadrature loop missing"
         assert pos_e < pos_q, "Quadrature loop must be nested inside element loop"
 
-    # -- P6.4.3: Constitutive call present --
+    # -- Constitutive call present --
 
     def test_constitutive_call_inside_kernel(self, svk_source: str) -> None:
         """Internal force kernel must call constitutive_update."""
@@ -313,7 +313,7 @@ class TestInternalForceEmission:
         pos_s = kernel_src.find("S = constitutive_update(F, lam, mu)")
         assert pos_f < pos_s, "F must be computed before calling constitutive_update"
 
-    # -- P6.4.4: PK1 computation (P = F @ S) --
+    # -- PK1 computation (P = F @ S) --
 
     def test_pk1_stress(self, svk_source: str) -> None:
         """1st Piola-Kirchhoff stress P = F @ S must be computed."""
@@ -327,7 +327,7 @@ class TestInternalForceEmission:
         pos_p = kernel_src.find("P = F @ S")
         assert pos_s < pos_p, "P must be computed after S"
 
-    # -- P6.4.5: Force scatter --
+    # -- Force scatter --
 
     def test_force_scatter_accumulation(self, svk_source: str) -> None:
         """Internal force kernel accumulates into f_int via atomic-safe pattern."""
@@ -346,7 +346,7 @@ class TestInternalForceEmission:
         assert "detJ0 = J0.determinant()" in kernel_src
         assert "w_q * detJ0 * force_a[i]" in kernel_src
 
-    # -- P6.4.6: Nodal gathering --
+    # -- Nodal gathering --
 
     def test_reference_coords_gathered(self, svk_source: str) -> None:
         """Element gathers reference coordinates from x_ref."""
@@ -363,7 +363,7 @@ class TestInternalForceEmission:
         kernel_src = _get_source_lines_for_function(svk_source, "compute_internal_force")
         assert "nid = elem_nodes[e, a]" in kernel_src
 
-    # -- P6.4.7: Kernel decorator --
+    # -- Kernel decorator --
 
     def test_internal_force_is_ti_kernel(self, svk_source: str) -> None:
         """compute_internal_force must be decorated with @ti.kernel."""
@@ -373,7 +373,7 @@ class TestInternalForceEmission:
             "compute_internal_force must be decorated with @ti.kernel"
         )
 
-    # -- P6.4.8: Index partitioning correctness --
+    # -- Index partitioning correctness --
 
     def test_node_loops_use_runtime(self, svk_source: str) -> None:
         """Node loops (N_NODES=8 > 6) use runtime range per convention."""
@@ -392,7 +392,7 @@ class TestInternalForceEmission:
         assert "for i in ti.static(range(DIM)):" in kernel_src
         assert "for I in ti.static(range(DIM)):" in kernel_src
 
-    # -- P6.4.9: f_int zeroed before accumulation --
+    # -- f_int zeroed before accumulation --
 
     def test_f_int_zeroed(self, svk_source: str) -> None:
         """Internal force must be zeroed before the element loop."""
@@ -403,7 +403,7 @@ class TestInternalForceEmission:
         assert pos_elem >= 0, "Element loop not found"
         assert pos_zero < pos_elem, "f_int must be zeroed before element loop"
 
-    # -- P6.4.10: Jacobian computation --
+    # -- Jacobian computation --
 
     def test_jacobian_computation(self, svk_source: str) -> None:
         """Reference Jacobian J0, its inverse, and determinant are computed."""
@@ -417,7 +417,7 @@ class TestInternalForceEmission:
         kernel_src = _get_source_lines_for_function(svk_source, "compute_internal_force")
         assert "dNdX = dN_dxi @ J0_inv" in kernel_src
 
-    # -- P6.4.11: AST structural checks --
+    # -- AST structural checks --
 
     def test_kernel_has_for_loops(self, svk_ast: ast.Module) -> None:
         """compute_internal_force must contain For loop nodes in its AST."""
@@ -431,7 +431,7 @@ class TestInternalForceEmission:
 
 
 # ===========================================================================
-# P6.5: Tangent matvec emission tests
+# Tangent matvec emission tests
 # ===========================================================================
 
 
@@ -450,7 +450,7 @@ class TestTangentMatvecEmission:
     - the gather / scatter pattern via ``Kv_e`` accumulated per element
     """
 
-    # -- P6.5.1: Analytical linearisation is element-local --
+    # -- Analytical linearisation is element-local --
 
     def test_loops_over_elements(self, svk_source: str) -> None:
         """Tangent matvec iterates over elements via a Python range loop."""
@@ -503,7 +503,7 @@ class TestTangentMatvecEmission:
         assert "Kv_e += w_q * detJ0 * (dN_dX @ dP.T)" in matvec_src
         assert "Kv[nodes[a]] += Kv_e[a]" in matvec_src
 
-    # -- P6.5.2: Non-mutating with respect to Taichi fields --
+    # -- Non-mutating with respect to Taichi fields --
 
     def test_reads_fields_via_to_numpy(self, svk_source: str) -> None:
         """Taichi fields are read once, never written."""
@@ -519,7 +519,7 @@ class TestTangentMatvecEmission:
         matvec_src = _get_source_lines_for_function(svk_source, "tangent_matvec")
         assert "compute_internal_force(" not in matvec_src
 
-    # -- P6.5.3: Input/output shape handling --
+    # -- Input/output shape handling --
 
     def test_reshapes_input_vector(self, svk_source: str) -> None:
         """Input flat vector is reshaped to (n_nodes, 3)."""
@@ -531,7 +531,7 @@ class TestTangentMatvecEmission:
         matvec_src = _get_source_lines_for_function(svk_source, "tangent_matvec")
         assert ".ravel()" in matvec_src
 
-    # -- P6.5.4: Function signature --
+    # -- Function signature --
 
     def test_matvec_signature(self, svk_source: str) -> None:
         """tangent_matvec takes (v_flat, lam, mu) and returns ndarray."""
@@ -542,7 +542,7 @@ class TestTangentMatvecEmission:
         assert "lam" in sig
         assert "mu" in sig
 
-    # -- P6.5.5: Not a ti.kernel (runs at Python level for numpy ops) --
+    # -- Not a ti.kernel (runs at Python level for numpy ops) --
 
     def test_matvec_is_python_function(self, svk_source: str) -> None:
         """tangent_matvec must NOT be a @ti.kernel (it uses numpy)."""
@@ -554,14 +554,14 @@ class TestTangentMatvecEmission:
 
 
 # ===========================================================================
-# P7.1: Newton driver emission tests
+# Newton driver emission tests
 # ===========================================================================
 
 
 class TestNewtonDriverEmission:
     """P7.1 — Verify the Newton-Raphson driver emission."""
 
-    # -- P7.1.1: Newton loop structure --
+    # -- Newton loop structure --
 
     def test_newton_iteration_loop(self, svk_source: str) -> None:
         """Newton driver has an iteration loop over max_iter."""
@@ -582,7 +582,7 @@ class TestNewtonDriverEmission:
         sig = match.group(1)
         assert "tol" in sig
 
-    # -- P7.1.2: Residual computation --
+    # -- Residual computation --
 
     def test_residual_is_fint_minus_fext(self, svk_source: str) -> None:
         """Residual = f_int - f_ext (tension-positive convention)."""
@@ -594,7 +594,7 @@ class TestNewtonDriverEmission:
         driver_src = _get_source_lines_for_function(svk_source, "newton_solve")
         assert "np.linalg.norm(r_flat)" in driver_src
 
-    # -- P7.1.3: Convergence check --
+    # -- Convergence check --
 
     def test_convergence_check_against_tol(self, svk_source: str) -> None:
         """Convergence check: res_norm < conv_threshold (dual abs/rel tolerance)."""
@@ -613,7 +613,7 @@ class TestNewtonDriverEmission:
         pos_solve = driver_src.find("solver.solve(")
         assert pos_check < pos_solve, "Convergence check must precede linear solve"
 
-    # -- P7.1.4: Linear solve --
+    # -- Linear solve --
 
     def test_linear_solve_call(self, svk_source: str) -> None:
         """Newton driver calls the project's CGSolver for the linear system."""
@@ -636,7 +636,7 @@ class TestNewtonDriverEmission:
         driver_src = _get_source_lines_for_function(svk_source, "newton_solve")
         assert "cg_res" in driver_src
 
-    # -- P7.1.5: Displacement update --
+    # -- Displacement update --
 
     def test_displacement_update(self, svk_source: str) -> None:
         """u += du update must be present."""
@@ -648,7 +648,7 @@ class TestNewtonDriverEmission:
         driver_src = _get_source_lines_for_function(svk_source, "newton_solve")
         assert "u.from_numpy(u_arr + du_arr)" in driver_src
 
-    # -- P7.1.6: Newton loop ordering --
+    # -- Newton loop ordering --
 
     def test_newton_step_ordering(self, svk_source: str) -> None:
         """Newton steps must be in order: f_int, residual, check, solve, update."""
@@ -666,7 +666,7 @@ class TestNewtonDriverEmission:
             "Newton steps out of order: expected f_int -> residual -> check -> solve -> update"
         )
 
-    # -- P7.1.7: Non-convergence handling --
+    # -- Non-convergence handling --
 
     def test_raises_on_non_convergence(self, svk_source: str) -> None:
         """Driver raises RuntimeError if convergence is not reached."""
@@ -674,14 +674,14 @@ class TestNewtonDriverEmission:
         assert "raise RuntimeError" in driver_src
         assert "did not converge" in driver_src
 
-    # -- P7.1.8: Internal force is called within Newton --
+    # -- Internal force is called within Newton --
 
     def test_newton_calls_internal_force(self, svk_source: str) -> None:
         """Newton driver calls compute_internal_force."""
         driver_src = _get_source_lines_for_function(svk_source, "newton_solve")
         assert "compute_internal_force(lam, mu)" in driver_src
 
-    # -- P7.1.9: Solver import --
+    # -- Solver import --
 
     def test_project_solver_import(self, svk_source: str) -> None:
         """Newton driver imports the project's CGSolver, not scipy."""
@@ -689,14 +689,14 @@ class TestNewtonDriverEmission:
         assert "from mechdsl.solver.import_adapter import CGSolver" in driver_src
         assert "scipy" not in driver_src
 
-    # -- P7.1.10: n_dof computation --
+    # -- n_dof computation --
 
     def test_n_dof_computation(self, svk_source: str) -> None:
         """Newton driver computes n_dof = n_nodes * DIM."""
         driver_src = _get_source_lines_for_function(svk_source, "newton_solve")
         assert "n_dof = n_nodes * DIM" in driver_src
 
-    # -- P7.1.11: AST structural checks --
+    # -- AST structural checks --
 
     def test_newton_has_for_loop(self, svk_ast: ast.Module) -> None:
         """newton_solve must contain at least one For loop (the Newton iteration)."""
@@ -756,9 +756,8 @@ class TestEmittedSourceQuality:
         assert "TODO" not in func_src, (
             "SVK constitutive should not have TODO placeholders"
         )  # intentional-cleanup-site
-        # post_recovery_plan Phase 6 (P6-4): the two `# intentional-cleanup-site`
-        # markers above are scanned by test_phase6_exit.py in place of the
-        # previously-hardcoded line-number whitelist `_INTENTIONAL_CLEANUP_MATCHES`.
+        # The two `# intentional-cleanup-site` markers above are scanned by
+        # test_phase6_exit.py in place of a hardcoded line-number whitelist.
 
     def test_consistent_lame_parameter_names(self, svk_source: str) -> None:
         """Lame parameters are consistently named 'lam' and 'mu' throughout."""

@@ -1,6 +1,7 @@
 """Generated-tests emitter, one pytest file per scalar plasticity law (Task P3-2).
 
-MFront-mimic Cycle M0, Phase 3 (``dev/plans/mfront_cycleM0.md`` lines 101-103).
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier).
 
 :func:`emit_tests` writes a **self-contained, valid-Python** pytest file that
 exercises one :class:`~mechdsl.lawgen.contracts.PlasticityCarrierSpec`. The file
@@ -98,10 +99,11 @@ PLACEHOLDER_PARAM_VALUE: float = 1.0
 #: 6e-6``, so ``1e-6`` sits comfortably in that band.
 FD_STEP: float = 1e-6
 
-#: Relative tolerance for the FD-vs-analytic derivative comparison. ``1e-5`` is
-#: standard central-difference precision — NOT the ``1e-10`` P4-2 equivalence
-#: gate. The generated test uses this as ``rtol`` (with a small ``atol`` so a
-#: near-zero analytic derivative does not force an unreachable relative match).
+# Relative tolerance for the FD-vs-analytic derivative comparison. ``1e-5`` is
+# standard central-difference precision — deliberately looser than the symbolic
+# equivalence gate. The generated test uses this as ``rtol`` (with a small
+# ``atol`` so a near-zero analytic derivative does not force an unreachable
+# relative match).
 FD_RTOL: float = 1e-5
 
 #: The free-variable name the generated tests treat as the primary sweep axis
@@ -111,8 +113,7 @@ PRIMARY_VARIABLE_NAME: str = "p"
 
 # Per-factor primary-variable convention (the FD-derivative axis for each of the
 # three shipped factors). R/H/Q are THREE SEPARATE scalar factors, not a value and
-# its derivative — matching Cycle 0's ``swift_voce.py`` ``get_R``/``get_H``/
-# ``get_Q``:
+# its derivative — matching ``swift_voce.py``'s ``get_R``/``get_H``/``get_Q``:
 #   * R = isotropic HARDENING flow-stress, primarily a function of the accumulated
 #     plastic strain ``p`` (a.k.a. peeq);
 #   * H = strain-RATE factor, primarily a function of the rate ``edot``;
@@ -220,7 +221,7 @@ def emit_tests(
     if target_test_path is None:
         raise ValueError("emit_tests requires target_test_path (where to write the pytest file).")
 
-    # Lowering ``R`` here is the fail-loud gate (R2): an unsupported node raises
+    # Lowering ``R`` here is the fail-loud gate: an unsupported node raises
     # LawgenError before any file is written. The returned Taichi source is what
     # the guarded JIT smoke test compiles. Guards on so the smoke test matches the
     # production (guarded) emission path.

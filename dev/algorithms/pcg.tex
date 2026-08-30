@@ -1,0 +1,103 @@
+% Matrix-free Preconditioned Conjugate Gradient (PCG) — PlanJune14 P4-2.
+%
+% The canonical PCG algorithm authored for the **all-Taichi on-device seam path**
+% (Option 1): the operator ``A`` and the preconditioner ``M_inv`` are both
+% *callables* (matrix-free), so this box transpiles via
+% ``algo2code.transpile(..., runtime='ti_runtime')`` into a body that solves
+% ``A x = b`` over ``ti.Vector.field`` DOF vectors without ever forming or storing
+% a matrix and without NumPy in the hot path.
+%
+% Provenance
+% ----------
+% Identical in algorithm to the canonical PCG LaTeX
+% (``algo2code.library.pcg.PCG_ALGORITHM_LATEX`` / the hand twin
+% ``mechdsl.solver.import_adapter.Algo2CodePCGSolver``) and to the matrix-free
+% ``_CALLABLE_PCG_LATEX`` proven runnable in P2-2.  The *only* surface change vs
+% the canonical box is the operator type:
+%
+%   canonical:  ``% args A:matrix,    ... apply_M_inv:callable, ...``
+%   here:       ``% args A:callable,  ... M_inv:callable,       ...``
+%
+% A matrix ``A`` lowers to a dense scalar-indexed ``_matvec`` (incompatible with
+% the ``ti.Vector.field`` layout the seam uses); a callable ``A`` lowers to the
+% in-place ``A(out, p)`` operator call — the ``ti_runtime`` ``apply_A(out, x)``
+% seam contract.  The P2-2 runtime-mode guard requires exactly this: a callable
+% operator + a vector argument.
+%
+% Seam contract (mirrors ti_runtime.seams.LinearSolveContext)
+% -----------------------------------------------------------
+%   A(out, x)        — operator:        out = A @ x       (out FIRST)
+%   M_inv(r, z)      — preconditioner:  z   = M^{-1} r    (out LAST)
+%
+% This box productionizes the PJ-1 spike's hand-written ``pcg`` body
+% (``packages/mechdsl-core/tests/spike/svk_hex8_taichi.py``): the generated body
+% maps line-for-line to that hand-written PCG, but is *derived from LaTeX* rather
+% than hand-coded.
+%
+% Inputs
+% ------
+%   A       : matrix-free operator (callable, in-place ``A(out, x)``)
+%   b       : right-hand side vector
+%   x       : solution vector (carries the initial guess; solved in place)
+%   M_inv   : preconditioner apply (callable, in-place ``M_inv(r, z)``)
+%   tol     : relative convergence tolerance (scalar)
+%   maxiter : maximum iteration count (scalar)
+%
+% Output
+% ------
+%   x, iterations, residual_norm, converged
+%
+%   ``converged`` is a hard non-convergence flag: literal ``1`` on the two
+%   success returns (the ``r_0 = 0`` early-out and the in-loop tolerance hit),
+%   literal ``0`` on maxiter exhaustion and on the ``|pq| < 1e-300`` breakdown
+%   (which ``break``s out of the loop and falls through to the maxiter return).
+%   A caller that sees ``converged == 0`` must NOT consume ``x`` -- the inner
+%   solve failed and ``x`` is garbage (see seam_solve.make_seam_solver, which
+%   raises rather than letting a Newton step advance on it).
+
+% algorithm pcg
+% backend taichi
+% args A:callable, b:vector, x:vector, M_inv:callable, tol:scalar, maxiter:scalar
+
+% type r vector
+% type z vector
+% type p vector
+% type q vector
+% type rho scalar
+% type rho_new scalar
+% type alpha scalar
+% type beta scalar
+% type pq scalar
+% type r0_norm scalar
+% type r_norm scalar
+
+\begin{algorithmic}
+\State $r = b - A \cdot x$                                          % vector
+\State $r_0 = \lVert r \rVert_2$                                    % scalar
+\If{$r_0 = 0$}
+    \Return $x, 0, 0, 1$
+\EndIf
+\State $z = M^{-1}(r)$                                              % vector
+\State $p = z$                                                      % vector
+\State $\rho = r^\top z$                                            % scalar
+\For{$k = 1, 2, \ldots, \text{maxiter}$}
+    \State $q = A \cdot p$                                          % vector
+    \State $pq = p^\top q$                                          % scalar
+    \If{$|pq| < 10^{-300}$}
+        \State \textbf{break}
+    \EndIf
+    \State $\alpha = \frac{\rho}{pq}$                               % scalar
+    \State $x = x + \alpha \, p$                                    % vector
+    \State $r = r - \alpha \, q$                                    % vector
+    \State $r_n = \lVert r \rVert_2$                                % scalar
+    \If{$r_n < \text{tol} \cdot r_0$}
+        \Return $x, k, r_n, 1$
+    \EndIf
+    \State $z = M^{-1}(r)$                                          % vector
+    \State $\rho_{\text{new}} = r^\top z$                           % scalar
+    \State $\beta = \frac{\rho_{\text{new}}}{\rho}$                 % scalar
+    \State $p = z + \beta \, p$                                     % vector
+    \State $\rho = \rho_{\text{new}}$                               % scalar
+\EndFor
+\Return $x, \text{maxiter}, \lVert r \rVert_2, 0$
+\end{algorithmic}

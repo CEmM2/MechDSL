@@ -63,7 +63,6 @@ __all__ = ["critical_timestep"]
 #   0:(-,-,-), 1:(+,-,-), 2:(+,+,-), 3:(-,+,-)
 #   4:(-,-,+), 5:(+,-,+), 6:(+,+,+), 7:(-,+,+)
 
-# TET4 has 6 edges:
 _TET4_EDGES: list[tuple[int, int]] = [
     (0, 1),
     (0, 2),
@@ -101,7 +100,7 @@ def _hex8_volume(X_elem: NDArray) -> float:
     n_qp = GRAD_AT_QUAD.shape[0]  # 8 for full 2×2×2 rule
     vol = 0.0
     for q in range(n_qp):
-        J0 = X_elem.T @ GRAD_AT_QUAD[q]  # (3, 3)
+        J0 = X_elem.T @ GRAD_AT_QUAD[q]
         vol += float(np.linalg.det(J0)) * float(HEX8_QUAD_WEIGHTS[q])
     return vol
 
@@ -251,7 +250,7 @@ def _hex8_critical_timestep(
 
     dt_min = np.inf
     for e in range(n_elem):
-        X_elem = coords[conn[e]]  # (8, 3)
+        X_elem = coords[conn[e]]
         vol = _hex8_volume(X_elem)
         if vol <= 0.0:
             raise ValueError(
@@ -290,7 +289,7 @@ def _tet_critical_timestep(
     dt_min = np.inf
     for e in range(n_elem):
         # For TET10, corner nodes are indices 0..3 (mid-nodes are 4..9).
-        X_elem = coords[conn[e]]  # (4 or 10, 3)
+        X_elem = coords[conn[e]]
         L_e = _tet4_shortest_edge(X_elem, edges)
         if L_e <= 0.0:
             raise ValueError(f"Zero or negative edge length ({L_e:.6e}) at element {e}.")

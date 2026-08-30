@@ -285,7 +285,6 @@ class TaichiEmitter:
         collector = KernelCollector()
         collector.scan(self.algo.body)
 
-        # Pre-scan for temp count
         self._pre_scan_temps(self.algo.body)
 
         if self.runtime == RUNTIME_TI_RUNTIME:
@@ -359,10 +358,8 @@ class TaichiEmitter:
                     'argument is available to determine n.")'
                 )
             else:
-                # post_recovery_plan Phase 5 codegen fix: previously
-                # emitted ``n = b.shape[0]`` unconditionally, which
-                # broke scalar/matrix-only algorithms with no vector
-                # argument. Keep a harmless marker only when no
+                # Emitting ``n = b.shape[0]`` unconditionally would break scalar/matrix-only
+                # algorithms with no vector argument; keep a harmless marker only when no
                 # vector-sized allocation depends on n.
                 self._write("n = 0  # no vector arg present; scalar/matrix-only algorithm")
 
@@ -552,9 +549,9 @@ class TaichiEmitter:
             return self._emit_dot(expr)
         # All vector-valued binary ops (matvec, scale, +, -) lower through the
         # SSA pass: every emitted op is a single kernel call writing a field,
-        # so arbitrarily nested RHS like `r + beta*(p - omega*v)` is faithful
-        # (issue #307 F1). When a target field is given the result is written
-        # there and None is returned; otherwise a fresh temp field name is.
+        # so arbitrarily nested RHS like `r + beta*(p - omega*v)` is faithful.
+        # When a target field is given the result is written there and None is
+        # returned; otherwise a fresh temp field name is.
         if expr.inferred_type == VarType.VECTOR and expr.op in (
             "matvec",
             "scale",
@@ -592,12 +589,12 @@ class TaichiEmitter:
             return f"_v.dot({self._emit_expr(left)}, {self._emit_expr(expr.right)})"
         return f"_dot({self._emit_expr(left)}, {self._emit_expr(expr.right)})"
 
-    # ── SSA vector lowering (issue #307 F1) ──────────────────────────────
+    # ── SSA vector lowering ──────────────────────────────────────────────
     #
     # Any vector-valued expression is lowered to a chain of single-kernel-call
     # operations, each writing a fresh temporary field, with the final op
-    # writing the destination. This replaces the old one-level decomposition
-    # that emitted invalid ``ti.field`` Python arithmetic for nested RHS such as
+    # writing the destination. One-level decomposition would emit invalid
+    # ``ti.field`` Python arithmetic for nested RHS such as
     # ``r + beta*(p - omega*v)``. ``scalar * vector`` factors fuse into the
     # parent axpy coefficient, so the common solver updates stay a single
     # ``_vec_add`` and only genuinely nested sub-expressions cost a temp.
@@ -781,10 +778,9 @@ class TaichiEmitter:
 
     def _emit_for(self, stmt: ForLoop):
         # Explicit terminal `\ldots, N` is inclusive (k = 1, 2, ..., N), so the
-        # Python range upper bound is N + 1 — without the +1 the loop ran one
-        # fewer iteration than written (issue #307 for-loop off-by-one). An
-        # open-ended `0, 1, 2, ...` uses `maxiter` as a safety cap (exactly
-        # `maxiter` iterations), not an inclusive terminal.
+        # Python range upper bound is N + 1 — without the +1 the loop would run one
+        # fewer iteration than written. An open-ended `0, 1, 2, ...` uses `maxiter`
+        # as a safety cap (exactly `maxiter` iterations), not an inclusive terminal.
         end = f"{_sanitize(stmt.end_expr)} + 1" if stmt.end_expr else "maxiter"
         self._write(f"for {stmt.var} in range({stmt.start}, {end}):")
         self._indent += 1

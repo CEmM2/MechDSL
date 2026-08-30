@@ -98,7 +98,7 @@ def _count_pattern(source: str, pattern: str) -> int:
 
 
 # ===========================================================================
-# P9.2: Generated vs Handwritten Structural Equivalence
+# Generated vs Handwritten Structural Equivalence
 # ===========================================================================
 
 
@@ -242,9 +242,7 @@ class TestGeneratedVsHandwritten:
         """Generated plastic code reads alpha before constitutive and writes back."""
         _, source = _make_plastic_bundle()
 
-        # Must read alpha from the field
         assert "alpha_old = alpha[e, q]" in source, "Missing alpha read"
-        # Must write alpha back
         assert "alpha[e, q] = alpha_new" in source, "Missing alpha write"
 
     def test_plastic_tangent_preserves_history(self):
@@ -258,7 +256,6 @@ class TestGeneratedVsHandwritten:
         """
         _, source = _make_plastic_bundle()
 
-        # Analytical J2 path must snapshot alpha and call the symbolic return map.
         assert "alpha_np = alpha.to_numpy()" in source, (
             "Analytical J2 tangent must snapshot the alpha field"
         )
@@ -268,7 +265,7 @@ class TestGeneratedVsHandwritten:
         # Neither the FD save/restore pattern nor any write back to the field.
         # Scoped to the tangent_matvec body: newton_solve legitimately
         # snapshots/restores alpha for committed/trial history separation
-        # (WI-2, dev/plans/pj14_fix.md) — that is the driver, not the tangent.
+        # — that is the driver, not the tangent.
         start = source.find("def tangent_matvec(")
         assert start >= 0, "tangent_matvec definition not found"
         rest = source[start:]
@@ -325,7 +322,7 @@ class TestGeneratedVsHandwritten:
 
 
 # ===========================================================================
-# P9.2: Golden file snapshot tests
+# Golden file snapshot tests
 # ===========================================================================
 
 

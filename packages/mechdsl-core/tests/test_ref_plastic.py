@@ -180,7 +180,7 @@ class TestYieldDetection:
         """Single element with large strain exceeds yield → alpha > 0."""
         X_elem = _single_element_coords()
         # Large uniaxial strain to push well past yield
-        eps = 0.01  # 1% strain
+        eps = 0.01
         u_elem = _apply_constant_strain(X_elem, eps_xx=eps)
         alpha_elem = np.zeros(8, dtype=np.float64)
 

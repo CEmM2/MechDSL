@@ -84,7 +84,7 @@ def _make_tl_elastic_bundle() -> tuple[ArtifactBundle, str]:
 
 
 # ---------------------------------------------------------------------------
-# P1-3: UL residual emission
+# UL residual emission
 # ---------------------------------------------------------------------------
 
 
@@ -164,7 +164,6 @@ class TestTaskP1_3InternalForce:
         golden = golden_path.read_text(encoding="utf-8")
         # The golden must parse without SyntaxError.
         ast.parse(golden)
-        # And the current emission must match the golden.
         assert source == golden, (
             f"UL emission differs from golden file {golden_path}.\n"
             "If the change is intentional, delete the golden file and rerun "
@@ -184,7 +183,7 @@ class TestTaskP1_3InternalForce:
 
 
 # ---------------------------------------------------------------------------
-# P1-4: UL tangent emission
+# UL tangent emission
 # ---------------------------------------------------------------------------
 
 

@@ -3,7 +3,7 @@
 Every MechDSL directive is a LaTeX comment that begins with `% mechanics` and sits on
 its own line. This page documents the directives exercised by the canonical
 `compile_latex` path. Examples here are taken from the runnable inputs in
-[`dev/examples/`](https://github.com/SOSOVSKI/MechDSL/tree/main/dev/examples).
+[`examples/`](https://github.com/CEmM2/MechDSL/tree/main/examples).
 
 !!! note "Authoritative grammar"
     The full DSL grammar (including planned directives) lives in

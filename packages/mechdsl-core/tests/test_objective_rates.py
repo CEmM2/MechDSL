@@ -156,7 +156,7 @@ class TestTaskP1_5:
         """
         gamma = 0.5
         F = np.eye(3)
-        F[0, 1] = gamma  # F = [[1, gamma, 0], [0, 1, 0], [0, 0, 1]]
+        F[0, 1] = gamma
         assert abs(np.linalg.det(F) - 1.0) < 1e-14, "simple shear must be isochoric"
 
         # Isotropic shear-only tangent (lam = 0).

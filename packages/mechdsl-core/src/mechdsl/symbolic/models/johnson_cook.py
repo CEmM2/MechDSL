@@ -247,7 +247,7 @@ class JCReturnMappingResult:
     T_new: float  # Updated temperature
     delta_lambda: float  # Plastic multiplier increment dl
     is_plastic: bool  # Whether yielding occurred
-    tangent: NDArray  # Algorithmic tangent (3, 3, 3, 3) — elastic stub for P3-2
+    tangent: NDArray  # Algorithmic tangent (3, 3, 3, 3)
 
 
 # ---------------------------------------------------------------------------
@@ -407,12 +407,12 @@ def radial_return(
         J = np.array(
             [
                 [
-                    -3.0 * mu - dsy_da - dsy_d_dl_rate,  # dR1/ddl
-                    -dsy_dT,  # dR1/ddT
+                    -3.0 * mu - dsy_da - dsy_d_dl_rate,
+                    -dsy_dT,
                 ],
                 [
-                    -mat.beta * (dsy_da + dsy_d_dl_rate) * dl_ - mat.beta * sy,  # dR2/ddl
-                    mat.rho_c_p - mat.beta * dsy_dT * dl_,  # dR2/ddT
+                    -mat.beta * (dsy_da + dsy_d_dl_rate) * dl_ - mat.beta * sy,
+                    mat.rho_c_p - mat.beta * dsy_dT * dl_,
                 ],
             ]
         )
@@ -422,8 +422,8 @@ def radial_return(
     R1 = float("inf")
     R2 = float("inf")
     # J_conv is the 2x2 Newton Jacobian at convergence — retained for the
-    # consistent tangent assembly (P3-3).  Initialised to a dummy value;
-    # always overwritten before the tangent is computed.
+    # consistent tangent assembly.  Initialised to a dummy value; always
+    # overwritten before the tangent is computed.
     J_conv: NDArray = np.zeros((2, 2))
     J = J_conv  # alias so the name is defined before the loop body runs
 
@@ -496,17 +496,19 @@ def radial_return(
     ratio = 3.0 * mu * dl / sigma_eq_trial
     S_updated: NDArray = S_vol_trial + (1.0 - ratio) * S_dev_trial
 
-    # --- Algorithmic consistent tangent (P3-3) ---
+    # --- Algorithmic consistent tangent ---
     #
     # Derived from implicit differentiation of the coupled (dl, dT) Newton system
     # at convergence (Simo & Hughes 1998, §3.4 extended for thermal coupling;
     # Schur-complement elimination of dT).
     #
     # At convergence the 2x2 Newton residual satisfies:
+    #
     #   J_conv * [d(dl)/d(E_IJ); d(dT)/d(E_IJ)] = [∂sigma_eq_trial/∂E_IJ; 0]
     #
     # where J_conv = [[J00, J01], [J10, J11]] is the converged Jacobian.
     # Solving by Cramer's rule:
+    #
     #   d(dl)/d(sigma_eq_trial) = J_conv[1,1] / det(J_conv)
     #
     # For the J2-like box form (Simo & Hughes §3.4, Box 3.5), the effective

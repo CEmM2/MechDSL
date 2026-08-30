@@ -1,6 +1,6 @@
 """Unit tests for the generated-tests emitter (Task P3-2).
 
-Covers the four ``test_plan.cases`` from ``dev/plans/mfront_cycleM0/json/P3-2.json``:
+Covers four emitter cases:
 
 1. ``emit_tests`` on a simple spec → the generated source defines a reference-eval
    test function AND an FD-derivative test function.
@@ -120,7 +120,7 @@ class TestEmittedTestFunctions:
     def test_fd_test_uses_rtol_at_or_below_1e_5(self, tmp_path: Path) -> None:
         out = emit_tests(_voce_spec(), target_test_path=tmp_path / "test_gen_voce.py")
         source = out.read_text(encoding="utf-8")
-        # The FD tolerance must be the standard-FD 1e-5, not the 1e-10 P4-2 gate.
+        # The FD tolerance must be the standard-FD 1e-5, not the stricter 1e-10 reconciliation gate.
         assert FD_RTOL <= 1e-5
         assert f"FD_RTOL = {FD_RTOL!r}" in source
         assert "1e-10" not in source
@@ -238,7 +238,7 @@ class TestGeneratedFileRuns:
 
 
 # ---------------------------------------------------------------------------
-# Fail-loud (R2) — an unsupported node raises LawgenError, no file is written.
+# Fail-loud — an unsupported node raises LawgenError, no file is written.
 # ---------------------------------------------------------------------------
 
 

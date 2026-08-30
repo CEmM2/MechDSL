@@ -62,8 +62,14 @@ ti_cache/
 .publisher-worktrees/
 .sesskey
 
+# Public-release staging tree (curated copy pushed to CEmM2/MechDSL)
+/dev/MechDSL/
+
 # MkDocs build output
 /site/
 
 # Generated wiki / code-intelligence index (logic-loom / akms tooling)
 .repo_wiki/
+
+# comment-sweep working tree
+/.comment-review/

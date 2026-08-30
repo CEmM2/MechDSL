@@ -35,7 +35,6 @@ def _random_spd(n: int, rng: np.random.Generator) -> np.ndarray:
 # Test data
 # ---------------------------------------------------------------------------
 
-# Known 3x3 SPD system from the task spec.
 A_3x3 = np.array(
     [[4.0, 1.0, 0.0], [1.0, 3.0, 1.0], [0.0, 1.0, 2.0]],
     dtype=np.float64,

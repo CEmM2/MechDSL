@@ -30,7 +30,7 @@ exclude-newer = "2026-02-20T00:00:00Z"
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/SOSOVSKI/MechDSL"
+Repository = "https://github.com/CEmM2/MechDSL"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/algo2code"]

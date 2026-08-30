@@ -190,10 +190,10 @@ def _projected_hourglass_vectors(X_nodes: NDArray) -> tuple[NDArray, float]:
     V_e, B_bar = _element_volume_and_mean_B(X_nodes)
     gamma = _GAMMA_RAW.copy()
     # Gamma . X[:, j] = sum_a Gamma[alpha, a] * X[a, j]  ->  shape (4, 3)
-    gamma_dot_X = _GAMMA_RAW @ X_nodes  # (4, 3)
+    gamma_dot_X = _GAMMA_RAW @ X_nodes
     # Subtract (Gamma . X) contracted with B_bar (using 1/V_e factor)
     #   correction[alpha, a] = sum_j (Gamma_alpha . X[:, j]) * B_bar[a, j]
-    correction = gamma_dot_X @ B_bar.T  # (4, 8)
+    correction = gamma_dot_X @ B_bar.T
     gamma -= correction
     return gamma, V_e
 
@@ -289,16 +289,16 @@ def flanagan_belytschko_force(
         msg = f"X_nodes must have shape (8, 3); got {X_nodes.shape}."
         raise ValueError(msg)
 
-    gamma, V_e = _projected_hourglass_vectors(X_nodes)  # (4, 8), scalar
+    gamma, V_e = _projected_hourglass_vectors(X_nodes)
     epsilon = _hourglass_stiffness_scalar(V_e, mu, lambda_h)
 
     # Hourglass generalized displacements h_{alpha, i}  (FB eq. 2.31)
     #   h[alpha, i] = epsilon * sum_b gamma[alpha, b] * u_nodes[b, i]
-    h = epsilon * (gamma @ u_nodes)  # (4, 3)
+    h = epsilon * (gamma @ u_nodes)
 
     # Scatter back to nodal forces (FB eq. 4.8):
     #   f_HG[a, i] = sum_alpha gamma[alpha, a] * h[alpha, i]
-    f_HG = gamma.T @ h  # (8, 3)
+    f_HG = gamma.T @ h
     return f_HG
 
 
@@ -343,11 +343,11 @@ def flanagan_belytschko_stiffness(
         msg = f"X_nodes must have shape (8, 3); got {X_nodes.shape}."
         raise ValueError(msg)
 
-    gamma, V_e = _projected_hourglass_vectors(X_nodes)  # (4, 8), scalar
+    gamma, V_e = _projected_hourglass_vectors(X_nodes)
     epsilon = _hourglass_stiffness_scalar(V_e, mu, lambda_h)
 
     # Node-node hourglass coupling: G[a, b] = sum_alpha gamma[alpha, a] * gamma[alpha, b]
-    G = gamma.T @ gamma  # (8, 8)
+    G = gamma.T @ gamma
 
     # Tensor up with the 3x3 identity in the spatial component block
     K_HG = np.zeros((24, 24), dtype=np.float64)

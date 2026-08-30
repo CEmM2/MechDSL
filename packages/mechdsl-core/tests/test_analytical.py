@@ -33,7 +33,7 @@ def _unit_cube_coords() -> np.ndarray:
         for j in range(2):
             for i in range(2):
                 verts.append([float(i), float(j), float(k)])
-    return np.array(verts)  # shape (8, 3)
+    return np.array(verts)
 
 
 def _rot_z(theta: float) -> np.ndarray:
@@ -49,7 +49,7 @@ def _rot_z(theta: float) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# P2-T1: patch_test_reference
+# patch_test_reference
 # ---------------------------------------------------------------------------
 
 
@@ -144,7 +144,7 @@ class TestPatchTestReference:
         strain = np.array(
             [
                 [0.01, 0.02, 0.0],
-                [0.00, 0.00, 0.0],  # E_yx != E_xy
+                [0.00, 0.00, 0.0],
                 [0.00, 0.00, 0.0],
             ]
         )
@@ -168,7 +168,7 @@ class TestPatchTestReference:
 
 
 # ---------------------------------------------------------------------------
-# P2-T2: rigid_body_reference
+# rigid_body_reference
 # ---------------------------------------------------------------------------
 
 
@@ -260,7 +260,7 @@ class TestRigidBodyReference:
                 [0.0, 1.0, 0.0],
                 [0.0, 0.0, 1.0],
             ]
-        )  # det = 2, not orthogonal
+        )
         t = np.zeros(3)
         with pytest.raises(ValueError, match="orthogonal"):
             rigid_body_reference(coords, bad_R, t)
@@ -276,7 +276,7 @@ class TestRigidBodyReference:
 
 
 # ---------------------------------------------------------------------------
-# P2-T3: cantilever_euler_bernoulli
+# cantilever_euler_bernoulli
 # ---------------------------------------------------------------------------
 
 
@@ -357,7 +357,7 @@ class TestCantileverEulerBernoulli:
 
 
 # ---------------------------------------------------------------------------
-# P2-T4: uniaxial_tension_hardening
+# uniaxial_tension_hardening
 # ---------------------------------------------------------------------------
 
 
@@ -479,7 +479,6 @@ class TestUniaxialTensionHardening:
         # so we allow abs=0.01 to confirm continuity without a jump of order sigma_y0.
         assert stress_below == pytest.approx(stress_above, abs=0.01)
 
-        # Both stresses must be near sigma_y0 (250 MPa)
         assert stress_below == pytest.approx(self._sy0, rel=1e-4)
         assert stress_above == pytest.approx(self._sy0, rel=1e-4)
 
@@ -509,7 +508,6 @@ class TestUniaxialTensionHardening:
         stresses = np.array(stresses)
         eps_ps = np.array(eps_ps)
 
-        # Both must be non-decreasing across all values
         assert np.all(np.diff(stresses) >= -1e-10), "stress is not monotonically non-decreasing"
         assert np.all(np.diff(eps_ps) >= -1e-14), "eps_p is not monotonically non-decreasing"
 
@@ -592,7 +590,7 @@ class TestUniaxialTensionHardening:
 
 
 # ---------------------------------------------------------------------------
-# P2-T5: Combined acceptance tests
+# Combined acceptance tests
 # ---------------------------------------------------------------------------
 
 
