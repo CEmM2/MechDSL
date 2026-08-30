@@ -27,7 +27,7 @@ dependencies = [
     "opt-einsum>=3.3",
     "pyyaml>=6.0.3",
     "scipy>=1.17.0",
-    "nrpylatex @ git+https://github.com/SOSOVSKI/nrpylatex",
+    "nrpylatex>=1.4.0,<2",
 ]
 
 [project.optional-dependencies]
@@ -61,7 +61,7 @@ ti-runtime = { workspace = true }
 algo2code = { workspace = true }
 
 [project.urls]
-Repository = "https://github.com/SOSOVSKI/MechDSL"
+Repository = "https://github.com/CEmM2/MechDSL"
 
 [tool.hatch.metadata]
 allow-direct-references = true

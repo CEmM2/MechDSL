@@ -1,8 +1,8 @@
 """Unit tests for the deterministic SymPy → Taichi lowerer (Task P2-1).
 
-MFront-mimic Cycle M0, Phase 2 (``dev/plans/mfront_cycleM0.md`` lines 76-78).
+Part of the MechDSL lawgen test suite.
 
-Covers the three ``test_plan.cases`` plus the fail-loud route:
+Covers three lowerer cases plus the fail-loud route:
 
 1. A simple quadratic lowers to the expected (golden) Taichi string.
 2. A repeated sub-expression is factored into a CSE temporary emitted before
@@ -32,7 +32,7 @@ from mechdsl.lawgen.sympy_to_taichi import (
 )
 
 # Resolve the module source from the imported module (not a CWD-relative path)
-# so the R4 guard test is robust to where pytest is invoked from.
+# so the no-pycode/no-regex guard test is robust to where pytest is invoked from.
 _MODULE_SOURCE = Path(_lowerer_module.__file__)
 
 
@@ -90,7 +90,6 @@ def test_repeated_subexpression_introduces_cse_temp() -> None:
 
     assert result.temporaries == ("x0 = ti.exp(-b*p)",)
     assert result.returns == ("x0*(x0 + 1)",)
-    # The temporary is an assignment to the symbol the return references.
     assert result.temporaries[0].startswith("x0 = ")
     assert "x0" in result.returns[0]
 
@@ -135,7 +134,7 @@ def test_lower_expression_result_is_immutable() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Case 4 — fail loud (R2), no silent fallback.
+# Case 4 — fail loud, no silent fallback.
 # ---------------------------------------------------------------------------
 
 
@@ -174,7 +173,7 @@ def test_non_expr_input_raises_type_error() -> None:
 
 
 # ---------------------------------------------------------------------------
-# R4 guard + allow-list alignment.
+# No-pycode/no-regex guard + allow-list alignment.
 # ---------------------------------------------------------------------------
 
 

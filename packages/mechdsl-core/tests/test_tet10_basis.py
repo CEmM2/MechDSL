@@ -87,7 +87,7 @@ class TestTaskP5_2Tet10:
         Field chosen: f(x, y, z) = 1 + 2x + 3y + 4z + x^2 + x*y + y*z
         """
         # Node coordinates of the reference tet (parametric = physical here)
-        X = TET10_NODE_COORDS  # shape (10, 3)
+        X = TET10_NODE_COORDS
 
         def u_exact(xyz: np.ndarray) -> float:
             x, y, z = xyz[0], xyz[1], xyz[2]
@@ -141,8 +141,8 @@ class TestTaskP5_2Tet10:
           (3) ∫ L1^2  dV = ∫ xi^2 dV              = 1/60
         """
         # Quadrature points in (xi, eta, zeta) = (L1, L2, L3)
-        pts = TET10_QUAD_POINTS  # (4, 3)
-        wts = TET10_QUAD_WEIGHTS  # (4,)
+        pts = TET10_QUAD_POINTS
+        wts = TET10_QUAD_WEIGHTS
 
         # Test 1: ∫ L0 * L1 dV  (off-diagonal, a≠b)
         exact_ab = 1.0 / 120.0

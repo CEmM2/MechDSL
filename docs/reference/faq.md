@@ -77,7 +77,7 @@ feature is on the roadmap, not broken.
 - They're processed **in order** — a directive that references a symbol must come after
   the one that defines it.
 - Use the syntax from the [directive reference](../mechdsl-core/latex-directives.md), which mirrors the
-  runnable inputs in `dev/examples/`. The design-doc grammar in `02-LATEX-DSL.md` includes
+  runnable inputs in `examples/`. The design-doc grammar in `02-LATEX-DSL.md` includes
   planned directives that the current `compile_latex` path may not yet consume.
 
 ### Generated code changed unexpectedly / a golden test failed
@@ -110,6 +110,6 @@ uv run mkdocs build     # static site into ./site
 
 ## Still stuck?
 
-- The authoritative specs are under
-  [`dev/design_docs/`](https://github.com/SOSOVSKI/MechDSL/tree/main/dev/design_docs).
-- Open an issue at <https://github.com/SOSOVSKI/MechDSL/issues>.
+- The authoritative specs live in the internal `dev/design_docs/` tree of the
+  private development repository.
+- Open an issue at <https://github.com/CEmM2/MechDSL/issues>.

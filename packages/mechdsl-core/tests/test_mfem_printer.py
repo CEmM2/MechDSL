@@ -193,11 +193,6 @@ def _structural_cpp_checks(source: str) -> None:
     assert not stray_tokens, f"Unexpected placeholder tokens left behind: {stray_tokens}"
 
 
-# ---------------------------------------------------------------------------
-# Task P8-1 acceptance-criteria tests
-# ---------------------------------------------------------------------------
-
-
 class TestTaskP8_1:
     """Tests for Task P8-1: MFEM printer (C++ NonlinearFormIntegrator)."""
 
@@ -244,7 +239,7 @@ class TestTaskP8_1:
 
 
 # ---------------------------------------------------------------------------
-# Failure-route tests (defensive coverage, Step 8 in the task brief)
+# Failure-route tests (defensive coverage)
 # ---------------------------------------------------------------------------
 
 
@@ -299,11 +294,6 @@ class TestDeterminism:
         # be filled in downstream.
         raw = emit_cmakelists()
         assert "@MECHDSL_EXE_NAME@" in raw
-
-
-# ---------------------------------------------------------------------------
-# Gate B follow-up tests — correct tangent shape + deferral markers.
-# ---------------------------------------------------------------------------
 
 
 class TestTangentAndDeferrals:

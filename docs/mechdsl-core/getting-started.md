@@ -16,7 +16,7 @@ This page takes you from a fresh clone to a compiled solver bundle.
 ## Install
 
 ```bash
-git clone https://github.com/SOSOVSKI/MechDSL.git
+git clone https://github.com/CEmM2/MechDSL.git
 cd MechDSL
 uv sync --all-packages --all-groups --all-extras
 ```
@@ -58,10 +58,10 @@ uv run python first_run.py
 ```
 
 A runnable copy of this lives at
-[`dev/examples/run_compile_latex.py`](https://github.com/SOSOVSKI/MechDSL/blob/main/dev/examples/run_compile_latex.py):
+[`examples/run_compile_latex.py`](https://github.com/CEmM2/MechDSL/blob/main/examples/run_compile_latex.py):
 
 ```bash
-uv run python dev/examples/run_compile_latex.py
+uv run python examples/run_compile_latex.py
 ```
 
 ### What just happened
@@ -82,7 +82,7 @@ golden files.
 ## Compiling from a `.tex` file
 
 Because the directives are plain LaTeX comments, you can keep them in a real document.
-See [`dev/examples/elastic_cantilever.tex`](https://github.com/SOSOVSKI/MechDSL/blob/main/dev/examples/elastic_cantilever.tex):
+See [`examples/elastic_cantilever.tex`](https://github.com/CEmM2/MechDSL/blob/main/examples/elastic_cantilever.tex):
 
 ```latex
 % mechanics dim 3
@@ -101,7 +101,7 @@ Read it and pass the contents to `compile_latex`:
 from pathlib import Path
 from mechdsl import compile_latex
 
-source = Path("dev/examples/elastic_cantilever.tex").read_text()
+source = Path("examples/elastic_cantilever.tex").read_text()
 bundle = compile_latex(source)
 ```
 
@@ -112,12 +112,12 @@ are invisible to LaTeX.
 
 For energy-based hyperelastic models you can hand `compile_latex` the strain-energy
 function and let it auto-differentiate. The energy lives in a `.tex` snippet (see
-[`dev/examples/neo_hookean_energy.tex`](https://github.com/SOSOVSKI/MechDSL/blob/main/dev/examples/neo_hookean_energy.tex)):
+[`examples/neo_hookean_energy.tex`](https://github.com/CEmM2/MechDSL/blob/main/examples/neo_hookean_energy.tex)):
 
 ```python
 from mechdsl import compile_latex
 
-bundle = compile_latex(problem_source, energy_file="dev/examples/neo_hookean_energy.tex")
+bundle = compile_latex(problem_source, energy_file="examples/neo_hookean_energy.tex")
 ```
 
 The compiler parses Ψ, differentiates to get **S = ∂Ψ/∂E** and **C = ∂²Ψ/∂E²**, and

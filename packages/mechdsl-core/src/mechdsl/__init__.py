@@ -216,11 +216,11 @@ def compile_latex(
     )
     from mechdsl.ir.mechanics_ir import BCType, ProblemIR
 
-    # fgram P6-1: build the IR through the LaTeX-semantic constructor so
-    # the emitted bundle carries the source-role metadata (latex_semantics)
-    # that links generated code sections back to source equation roles. The
-    # MVP-stable core is identical to from_context, so emitted Taichi is
-    # unchanged; only the additive latex_semantics record is new.
+    # Build the IR through the LaTeX-semantic constructor so the emitted
+    # bundle carries the source-role metadata (latex_semantics) that links
+    # generated code sections back to source equation roles. The MVP-stable
+    # core is identical to from_context, so emitted Taichi is unchanged;
+    # only the additive latex_semantics record is new.
     problem_ir = ProblemIR.from_latex_semantics(ctx)
     # When a strain-energy block was supplied, derive its symbolic stress and
     # attach it to the IR. The codegen layer then emits the constitutive law and
@@ -233,18 +233,18 @@ def compile_latex(
         problem_ir = dataclasses.replace(
             problem_ir, derived_energy=_derive_constitutive_energy(energy_source)
         )
-    # P3-4 / P3-5: enforce the MVP-stable contract at the canonical
-    # compile-path boundary so users hitting an experimental combination
-    # or a missing required-param see a clean IR-level rejection instead
-    # of a deep codegen / runtime failure.
+    # Enforce the MVP-stable contract at the canonical compile-path
+    # boundary so users hitting an experimental combination or a missing
+    # required-param see a clean IR-level rejection instead of a deep
+    # codegen / runtime failure.
     problem_ir.assert_mvp_stable()
     bundle = compile(problem_ir)
 
-    # post_recovery_plan P1-5: surface a Neumann ``f_ext`` initialisation
-    # kernel for every Neumann BC carrying numeric traction. Symbolic
-    # (string) traction stays handled by the legacy imported numeric
-    # injection path so existing callers keep working unchanged. Pure
-    # Dirichlet problems leave ``f_ext_kernel`` at ``None``.
+    # Surface a Neumann ``f_ext`` initialisation kernel for every Neumann
+    # BC carrying numeric traction. Symbolic (string) traction stays
+    # handled by the legacy imported numeric injection path so existing
+    # callers keep working unchanged. Pure Dirichlet problems leave
+    # ``f_ext_kernel`` at ``None``.
     neumann_bcs = [
         bc
         for bc in problem_ir.boundaries

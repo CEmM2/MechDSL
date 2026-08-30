@@ -1,6 +1,6 @@
 # MechDSL
 
-[![CI](https://github.com/SOSOVSKI/MechDSL/actions/workflows/ci.yml/badge.svg)](https://github.com/SOSOVSKI/MechDSL/actions/workflows/ci.yml)
+[![CI](https://github.com/CEmM2/MechDSL/actions/workflows/ci.yml/badge.svg)](https://github.com/CEmM2/MechDSL/actions/workflows/ci.yml)
 
 > **Write your mechanics in LaTeX. Get a tested finite-element solver back.**
 >
@@ -38,7 +38,7 @@ viscoplasticity, and Lemaitre continuum damage. Backends: Taichi (MVP-stable), M
 Clone the repository, install the workspace with `uv`, and keep all commands under `uv run`:
 
 ```bash
-git clone https://github.com/SOSOVSKI/MechDSL.git
+git clone https://github.com/CEmM2/MechDSL.git
 cd MechDSL
 uv sync
 ```
@@ -79,10 +79,10 @@ print(bundle.content_hash())
 localisation, einsum planning, and Taichi emission.
 
 A runnable version of this canonical first-run example lives in
-[`dev/examples/run_compile_latex.py`](dev/examples/run_compile_latex.py):
+[`examples/run_compile_latex.py`](examples/run_compile_latex.py):
 
 ```bash
-uv run python dev/examples/run_compile_latex.py
+uv run python examples/run_compile_latex.py
 ```
 
 ### Programmatic API (advanced / testing aid)
@@ -143,19 +143,19 @@ print(bundle.element_ir_summary)
 print(bundle.content_hash())
 ```
 
-Runnable examples live in `dev/examples/`. The canonical LaTeX-first
+Runnable examples live in `examples/`. The canonical LaTeX-first
 script is listed first; the remaining scripts use the programmatic API
 and are kept as advanced/testing aids:
 
 ```bash
-uv run python dev/examples/run_compile_latex.py   # canonical: LaTeX -> compile_latex
+uv run python examples/run_compile_latex.py   # canonical: LaTeX -> compile_latex
 # Programmatic API examples (advanced / testing aids):
-uv run python dev/examples/elastic_cantilever.py
-uv run python dev/examples/plastic_uniaxial.py
-uv run python dev/examples/cook_membrane.py
-uv run python dev/examples/necking_bar.py
-uv run python dev/examples/patch_test.py
-uv run python dev/examples/run_pipeline.py    # SVK + J2, write emitted Taichi source to disk
+uv run python examples/elastic_cantilever.py
+uv run python examples/plastic_uniaxial.py
+uv run python examples/cook_membrane.py
+uv run python examples/necking_bar.py
+uv run python examples/patch_test.py
+uv run python examples/run_pipeline.py    # SVK + J2, write emitted Taichi source to disk
 ```
 
 ## Usage examples
@@ -256,9 +256,9 @@ uv run mkdocs serve     # live preview at http://127.0.0.1:8000
 uv run mkdocs build     # static site into ./site
 ```
 
-The authoritative design specs remain under [`dev/design_docs/`](dev/design_docs/)
-(read-only); the `docs/` site is the friendly, task-oriented entry point that links into
-them.
+The authoritative design specs live in the internal `dev/design_docs/` tree of the
+private development repository (read-only); the `docs/` site is the friendly,
+task-oriented entry point.
 
 ## Architecture
 
@@ -273,16 +273,13 @@ Layer 5  Einsum IR      contraction-family registry, plans, and JIT-budget-aware
 Layer 6  Codegen        deterministic source emission — Taichi (MVP-stable), MFEM (experimental, C++), MOOSE (experimental)
 ```
 
-Design docs are authoritative and read-only:
-
-- [`dev/design_docs/00-OVERVIEW.md`](dev/design_docs/00-OVERVIEW.md) for the document map
-- [`dev/design_docs/01-ARCHITECTURE.md`](dev/design_docs/01-ARCHITECTURE.md) for pipeline structure
-- [`dev/design_docs/08-VERIFICATION.md`](dev/design_docs/08-VERIFICATION.md) for the verification matrix
-- [`dev/design_docs/PLAN-B.md`](dev/design_docs/PLAN-B.md) for post-MVP roadmap phases
+The design-doc set (document map, pipeline structure, verification matrix, and the
+post-MVP roadmap) is maintained in the internal `dev/design_docs/` tree of the
+private development repository.
 
 Per-layer architecture notes (live alongside the source they describe):
 
-- [`packages/mechdsl-core/src/mechdsl/frontend/ARCHITECTURE.md`](packages/mechdsl-core/src/mechdsl/frontend/ARCHITECTURE.md) — Layer 1 split: NRPyLaTeX as parser of record (math grammar) vs the local adapter / normalizer / validator triad (`parser.py` + `directives.py` + `build_context` + `two_point.py`). Introduced by recovery-plan Phase 2 (R1.3).
+- [`packages/mechdsl-core/src/mechdsl/frontend/ARCHITECTURE.md`](packages/mechdsl-core/src/mechdsl/frontend/ARCHITECTURE.md) — Layer 1 split: NRPyLaTeX as parser of record (math grammar) vs the local adapter / normalizer / validator triad (`parser.py` + `directives.py` + `build_context` + `two_point.py`).
 
 ### `mechdsl-core` ↔ `algo2code` integration
 
@@ -295,40 +292,33 @@ calls through. Concrete adapters (`ScipyCGSolver`, `CGSolver`, `PCGSolver`,
 and `Algo2CodePCGSolver`) all satisfy that interface and are selected via
 `mechdsl.solver.integration.select_linear_solver(...)`.
 
-Recovery-plan Phase 6 landed the canonical PCG path (P6-1 through P6-3):
-`Algo2CodePCGSolver` is a verbatim line-by-line Python translation of the
+The canonical PCG path: `Algo2CodePCGSolver` is a verbatim line-by-line Python translation of the
 LaTeX algpseudocode held in `algo2code.library.pcg.PCG_ALGORITHM_LATEX`,
 which is the single source of truth for the PCG algorithm. It is opt-in
 via `select_linear_solver("generated")` or
 `newton_solve(..., linear_solver=...)` — the default remains
-`ScipyCGSolver` until further validation. The `algo2code`-generated
-radial-return constitutive seam (Plan A Phase A9) is deferred per
-recovery plan §P6-4.
+`ScipyCGSolver` until further validation.
 
-The authoritative architecture reference for this seam is
-[`dev/design_docs/11-ALGO2CODE.md`](dev/design_docs/11-ALGO2CODE.md)
-(see §1.1 for the integration points and §2.5 for the canonical PCG
-algpseudocode).
+The authoritative architecture reference for this seam is the `11-ALGO2CODE`
+design doc in the internal `dev/design_docs/` tree (§1.1 for the integration
+points, §2.5 for the canonical PCG algpseudocode).
 
 ## Support tiers
 
-MechDSL classifies every public feature into one of two support tiers (introduced by
-[`dev/plans/recovery_plan_latex_contract.md`](dev/plans/recovery_plan_latex_contract.md)
-Phase 1):
+MechDSL classifies every public feature into one of two support tiers:
 
 - **`MVP-stable`** — features supporting the canonical LaTeX-driven compile path:
   Hex8 element, Total Lagrangian formulation, convected curvilinear coordinates,
   St. Venant–Kirchhoff elasticity, J2 plasticity with power-law hardening, and the
   Taichi backend. These are the only surfaces guaranteed to remain stable across
-  recovery work.
+  releases.
 - **`experimental`** — features preserved in the tree but not part of the
   canonical contract: MFEM and MOOSE codegen backends, explicit dynamics, non-MVP
   materials (Mooney-Rivlin, Ogden, HGO, viscoplasticity, damage), and non-canonical
   elements (Hex8-R, Hex20, Tet4, Tet10). These remain available for use but may
-  shift, lose tests, or become labeled deprecated as the recovery plan
-  progresses.
+  shift, lose tests, or become labeled deprecated as development progresses.
 
-The recovery plan is additive: experimental scope is **not** deleted; it is
+The tier split is additive: experimental scope is **not** deleted; it is
 labeled so the canonical story is unambiguous.
 
 ### `mechdsl.integration` — MVP-stable machine-readable façade
@@ -367,7 +357,7 @@ vr = verify("patch_test", {"lam": 1.0, "mu": 1.0})  # pays the Taichi cost
 print(vr["passed"])
 ```
 
-Do not add entry points to this module without a plan-level decision; the
+Do not add entry points to this module without a deliberate design decision; the
 surface is a machine API contract, not a convenience library.
 
 ### Stability policy
@@ -375,18 +365,13 @@ surface is a machine API contract, not a convenience library.
 The two tiers carry different commitments:
 
 - **MVP-stable** features have a stable public API and a passing test suite
-  on every commit to `main`. Breaking changes require an entry in the
-  recovery plan (or a follow-up plan) and a tracker row that follows the
-  status vocabulary in [`dev/tracking/STATUS_LEGEND.md`](dev/tracking/STATUS_LEGEND.md).
+  on every commit to `main`. Breaking changes require a documented design decision and a
+  changelog entry.
 - **experimental** features may evolve, lose tests, or be deprecated without
   a release-note entry. They live behind module docstrings that say so
   (see e.g. `packages/mechdsl-core/src/mechdsl/codegen/mfem_printer.py`).
   Reaching for an experimental feature is supported, but only with the
   understanding that the contract is provisional.
-
-The full motivation, including the historical drift that led to this
-policy, is in [`dev/plans/recovery_plan_latex_contract.md`](dev/plans/recovery_plan_latex_contract.md)
-and [`dev/reviews/frontend_drift_history.md`](dev/reviews/frontend_drift_history.md).
 
 ## CI and Verification
 
@@ -414,4 +399,5 @@ from `build_context()` through emitted Taichi source generation.
 | B9 | Contraction-family registry + family-aware emission dispatch | Done |
 | B10 | Verification benchmark suite (thick cylinder, necking, HGO strip) | Done |
 
-See [`dev/design_docs/PLAN-B.md`](dev/design_docs/PLAN-B.md) for the full roadmap.
+The full roadmap lives in the internal `dev/design_docs/` tree of the private
+development repository.

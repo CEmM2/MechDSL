@@ -81,7 +81,7 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# P9-2: Per-family emitters (MOOSE backend)
+# Per-family emitters (MOOSE backend)
 # ---------------------------------------------------------------------------
 #
 # The MOOSE emission path is action-driven: ``ComputeStressBase`` writes
@@ -170,7 +170,7 @@ def _dispatch_family(family: Family, ctx: EmissionContext, *args: object) -> boo
 # ---------------------------------------------------------------------------
 
 # MVP tensorial Voigt ordering: [xx, yy, zz, xy, xz, yz], unscaled shears.
-# Matches dev/design_docs/07-CONVENTIONS.md.
+# Matches 07-CONVENTIONS.md.
 _VOIGT_INDEX: tuple[tuple[int, int], ...] = (
     (0, 0),  # xx
     (1, 1),  # yy
@@ -467,7 +467,7 @@ def emit_cpp(bundle: ArtifactBundle) -> str:
         ctx.emit("const Real trE = E.trace();")
         ctx.emit("RankTwoTensor stress;")
         ctx.emit("stress.zero();")
-        # P9-2: dispatch through the family emitter table. Legacy body is
+        # Dispatch through the family emitter table. Legacy body is
         # retained as the fallback when the flag is off so byte-identical
         # emission is preserved under ``MECHDSL_FAMILY_EMITTERS=0``.
         if not _dispatch_family(Family.MATERIAL_TANGENT_CONTRACTION, ctx):
@@ -493,7 +493,7 @@ def emit_cpp(bundle: ArtifactBundle) -> str:
         ctx.emit("//               + mu * (delta_ik * delta_jl + delta_il * delta_jk)")
         ctx.emit("RankFourTensor C;")
         ctx.emit("C.zero();")
-        # P9-2: dispatch through the family emitter table; legacy inline body
+        # Dispatch through the family emitter table; legacy inline body
         # retained as the fallback for byte-identical emission when the flag
         # is off.
         if not _dispatch_family(Family.TANGENT_DOUBLE_CONTRACTION, ctx):

@@ -57,7 +57,7 @@ class TestTaskP1_2:
         X_elem = _unit_cube_nodes()
         x_elem = X_elem  # F = I => current coords = reference coords
         for q in range(8):
-            dN_dxi = GRAD_AT_QUAD[q]  # (8, 3)
+            dN_dxi = GRAD_AT_QUAD[q]
             J0 = X_elem.T @ dN_dxi
             j = current_jacobian(dN_dxi, x_elem)
             assert np.allclose(j, J0, atol=1e-14), f"QP {q}: j != J0 at F = I"

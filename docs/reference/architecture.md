@@ -1,9 +1,8 @@
 # How it works
 
 This page is for the curious user who wants to understand the machinery before relying
-on it. The authoritative, read-only design docs live under
-[`dev/design_docs/`](https://github.com/SOSOVSKI/MechDSL/tree/main/dev/design_docs); this
-is a guided tour.
+on it. The authoritative, read-only design docs live in the internal `dev/design_docs/`
+tree of the private development repository; this is a guided tour.
 
 ## The six layers
 

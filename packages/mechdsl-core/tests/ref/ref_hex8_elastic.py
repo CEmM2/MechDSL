@@ -118,7 +118,7 @@ def _shape_grad_reference(
     dN_dxi = _BASIS.gradient(xi, eta, zeta)
 
     # Reference Jacobian: J0 = dX/d(xi) = X^T @ dN/d(xi)  ->  (3, 3)
-    J0 = X_elem.T @ dN_dxi  # (3,3)
+    J0 = X_elem.T @ dN_dxi
 
     detJ0 = float(np.linalg.det(J0))
     if detJ0 <= 0.0:
@@ -165,7 +165,7 @@ def element_internal_force(
         dN_dX, detJ0 = _shape_grad_reference(X_elem, xi, eta, zeta)
 
         # 2. Displacement gradient: du/dX = u^T @ dN/dX  ->  (3, 3)
-        grad_u = u_elem.T @ dN_dX  # (3, 3)
+        grad_u = u_elem.T @ dN_dX
 
         # 3. Deformation gradient F = I + du/dX
         F = deformation_gradient(grad_u)

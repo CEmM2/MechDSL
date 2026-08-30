@@ -371,7 +371,7 @@ def _p10_6_factory() -> dict[str, Any]:
 
 
 def _p10_7_factory() -> dict[str, Any]:
-    # P8-2 carry-forward: smoke profile only — never `nightly()`.
+    # Smoke profile only — never `nightly()`.
     return {"params": TaylorImpactParameters.smoke()}
 
 

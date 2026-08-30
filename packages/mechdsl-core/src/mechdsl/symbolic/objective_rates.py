@@ -282,8 +282,7 @@ def truesdell_tangent(
             "the Truesdell push-forward."
         )
     # Piola push-forward c_ijkl = (1/J) F_iI F_jJ F_kK F_lL C_IJKL.
-    # The 4-leg einsum is ~243 multiply-adds for 3D and runs in microseconds;
-    # P1-4's emitter will inline this when it generates the UL tangent body.
+    # The 4-leg einsum is ~243 multiply-adds for 3D and runs in microseconds.
     return cast(
         "Tensor4",
         (1.0 / J) * np.einsum("iI,jJ,kK,lL,IJKL->ijkl", F, F, F, F, C4),

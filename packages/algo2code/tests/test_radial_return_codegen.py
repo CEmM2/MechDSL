@@ -46,9 +46,7 @@ def test_radial_return_j2_parses() -> None:
     assert algo.name == "radial_return_j2"
     assert algo.backend == "taichi"
     arg_names = [name for name, _ in algo.args]
-    # Must declare the full power-law hardening argument set: scalar
-    # Newton inner loop signature is
-    # (sigma_eq, alpha, mu, K, n, sigy0, tol, max_iter).
+    # The scalar Newton inner loop must declare the full power-law hardening argument set.
     for required in ("sigma_eq", "alpha", "mu", "K", "n", "sigy0", "tol", "max_iter"):
         assert required in arg_names, (
             f"radial_return_j2 args must include {required!r}; got {arg_names}"

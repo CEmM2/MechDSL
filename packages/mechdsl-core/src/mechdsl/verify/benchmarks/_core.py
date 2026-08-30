@@ -59,14 +59,14 @@ class BenchmarkResult:
         ``radial_displacement_samples``.  Keys are benchmark-specific.
     """
 
-    displacements: NDArray  # (N, 3)
+    displacements: NDArray
     newton_iters: int
     wallclock_s: float
     extras: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
-# Element-level stress helper (reusable by P10-6/8/9)
+# Element-level stress helper
 # ---------------------------------------------------------------------------
 
 
@@ -88,7 +88,7 @@ def _shape_grad_at(X_elem: NDArray, xi: float, eta: float, zeta: float) -> tuple
         Absolute value of the reference Jacobian determinant.
     """
     dN_dxi = _BASIS.gradient(xi, eta, zeta)
-    J0 = X_elem.T @ dN_dxi  # (3, 3)
+    J0 = X_elem.T @ dN_dxi
     detJ0 = float(np.linalg.det(J0))
     if detJ0 <= 0.0:
         msg = (
@@ -96,7 +96,7 @@ def _shape_grad_at(X_elem: NDArray, xi: float, eta: float, zeta: float) -> tuple
             f"xi=({xi},{eta},{zeta}) - check element connectivity."
         )
         raise ValueError(msg)
-    dN_dX = dN_dxi @ np.linalg.inv(J0)  # (8, 3)
+    dN_dX = dN_dxi @ np.linalg.inv(J0)
     return dN_dX, detJ0
 
 
@@ -132,7 +132,7 @@ def element_cauchy_stress(
     xi, eta, zeta = _XI_CENTROID
     dN_dX, _ = _shape_grad_at(X_elem, xi, eta, zeta)
 
-    grad_u = u_elem.T @ dN_dX  # (3, 3)
+    grad_u = u_elem.T @ dN_dX
     F = deformation_gradient(grad_u)
     E = green_lagrange(F)
     tr_E = float(np.trace(E))
@@ -140,4 +140,4 @@ def element_cauchy_stress(
 
     J = float(np.linalg.det(F))
     sigma = (1.0 / J) * (F @ S @ F.T)
-    return sigma  # (3, 3)
+    return sigma

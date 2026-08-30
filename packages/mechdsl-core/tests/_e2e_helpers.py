@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 # Element constants for resolving ``ti.static(range(...))`` trip counts when
 # weighting unrolled lines (Hex8, 2x2x2 Gauss). Used by
-# :func:`count_unrolled_kernel_lines` (PlanJune14 WI-1 honest JIT-budget test).
+# :func:`count_unrolled_kernel_lines`.
 _UNROLL_CONSTS = {"DIM": 3, "N_QP": 8, "N_NODES": 8}
 
 

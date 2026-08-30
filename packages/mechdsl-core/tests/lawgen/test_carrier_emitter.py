@@ -172,8 +172,8 @@ class TestImportInvariant:
         ],
     )
     def test_assert_taichi_only_raises_on_forbidden_import(self, bad_import: str) -> None:
-        # Directly exercise the INV-DG-1 self-check raise path (the fail-loud guard
-        # that runs on the emitter's own output): a module carrying any forbidden
+        # Directly exercise the fail-loud self-check raise path (the guard that runs
+        # on the emitter's own output): a module carrying any forbidden
         # import — the offline generator (sympy/mechdsl) or the consumer
         # (ticonstit/numerixweave) — must raise AssertionError naming the module.
         source = f"import taichi as ti\n{bad_import}\n\n\nclass Bad:\n    pass\n"

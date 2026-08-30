@@ -218,10 +218,10 @@ class TestAlgoParser:
         algo = parse_algorithm(PCG_LATEX)
         # Should have: 4 assignments, 1 for loop, 1 return
         assert len(algo.body) == 6
-        assert isinstance(algo.body[0], Assign)  # r = ...
-        assert isinstance(algo.body[1], Assign)  # z = ...
-        assert isinstance(algo.body[2], Assign)  # p = ...
-        assert isinstance(algo.body[3], Assign)  # rho = ...
+        assert isinstance(algo.body[0], Assign)
+        assert isinstance(algo.body[1], Assign)
+        assert isinstance(algo.body[2], Assign)
+        assert isinstance(algo.body[3], Assign)
         assert isinstance(algo.body[4], ForLoop)
         assert isinstance(algo.body[5], Return)
 
@@ -268,7 +268,6 @@ class TestTypeInference:
         infer_types(algo)
         # r = b - A·x : the A·x part should be matvec
         r_assign = algo.body[0]
-        # RHS is b - A·x
         rhs = r_assign.value
         assert rhs.inferred_type == VarType.VECTOR
 

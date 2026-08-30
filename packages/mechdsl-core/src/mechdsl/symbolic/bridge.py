@@ -156,11 +156,10 @@ def convert(
         )
 
     if rank == 4:
-        # Rank-4 tangent moduli C_IJKL are accepted by the bridge (P3-2).
+        # Rank-4 tangent moduli C_IJKL are accepted by the bridge.
         # JIT budget enforcement (≤ 512 unrolled lines per @ti.func) must be
         # applied before any unrolled Taichi emission — use
         # mechdsl.codegen.einsum_optimizer.optimize_contraction to gate emission.
-        # Full Taichi emission for rank-4 nodes is wired in P3-3.
         return SymbolicNode(
             name=name,
             kind="tensor4",

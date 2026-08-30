@@ -30,7 +30,7 @@ from enum import IntEnum
 
 import opt_einsum
 
-# P9-2: family classification is a realisation decision orthogonal to the
+# Family classification is a realisation decision orthogonal to the
 # tier (scheduling) decision. We import the enum + classifier here so that
 # every ContractionResult carries both axes.
 from mechdsl.codegen.family_registry import (  # re-exported for convenience
@@ -232,8 +232,6 @@ def estimate_unrolled_lines(
 
         total_lines += step_lines
 
-        # Update operand list: remove contracted, add result
-        # (simplified — we just need index sets for estimation)
         remaining_indices: set[str] = set()
         for i, op in enumerate(current_operands):
             if i not in pair:
@@ -324,7 +322,7 @@ def optimize_contraction(
     if not within_budget:
         budget_detail += " [OVER BUDGET — Tier 3 restructuring required]"
 
-    # P9-2: attach the realisation-axis classification. Tier and family are
+    # Attach the realisation-axis classification. Tier and family are
     # orthogonal (scheduling vs realisation); see 09-EINSUM-OPTIMISER.md §9.
     family = classify_einsum_string(einsum_string, operand_shapes)
 
@@ -412,7 +410,7 @@ def optimize_all(
 
 
 # ---------------------------------------------------------------------------
-# P9-2 feature flag
+# Family-emitter feature flag
 # ---------------------------------------------------------------------------
 
 

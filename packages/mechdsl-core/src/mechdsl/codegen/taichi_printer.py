@@ -118,11 +118,11 @@ class _IndentCtx:
 
 
 # ---------------------------------------------------------------------------
-# Recovery P5-4 — enriched-IR consumption helpers
+# Enriched-IR consumption helpers
 #
 # The printer historically read element identity fields from
-# ``ArtifactBundle.element_ir_summary`` (the legacy 4-key dict).  Post-P4-5,
-# the canonical carrier is ``ArtifactBundle.element_ir_dict``, which is
+# ``ArtifactBundle.element_ir_summary`` (the legacy 4-key dict).  The
+# canonical carrier is now ``ArtifactBundle.element_ir_dict``, which is
 # ``ElementIR.to_dict()`` and includes the four execution-contract blocks
 # (``geometry``, ``material_eval``, ``local_force``, ``local_tangent``).
 #
@@ -379,20 +379,19 @@ def _fmt_1d_literal(arr: np.ndarray, name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# P9-2: Per-family emitters (Taichi backend)
+# Per-family emitters (Taichi backend)
 # ---------------------------------------------------------------------------
 #
 # These helpers emit the per-contraction code shapes that the Taichi MVP
 # uses today. Each helper is the single owner of its family's emission
 # pattern; the legacy inline bodies that used to sit in the force /
 # tangent kernels now delegate to these helpers via :data:`family_emitters`
-# so the dispatch is exercised on the happy path (see P8-3 Gate B lesson:
-# define-but-don't-call is a silent failure).
+# so the dispatch is exercised on the happy path (define-but-don't-call
+# is a silent failure).
 #
-# Every helper is **source-identical** to the pre-P9-2 inline body it
-# replaces — that is the whole point of P9-2 being a pure refactor. The
-# cross-backend equivalence tests (P8-3) and the regenerated goldens are
-# the regression guard.
+# Every helper is **source-identical** to the inline body it replaces —
+# this is a pure refactor. The cross-backend equivalence tests and the
+# regenerated goldens are the regression guard.
 
 
 def _emit_family_displacement_gradient_taichi(ctx: EmissionContext) -> None:
@@ -497,7 +496,7 @@ def _emit_family_fallback_taichi(ctx: EmissionContext) -> None:
     ctx.emit("# (P9-2 fallback: no template override — caller emits inline)")
 
 
-# P9-2 family-emitter dispatch table. Keyed on :class:`Family`; each
+# Family-emitter dispatch table. Keyed on :class:`Family`; each
 # entry is callable with ``(ctx, *args)`` at the relevant emission site.
 # Heterogeneous signatures are intentional — families emit into different
 # containing scopes. The table is total over :data:`family_registry.FAMILIES`
@@ -529,7 +528,7 @@ def _dispatch_family(family: Family, ctx: EmissionContext, *args: object) -> boo
     if emitter is _emit_family_fallback_taichi:
         # Fallback intentionally defers to the legacy body; signal the
         # caller to emit the inline code path. Log at DEBUG so that
-        # silent-fallback collisions (P9-2 Gate B finding) are observable.
+        # silent-fallback collisions are observable.
         _logger.debug("taichi_printer: family %s routed to legacy body", family.name)
         return False
     emitter(ctx, *args)
@@ -556,7 +555,7 @@ def emit_preamble(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     # Extract material model for the header comment
     material_model = bundle.problem_ir_dict.get("material", {}).get("model", "svk")
     formulation = bundle.problem_ir_dict.get("formulation", "total_lagrangian")
-    # P5-4: prefer element_ir_dict over element_ir_summary for identity fields.
+    # Prefer element_ir_dict over element_ir_summary for identity fields.
     element_type = _ir_field(bundle, "element_type", "hex8")
     dim = _ir_field(bundle, "dim", 3)
 
@@ -566,7 +565,7 @@ def emit_preamble(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     ctx.emit(f"Material    : {material_model}")
     ctx.emit(f"Element     : {element_type}")
     ctx.emit(f"Dimension   : {dim}")
-    # P5-4 auditability — opt-in, never on by default. Surface enriched-IR
+    # Auditability — opt-in, never on by default. Surface enriched-IR
     # contract fields so users can see WHY the codegen made specific
     # decisions (stress measure, integration count, force/tangent layout).
     if ctx.verbose:
@@ -595,7 +594,7 @@ def _emit_enrichment_audit(ctx: EmissionContext, bundle: ArtifactBundle) -> None
     local_tangent = _ir_block(bundle, "local_tangent")
 
     if not any((material_eval, geometry, local_force, local_tangent)):
-        # Legacy bundle (pre-P4-3 enrichment) — nothing to surface.
+        # Legacy bundle without enrichment blocks — nothing to surface.
         return
 
     ctx.emit("")
@@ -761,7 +760,7 @@ def emit_field_declarations(ctx: EmissionContext, bundle: ArtifactBundle) -> Non
         ctx.emit("ti.root.dense(ti.ij, (n_elem, N_NODES)).place(elem_nodes)")
         emits_matvec = _emits_generated_tangent_matvec(bundle)
         if emits_matvec:
-            # Quadrature tables (PlanJune14 WI-1): mesh-independent, but placed +
+            # Quadrature tables: mesh-independent, but placed +
             # filled here because allocate_fields() is guaranteed (by the seam
             # contract) to run after the caller's ti.init and before any kernel
             # launch — so the fill never races Taichi materialisation. The runtime-q
@@ -797,7 +796,7 @@ def emit_constitutive_update(ctx: EmissionContext, bundle: ArtifactBundle) -> No
     material_model = bundle.problem_ir_dict.get("material", {}).get("model", "svk")
     material_params = bundle.problem_ir_dict.get("material", {}).get("params", {})
 
-    # P3-1: when the bundle carries a LaTeX-derived energy model, emit the
+    # When the bundle carries a LaTeX-derived energy model, emit the
     # constitutive ``@ti.func`` from the derived PK2 stress (via the proven
     # energy_emitter path) instead of the hard-coded named-model switch. This
     # replaces the advisory-only LatexSemantics path: the derived energy now
@@ -1276,7 +1275,7 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
     ctx.emit("# " + "=" * 70)
     ctx.emit("")
 
-    # P6-2: document the element-deletion contract so downstream readers
+    # Document the element-deletion contract so downstream readers
     # know the generated residual shape mutates across Newton steps only
     # by dropping elements (never by bringing them back).
     if is_damage:
@@ -1351,14 +1350,14 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
                         ctx.emit("dN_dxi[a, d] = GRAD_AT_QUAD[q][a][d]")
                 ctx.emit("")
 
-                # ----- Configuration dispatch (Plan B B1.3) -----
+                # ----- Configuration dispatch -----
                 # Python-time branch: emits EITHER the TL body (P = F@S,
                 # detJ0) or the UL body (sigma = F@S@F.T/J, detj).
                 # The generated source file contains only ONE path.
                 if configuration == "current":
                     _emit_ul_force_qp_inner(ctx, material_model)
                 else:
-                    # === TL body (Plan A, unchanged) ===
+                    # === TL body (reference configuration) ===
                     ctx.emit("# Reference Jacobian J0 = X^T @ dN/dxi  (3x3)")
                     ctx.emit("J0 = X_elem.transpose() @ dN_dxi")
                     ctx.emit("detJ0 = J0.determinant()")
@@ -1373,7 +1372,7 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
                         ctx.emit("# dN/dX = dN/dxi @ J0^{-1}  (N_NODES x DIM)")
                         ctx.emit("dNdX = dN_dxi @ J0_inv")
                         ctx.emit("")
-                        # P9-2: family-emitter dispatch for DISPLACEMENT_GRADIENT.
+                        # Family-emitter dispatch for DISPLACEMENT_GRADIENT.
                         # Emits the F = I + grad_u scatter ('qaI,ai->qiI').
                         # When the feature flag is OFF we fall through to the
                         # legacy inline body below (byte-identical output).
@@ -1441,7 +1440,7 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
                         ctx.emit("# 1st Piola-Kirchhoff stress P = F @ S")
                         ctx.emit("P = F @ S")
                         ctx.emit("")
-                        # P9-2: family-emitter dispatch for FORCE_INTEGRATION
+                        # Family-emitter dispatch for FORCE_INTEGRATION
                         # (einsum 'qaI,qiI->qai'). Legacy inline body below
                         # is the fallback when the flag is off.
                         if not _dispatch_family(Family.FORCE_INTEGRATION, ctx):
@@ -1525,7 +1524,7 @@ def _emit_tl_tangent_qp_body(
     if derived_lines is not None:
         for line in derived_lines:
             ctx.emit(line)
-    # P9-2: family-emitter dispatch for MATERIAL_TANGENT_CONTRACTION
+    # Family-emitter dispatch for MATERIAL_TANGENT_CONTRACTION
     # (einsum 'qaI,qiIjJ,qbJ->qaibj' — collapsed for SVK into the short
     # closed form). Legacy inline body below is the fallback.
     elif not _dispatch_family(Family.MATERIAL_TANGENT_CONTRACTION, ctx, is_plastic):
@@ -1624,7 +1623,7 @@ def _emit_ul_tangent_qp_body(ctx: EmissionContext, is_plastic: bool) -> None:
     ctx.emit("# Spatial gradient of v (using dN/dx, not dN/dX)")
     ctx.emit("grad_v = v_elem.T @ dNdx")
     ctx.emit("")
-    # P9-2: family-emitter dispatch for TANGENT_DOUBLE_CONTRACTION
+    # Family-emitter dispatch for TANGENT_DOUBLE_CONTRACTION
     # (einsum 'ijkl,kl->ij'). Legacy inline body below is the fallback.
     if not _dispatch_family(Family.TANGENT_DOUBLE_CONTRACTION, ctx):
         ctx.emit("# Material term: dsigma_mat_{ij} = c^tau_{ijkl} * grad_v_{kl}")
@@ -1873,33 +1872,32 @@ def emit_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
 
 
 # ---------------------------------------------------------------------------
-# PlanJune14 P3-2 — generated @ti.kernel matrix-free SVK tangent operator
+# Generated @ti.kernel matrix-free SVK tangent operator
 #
 # The function above (``emit_tangent_matvec_kernel``) emits a host-NumPy
 # ``tangent_matvec`` consumed by the imported ``CGSolver`` in the emitted
-# Newton driver. P3-2 adds — *alongside* it, not replacing it — a generated
-# ``@ti.kernel`` that applies the SVK tangent ``K(u)·v`` **fully matrix-free**
-# (D-A: never store element tangents), routing the tangent contraction through
-# the Layer-4b einsum optimiser (the P3-1 ``ContractionPlan``) and calling the
-# Tier-1 ``ti_runtime`` ``@ti.func`` helpers. The kernel targets the
-# ``ti_runtime`` ``apply_A(out, x)`` seam (like the PJ-1 spike) so a generated
+# Newton driver. This section adds — *alongside* it, not replacing it — a
+# generated ``@ti.kernel`` that applies the SVK tangent ``K(u)·v`` **fully
+# matrix-free** (never store element tangents), routing the tangent
+# contraction through the einsum optimiser (``ContractionPlan``) and
+# calling the Tier-1 ``ti_runtime`` ``@ti.func`` helpers. The kernel
+# targets the ``ti_runtime`` ``apply_A(out, x)`` seam so a generated
 # PCG / Newton driver can inject it.
 #
-# Why alongside, not in place: the host ``tangent_matvec`` name, its closed-form
-# ``dS = lam*tr(dE)*I + 2*mu*dE`` body, and the ``def tangent_matvec(`` signature
-# are pinned by ``test_taichi_printer.py`` / ``test_codegen.py`` and the three
-# ``*.py.golden`` snapshots, and the host function is wired into the emitted
-# Newton driver's ``CGSolver`` call. A wholesale swap would cascade through every
-# e2e/golden/J2/UL path. The smallest faithful P3-2 delivery is the generated
-# ``@ti.kernel`` SVK route plus its <1e-10 parity + JIT-budget gates; flipping
-# the default emission to it (and the J2 variant) are the explicitly-downstream
-# tasks P4-3 and P5-1.
+# Why alongside, not in place: the host ``tangent_matvec`` name, its
+# closed-form ``dS = lam*tr(dE)*I + 2*mu*dE`` body, and the
+# ``def tangent_matvec(`` signature are pinned by the printer/codegen tests
+# and the ``*.py.golden`` snapshots, and the host function is wired into
+# the emitted Newton driver's ``CGSolver`` call. A wholesale swap would
+# cascade through every e2e/golden/J2/UL path, so the generated
+# ``@ti.kernel`` SVK route ships with <1e-10 parity + JIT-budget gates
+# while the host route stays the default.
 #
-# The A-formation. The P3-1 contraction ``qaI,qiIjJ,qbJ,bj->qai`` applies the
+# The A-formation. The contraction ``qaI,qiIjJ,qbJ,bj->qai`` applies the
 # consistent **two-point** tangent ``A(i,I,j,J)`` such that
-# ``dP_{iI} = A_{iIjJ} (∂v_j/∂X_J)``. For SVK that A (matching the spike's
-# ``dP = grad_v·S + F·(C:dE)``) collapses to the closed form, per quadrature
-# point,
+# ``dP_{iI} = A_{iIjJ} (∂v_j/∂X_J)``. For SVK that A (matching
+# ``dP = grad_v·S + F·(C:dE)``) collapses to the closed form, per
+# quadrature point,
 #
 #     A_{iIjJ} = δ_{ij} S_{JI}                (geometric / initial-stress)
 #              + λ F_{iI} F_{jJ}
@@ -2069,8 +2067,8 @@ def emit_svk_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle)
     from mechdsl.ir.element_ir import create_hex8_element_ir
     from mechdsl.lowering.einsum_extract import build_tangent_matvec_plan
 
-    # Route the tangent contraction through Layer-4b: this is the P3-1
-    # ContractionPlan (opt_einsum path + JIT-budget-checked tier), not a
+    # Route the tangent contraction through the einsum optimiser: this is
+    # the ContractionPlan (opt_einsum path + JIT-budget-checked tier), not a
     # hand-rolled einsum. The path drives the loop structure emitted below.
     element_ir = create_hex8_element_ir(formulation="total_lagrangian", configuration="reference")
     plan = build_tangent_matvec_plan(element_ir)
@@ -2687,7 +2685,7 @@ def emit_newton_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
                 # tests/test_lemaitre_acceptance.py::_newton_step_lemaitre, which
                 # snapshots+restores alpha AND damage_D around every residual eval).
                 # Without this, damage_D / is_deleted would drift across Newton
-                # iterations exactly as alpha did before the WI-2 fix.
+                # iterations just as alpha would without its committed mirror.
                 # copy_from is dtype-agnostic: it works for the f64 damage_D and
                 # the i32 is_deleted alike (raw same-shape field copy on device).
                 ctx.emit("_damage_D_committed.copy_from(damage_D)")
@@ -2883,9 +2881,6 @@ def emit_explicit_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
                 ctx.emit("u[a][i] += dt * v[a][i]")
     ctx.emit("")
 
-    # Document the deleted-element guard is already honoured in
-    # compute_internal_force (Phase 6 idiom) -- advance_one_step itself operates
-    # on nodal state, not element state, so the guard sits upstream.
     if is_damage:
         ctx.emit("# Note: deleted elements (is_deleted[e] != 0) contribute zero to")
         ctx.emit("# f_int via the guard already emitted in compute_internal_force.")
@@ -2934,7 +2929,7 @@ def emit_validate_mesh(ctx: EmissionContext) -> None:
 
 
 # ---------------------------------------------------------------------------
-# post_recovery_plan P1-4 — Neumann f_ext init kernel
+# Neumann f_ext init kernel
 # ---------------------------------------------------------------------------
 
 
@@ -3173,7 +3168,7 @@ def emit_main(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     # Explicit-dynamics __main__: no Newton solve; the generated module exposes
     # advance_one_step(dt) so the user drives time stepping externally. We emit
     # a minimal informational main here so the module is still importable and
-    # the file is self-contained (Plan B §B7, P7-1).
+    # the file is self-contained.
     if dynamics_mode == "explicit":
         ctx.emit("# " + "=" * 70)
         ctx.emit("# Main entry point (explicit dynamics)")
@@ -3375,7 +3370,7 @@ def emit(bundle: ArtifactBundle) -> str:
     """
     ctx = EmissionContext()
 
-    # Validate material model before emission. P3-1: a bundle carrying a
+    # Validate material model before emission. A bundle carrying a
     # LaTeX-derived energy model emits its constitutive @ti.func from that
     # energy (see emit_constitutive_update), so the named-model allow-list
     # does not gate it — any model whose law was derived from a strain-energy
@@ -3392,7 +3387,7 @@ def emit(bundle: ArtifactBundle) -> str:
             f"Perzyna/Johnson-Cook Taichi emission is planned for a future integration task."
         )
 
-    # Dynamics mode branch (Plan B §B7, P7-1). STATIC (or missing) keeps the
+    # Dynamics mode branch. STATIC (or missing) keeps the
     # existing Newton-driver emission byte-identical; EXPLICIT swaps the driver
     # for central-difference ``advance_one_step`` and skips the tangent matvec
     # that only the implicit Newton solver consumes.
@@ -3421,7 +3416,7 @@ def emit(bundle: ArtifactBundle) -> str:
         configuration = bundle.problem_ir_dict.get("configuration", "reference")
         if material_model == "svk" and bundle.derived_energy is None and configuration != "current":
             emit_svk_tangent_matvec_kernel(ctx, bundle)
-        # PlanJune14 P5-1: J2's dissipative counterpart — the generated matrix-free
+        # J2's dissipative counterpart — the generated matrix-free
         # *algorithmic consistent tangent* @ti.kernel, emitted alongside the host
         # tangent_matvec for the J2 / Total-Lagrangian / reference path only (NOT
         # Lemaitre, which layers damage and stays on the host route until a
@@ -3442,7 +3437,7 @@ def emit(bundle: ArtifactBundle) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Design-doc-aligned façade (P5-3 / R4.3)
+# Design-doc-aligned façade
 # ---------------------------------------------------------------------------
 
 

@@ -102,8 +102,8 @@ def test_generated_svk_func_matches_oracle(tmp_path):
 
 
 def test_example_tex_file_round_trips():
-    """The committed dev/examples/svk_energy.tex compiles through the slice."""
-    tex = Path(__file__).resolve().parents[3] / "dev" / "examples" / "svk_energy.tex"
+    """The committed examples/svk_energy.tex compiles through the slice."""
+    tex = Path(__file__).resolve().parents[3] / "examples" / "svk_energy.tex"
     model = derive_from_energy(tex.read_text())
     assert {orig for orig in model.parameters.values()} == {"lambda"}
     src = emit_constitutive_func(model)

@@ -37,9 +37,7 @@ _GOLDEN_PATH = _GOLDEN_DIR / "boundary_neumann.ti.txt"
 _UPDATE_GOLDEN = False
 
 
-# Canonical fixture: traction "0 0 -1000" on hex8 face tagged 'z1' —
-# matches the example in dev/plans/post_recovery_plan.md (P1-1, P1-7
-# acceptance criteria).
+# Canonical fixture: traction "0 0 -1000" on hex8 face tagged 'z1'.
 _CANONICAL_SPEC = NeumannKernelSpec(
     bc_name="load",
     surface_tag="z1",

@@ -1,0 +1,27 @@
+% MechDSL -- Tensile necking bar (J2 plasticity with power-law hardening)
+%
+% This is an example LaTeX input file for the MechDSL compiler.
+% The parser (Phase 2) is not yet implemented; these directives
+% document the intended input syntax for the MVP.
+%
+% Problem: 3D bar under uniaxial tension.  Both ends are displacement-
+% controlled: left face fixed, right face pulled.  Material: J2
+% von Mises plasticity with isotropic power-law hardening.
+%   sigma_y(alpha) = sigma_y0 + K * alpha^n
+%   E = 200 GPa, nu = 0.3, sigma_y0 = 250 MPa, K = 1000, n = 1.0
+
+% mechanics dim 3
+% mechanics cell hex8
+% mechanics coord spatial x y z
+% mechanics coord material X Y Z
+% mechanics material hooke_power_law --E 200e3 --nu 0.3 --sigma_y0 250 --K 1000 --n 1.0
+% mechanics formulation total_lagrangian
+% mechanics boundary fix --type dirichlet --field u --components 0 1 2 --value 0
+% mechanics boundary pull --type dirichlet --field u --components 2 --value 0.1
+
+% After compilation, the generated Taichi solver will:
+%   1. Initialise a structured Hex8 mesh
+%   2. Apply Dirichlet BCs: fix on z = 0, pull on z = L
+%   3. Use adaptive load stepping to reach full prescribed displacement
+%   4. At each load step, solve via Newton-Raphson with CG linear solver
+%   5. Track history fields (accumulated plastic strain alpha)

@@ -99,7 +99,7 @@ class TestTaskP2_4MetricAssignDirectives:
 
     @pytest.mark.e2e
     @pytest.mark.xfail(
-        reason="e2e metric propagation requires build_context metric wiring — deferred to P10-1 (SOSOVSKI/MechDSL#79)",
+        reason="e2e metric propagation requires build_context metric wiring — deferred (tracked internally)",
         strict=False,
     )
     def test_cylindrical_metric_propagates_to_element_ir(self):

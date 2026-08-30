@@ -32,8 +32,8 @@ import sys
 import pytest
 
 # ---------------------------------------------------------------------------
-# Shared LaTeX fixtures (reused from P1-2 test; duplicated here to keep this
-# file fully self-contained — it is the canonical surface test).
+# Shared LaTeX fixtures (duplicated here to keep this file fully
+# self-contained — it is the canonical surface test).
 # ---------------------------------------------------------------------------
 
 _PROBLEM_SOURCE_SVK_NAMED = """\

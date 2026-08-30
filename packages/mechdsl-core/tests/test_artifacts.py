@@ -329,7 +329,6 @@ class TestGoldenDriftDetection:
         # Load the real golden data
         original = _load_golden(golden_dir, "elastic_cantilever.npz")
 
-        # Create perturbed copy in a temp directory
         perturbed_dir = tmp_path / "golden_perturbed"
         perturbed_dir.mkdir()
 
@@ -395,7 +394,7 @@ class TestGoldenLoadErrors:
 
 
 # ===========================================================================
-# Test 6: Necking bar golden regression (P3-3)
+# Test 6: Necking bar golden regression
 # ===========================================================================
 
 

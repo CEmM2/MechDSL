@@ -1,0 +1,42 @@
+% Ogden (compressible, spectral / principal-stretch, isochoric-volumetric split)
+% strain-energy density, authored as LaTeX for the LaTeX-to-code constitutive
+% pipeline (symbolic/spectral_energy.py — the SPECTRAL derivation path).
+%
+% Two-term Ogden:
+%   Psi = (mu1/alpha1)(lbar1^{alpha1} + lbar2^{alpha1} + lbar3^{alpha1} - 3)
+%       + (mu2/alpha2)(lbar1^{alpha2} + lbar2^{alpha2} + lbar3^{alpha2} - 3)
+%       + (kappa/2)(Jdet - 1)^2
+%
+% where
+%   lbar_i = J^{-1/3} * lambda_i   (isochoric principal stretches)
+%   lambda_i = sqrt(eig_i(C))      (principal stretches; C = 2E + I)
+%   J = lambda_1 * lambda_2 * lambda_3 = det F
+%
+% Spectral authoring contract (symbolic/spectral_energy.py). The barred
+% principal stretches are authored as bare scalar symbols \mathrm{lbar1},
+% \mathrm{lbar2}, \mathrm{lbar3} and the Jacobian as \mathrm{Jdet} — the same
+% \mathrm{..} escape the named-invariant path uses, so nrpylatex emits them as
+% scalar symbols with no index contraction. The derivation substitutes
+%   lbar_i -> J^{-1/3} lambda_i,   Jdet -> lambda_1 lambda_2 lambda_3
+% (lambda_i three independent stretch symbols), differentiates Psi w.r.t. the
+% lambda_i, and forms the principal PK2 stresses S_i = (1/lambda_i) dPsi/dlambda_i.
+% At evaluation the stretches come from a numerical eigendecomposition of C and
+% S = sum_i S_i N_i (x) N_i is reassembled — robust at repeated eigenvalues
+% (no eigenvalue-difference denominators). The tangent uses central-difference
+% FD of that stress, matching models/ogden.py's own method.
+%
+% Parameter naming (nrpylatex scans only known greek command tokens):
+%   \mu    == mu1    (first  Ogden shear coefficient)
+%   \alpha == alpha1 (first  Ogden exponent)
+%   \nu    == mu2    (second Ogden shear coefficient)
+%   \eta   == alpha2 (second Ogden exponent)
+%   \kappa == bulk modulus
+% All five are sympy-safe (no sanitisation placeholder needed).
+%
+% Matches the oracle in models/ogden.py (mus=(mu1,mu2), alphas=(alpha1,alpha2),
+% kappa) to < 1e-8 (stress).
+
+% declare metric gDD --dim 3
+% declare EDD --dim 3
+% declare \mu \alpha \nu \eta \kappa --const
+\Psi = \frac{\mu}{\alpha}\left(\mathrm{lbar1}^{\alpha} + \mathrm{lbar2}^{\alpha} + \mathrm{lbar3}^{\alpha} - 3\right) + \frac{\nu}{\eta}\left(\mathrm{lbar1}^{\eta} + \mathrm{lbar2}^{\eta} + \mathrm{lbar3}^{\eta} - 3\right) + \frac{\kappa}{2}\left(\mathrm{Jdet} - 1\right)^{2}

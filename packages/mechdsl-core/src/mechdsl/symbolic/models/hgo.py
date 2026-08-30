@@ -131,7 +131,6 @@ def _fiber_contrib(
     dI1bar_dC = J23m * (eye3 - (I1 / 3.0) * Cinv)
     dI4bar_dC = J23m * (A - (I4 / 3.0) * Cinv)
     dE_dC = kd * dI1bar_dC + (1.0 - 3.0 * kd) * dI4bar_dC
-    # S_fi = 2 * k1 * E_fi * exp(k2 * E_fi^2) * dE_dC
     coeff = 2.0 * mat.k1 * E_fi * np.exp(mat.k2 * E_fi * E_fi)
     return coeff * dE_dC
 

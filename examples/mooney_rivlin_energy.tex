@@ -1,0 +1,36 @@
+% Mooney-Rivlin (compressible, two-invariant isochoric-volumetric split)
+% strain-energy density, authored as LaTeX for the LaTeX-to-code constitutive
+% pipeline (symbolic/energy.py).
+%
+%   Psi = C1 * (Ibar1 - 3) + C2 * (Ibar2 - 3) + (kappa/2) * (Jdet - 1)^2
+%
+% where
+%   Ibar1 = I1 * I3^{-1/3}    (isochoric first invariant,  I1 = tr C)
+%   Ibar2 = I2 * I3^{-2/3}    (isochoric second invariant, I2 = 1/2[(tr C)^2 - tr C^2])
+%   Jdet  = sqrt(det C)        (Jacobian, det F)
+%   C     = 2*E + I            (right Cauchy-Green from Green-Lagrange strain E)
+%
+% Authored in named invariants so nrpylatex never has to parse \det / \log.
+% All three invariant symbols (\mathrm{Ibar1}, \mathrm{Ibar2}, \mathrm{Jdet})
+% are substituted with their C = 2E + I definitions by symbolic/energy.py
+% before differentiation (Ibar2 was registered in P2-1; first real use here).
+%
+% Parameter naming. nrpylatex only scans known (greek) command tokens, so the
+% Mooney coefficients are authored as greek letters and documented here:
+%   \alpha  ==  C1  (first  Mooney-Rivlin coefficient; > 0)
+%   \beta   ==  C2  (second Mooney-Rivlin coefficient; >= 0)
+%   \kappa  ==  bulk modulus (> 0)
+% \beta collides with sympy.beta and is sanitised to the Hebrew placeholder
+% \aleph internally (same mechanism SVK uses for \lambda -> \aleph); the
+% original display name is preserved in EnergyModel.parameters.
+%
+% Matches the oracle in models/mooney_rivlin.py exactly:
+%   S = 2*C1*J^{-2/3} (I - (1/3) I1 Cinv)
+%     + 2*C2*J^{-4/3} (I1 I - C - (2/3) I2 Cinv)
+%     + kappa*J*(J-1) Cinv
+% and reduces to Neo-Hookean (mu = 2*C1) when C2 = 0.
+
+% declare metric gDD --dim 3
+% declare EDD --dim 3
+% declare \alpha \beta \kappa --const
+\Psi = \alpha \left( \mathrm{Ibar1} - 3 \right) + \beta \left( \mathrm{Ibar2} - 3 \right) + \frac{\kappa}{2} \left( \mathrm{Jdet} - 1 \right)^{2}

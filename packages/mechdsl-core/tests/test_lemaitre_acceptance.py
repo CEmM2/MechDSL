@@ -603,7 +603,7 @@ class TestTaskP6_3:
         n_elem = conn.shape[0]
 
         # Element centroids for geometric queries
-        centroids = coords[conn].mean(axis=1)  # (n_elem, 3)
+        centroids = coords[conn].mean(axis=1)
 
         # --- BCs: left face (x=0) clamped, right face (x=L) prescribed x-disp ---
         x_left = np.where(np.abs(coords[:, 0] - 0.0) < 1e-12)[0]
@@ -613,8 +613,7 @@ class TestTaskP6_3:
         bc_mask[x_right, 0] = True
 
         # --- Loading: small strain increments (<=0.5%/step) so the undamaged
-        #     J2 tangent (Option A, Gate B forward-warning #2) can still
-        #     drive Newton to convergence under active damage. ---
+        #     J2 tangent can still drive Newton to convergence under active damage. ---
         target_eng_strain = 0.02  # 2 % engineering strain
         total_disp = target_eng_strain * L
         n_steps = 8  # 0.25 % strain / step
@@ -685,15 +684,14 @@ class TestTaskP6_3:
                 nu_val=_NU,
                 D_crit=D_crit,
                 tol=1e-7,
-                max_iter=40,  # >= 30 per Gate B guidance
+                max_iter=40,
             )
 
         # --- Extract per-element damage (max over QPs) ---
-        damage_qp = mod.damage_D.to_numpy()  # (n_elem, n_qp)
+        damage_qp = mod.damage_D.to_numpy()
         assert damage_qp.shape == (n_elem, 8)
         damage_elem = damage_qp.max(axis=1)
 
-        # Sanity: damage actually grew somewhere (otherwise the test is vacuous)
         D_max = float(damage_elem.max())
         assert D_max > 0.0, f"No damage accumulated; test is vacuous (D_max={D_max:.3e})"
 
@@ -808,7 +806,7 @@ class TestTaskP6_3:
         bundle = mechdsl_compile(lem_ir)
         source = bundle.emitted_source
 
-        # --- Structural guard (WI-A fix): the generated driver must snapshot AND
+        # --- Structural guard: the generated driver must snapshot AND
         #     restore the damage history (damage_D + is_deleted), not just alpha.
         ns_start = source.find("def newton_solve(")
         assert ns_start >= 0, "generated Lemaitre module missing newton_solve driver"

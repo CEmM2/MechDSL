@@ -389,8 +389,6 @@ class TestTaskP10_10:
                 f"{task_id!r} unexpectedly failed under per-benchmark override; "
                 "only the targeted task should regress."
             )
-        # The reported tolerance on every metric of the targeted task must
-        # reflect the override (5.0), not the default (10.0).
         for delta in by_id_strict[target_task].deltas:
             assert delta.tolerance_pct == 5.0, (
                 f"per-benchmark override must propagate into MetricDelta.tolerance_pct; "

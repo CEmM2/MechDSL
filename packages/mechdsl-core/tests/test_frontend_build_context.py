@@ -74,9 +74,8 @@ class TestBuildContextBasics:
             "boundaries",
             "coord_system",
             "hourglass_coef",
-            # Plan B phase B5 (task P5-6) added the integration / hourglass
-            # selectors so the LaTeX `% mechanics cell` directive can carry
-            # element-discretisation choices end-to-end.
+            # The integration / hourglass selectors let the LaTeX `% mechanics cell`
+            # directive carry element-discretisation choices end-to-end.
             "integration",
             "hourglass",
         }
@@ -247,8 +246,6 @@ class TestBuildContextParserTests:
             "boundaries",
             "coord_system",
             "hourglass_coef",
-            # Plan B phase B5 (task P5-6) — see TestBuildContextBasics
-            # for the rationale.
             "integration",
             "hourglass",
         }

@@ -66,8 +66,8 @@ _AssembleFn = Callable[..., "NDArray"]
 class StripMesh:
     """Rectangular Hex8 strip mesh on [0, Lx] x [0, Ly] x [0, Lz]."""
 
-    coords: NDArray  # (n_nodes, 3)
-    connectivity: NDArray  # (n_elem, 8)
+    coords: NDArray
+    connectivity: NDArray
     n_nodes: int
     n_elem: int
     Lx: float

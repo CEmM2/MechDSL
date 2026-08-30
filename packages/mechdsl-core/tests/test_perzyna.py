@@ -243,7 +243,7 @@ class TestTaskP3_3PerzynaTangent:
             E = 0.03 * 0.5 * (A + A.T)
 
             result = radial_return(mat, E, alpha_old, dt)
-            C_analytical = result.tangent  # (3, 3, 3, 3)
+            C_analytical = result.tangent
 
             C_fd = self._fd_tangent(mat, E, alpha_old, dt)
 

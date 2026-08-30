@@ -24,9 +24,8 @@ from mechdsl.codegen.hourglass import (
 # ---------------------------------------------------------------------------
 # Helpers — direct single-element residual computation.
 #
-# A full assembly pipeline for reduced-integration Hex8 is the job of P5-6
-# and P5-7.  For the acceptance tests here we compute the residual of a
-# single element using a 1-point (centroid) quadrature rule — this is the
+# These tests bypass the full assembly pipeline: the residual of a single
+# element is computed with a 1-point (centroid) quadrature rule — the
 # reduced-integration scheme that the hourglass control stabilises — plus
 # (optionally) the Flanagan-Belytschko hourglass correction.
 # ---------------------------------------------------------------------------
@@ -39,13 +38,13 @@ def _one_point_svk_force(
     # Centroid (xi=eta=zeta=0) : dN/dxi = HEX8_NODE_COORDS / 8
     from mechdsl.codegen.hex8_tables import shape_gradients
 
-    dN_dxi = shape_gradients(0.0, 0.0, 0.0)  # (8, 3)
+    dN_dxi = shape_gradients(0.0, 0.0, 0.0)
     J0 = X_elem.T @ dN_dxi
     detJ0 = float(np.linalg.det(J0))
     J0_inv = np.linalg.inv(J0)
-    dN_dX = dN_dxi @ J0_inv  # (8, 3)
+    dN_dX = dN_dxi @ J0_inv
 
-    grad_u = u_elem.T @ dN_dX  # (3, 3)
+    grad_u = u_elem.T @ dN_dX
     F = np.eye(3) + grad_u
     E = 0.5 * (F.T @ F - np.eye(3))
     tr_E = np.trace(E)

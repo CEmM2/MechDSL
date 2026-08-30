@@ -121,7 +121,6 @@ def rigid_body_reference(
     if coords.ndim != 2 or coords.shape[1] != 3:
         raise ValueError(f"coords must be shape (N, 3), got {coords.shape}")
 
-    # u = (R - I) @ X + t
     R_minus_I = rotation - np.eye(3)
     return cast("np.ndarray", coords @ R_minus_I.T + translation[np.newaxis, :])
 

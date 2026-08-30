@@ -110,7 +110,7 @@ class TestTaskP5_3Hex20:
                            + xi^2 + eta^2 + zeta^2
         """
         # Use the reference element (parametric = physical)
-        X = HEX20_NODE_COORDS  # shape (20, 3)
+        X = HEX20_NODE_COORDS
 
         def u_exact(xyz: np.ndarray) -> float:
             x, y, z = float(xyz[0]), float(xyz[1]), float(xyz[2])
@@ -157,7 +157,7 @@ class TestTaskP5_3Hex20:
         On the reference element (X_elem = HEX20_NODE_COORDS), the map is
         the identity, so J = I and det(J) = 1.0 at every point.
         """
-        X_elem = HEX20_NODE_COORDS  # shape (20, 3)
+        X_elem = HEX20_NODE_COORDS
 
         det_vals = []
         for q in range(27):

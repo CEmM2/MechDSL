@@ -1,8 +1,8 @@
 """Unit tests for the pre-emission JIT budget gate (Task P2-2).
 
-MFront-mimic Cycle M0, Phase 2 (``dev/plans/mfront_cycleM0.md`` lines 79-82).
+Part of the MechDSL lawgen test suite.
 
-Covers all seven ``test_plan.cases``:
+Covers all seven cases:
 
 1-6. Each of the six budget knobs is tripped *in isolation* by a targeted
      fixture, and the raised :class:`BudgetError` names the knob, the measured
@@ -76,7 +76,7 @@ def _lowered(n_temps: int = 0, n_returns: int = 1) -> LoweredExpr:
 
 
 # ---------------------------------------------------------------------------
-# Module-level counters — the reusable primitives (P2-3/P2-4/P3 depend here).
+# Module-level counters — the reusable primitives.
 # ---------------------------------------------------------------------------
 
 
@@ -100,10 +100,10 @@ def test_count_pow_symbolic_exponent_rule() -> None:
     assert count_pow_symbolic_exponent(_x**_n) == 1  # symbolic
     assert count_pow_symbolic_exponent(_x**2) == 0  # integer literal
     assert count_pow_symbolic_exponent(_x**-3) == 0  # negative integer
-    # ±1/2 exponents lower to ti.sqrt / 1/ti.sqrt (P2-1 printer), NOT ti.pow,
+    # ±1/2 exponents lower to ti.sqrt / 1/ti.sqrt, NOT ti.pow,
     # so they are exempt from this runtime-ti.pow budget.
-    assert count_pow_symbolic_exponent(sp.sqrt(_x)) == 0  # Pow(x, S.Half)
-    assert count_pow_symbolic_exponent(1 / sp.sqrt(_x)) == 0  # Pow(x, -S.Half)
+    assert count_pow_symbolic_exponent(sp.sqrt(_x)) == 0
+    assert count_pow_symbolic_exponent(1 / sp.sqrt(_x)) == 0
     assert count_pow_symbolic_exponent(_x ** sp.Rational(3, 2)) == 1  # non-half rational
     assert count_pow_symbolic_exponent(_x**2.0) == 1  # Float
     assert count_pow_symbolic_exponent(_x**_n + _p**_n) == 2  # two distinct symbolic
@@ -116,7 +116,7 @@ def test_count_pow_symbolic_exponent_rule() -> None:
 
 def test_max_expr_ops_exceeded_raises_named_error() -> None:
     """Exceeding ``max_expr_ops`` raises collect-all ``LawgenError`` naming knob/value/limit."""
-    expr = _x**2 + 2 * _x + 1  # count_ops == 4
+    expr = _x**2 + 2 * _x + 1
     target = TiconstitTarget(max_expr_ops=2)
     checker = BudgetChecker(target)
 

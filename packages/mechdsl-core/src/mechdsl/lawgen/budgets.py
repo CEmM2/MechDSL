@@ -1,6 +1,7 @@
 """Pre-emission JIT budget gate for the lawgen lowerer (Task P2-2).
 
-MFront-mimic Cycle M0, Phase 2 (``dev/plans/mfront_cycleM0.md`` lines 79-82).
+Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
+Taichi carrier).
 
 This module is the *gate* that stands between the deterministic lowerer
 (:mod:`mechdsl.lawgen.sympy_to_taichi`, P2-1) and any Taichi emission
@@ -66,10 +67,10 @@ from typing import TYPE_CHECKING
 
 import sympy as sp
 
-# REUSE.md verdict: extend the repo's single message-only budget error rather
-# than inventing a parallel hierarchy. ``BudgetError`` IS-A ``BudgetExceededError``
-# so callers that already catch the shared budget error keep working, while
-# lawgen code can catch the narrower lawgen-specific type.
+# Extend the repo's single message-only budget error rather than inventing a
+# parallel hierarchy. ``BudgetError`` IS-A ``BudgetExceededError`` so callers
+# that already catch the shared budget error keep working, while lawgen code
+# can catch the narrower lawgen-specific type.
 from mechdsl.codegen.einsum_optimizer import BudgetExceededError
 from mechdsl.lawgen.contracts import TiconstitTarget
 from mechdsl.lawgen.diagnostics import DiagnosticCollector, LawgenDiagnostic
@@ -127,7 +128,7 @@ class BudgetError(BudgetExceededError):
 
 
 # ---------------------------------------------------------------------------
-# Module-level pure counters (independently testable; reused by P2-3/P2-4/P3).
+# Module-level pure counters (independently testable).
 # ---------------------------------------------------------------------------
 
 

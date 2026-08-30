@@ -187,15 +187,15 @@ def shape_gradients(xi: float, eta: float, zeta: float) -> NDArray:
 
 TET10_QUAD_POINTS: NDArray = np.array(
     [
-        [_A, _A, _A],  # Q0: L0 = b
-        [_B, _A, _A],  # Q1: L1 = b
-        [_A, _B, _A],  # Q2: L2 = b
-        [_A, _A, _B],  # Q3: L3 = b
+        [_A, _A, _A],
+        [_B, _A, _A],
+        [_A, _B, _A],
+        [_A, _A, _B],
     ],
     dtype=np.float64,
-)  # shape (4, 3)
+)
 
-TET10_QUAD_WEIGHTS: NDArray = np.full(4, 1.0 / 24.0, dtype=np.float64)  # shape (4,)
+TET10_QUAD_WEIGHTS: NDArray = np.full(4, 1.0 / 24.0, dtype=np.float64)
 
 # ---------------------------------------------------------------------------
 # Pre-evaluated tables (computed once at module load time)
@@ -205,13 +205,13 @@ TET10_QUAD_WEIGHTS: NDArray = np.full(4, 1.0 / 24.0, dtype=np.float64)  # shape 
 SHAPE_AT_QUAD: NDArray = np.array(
     [shape_functions(float(pt[0]), float(pt[1]), float(pt[2])) for pt in TET10_QUAD_POINTS],
     dtype=np.float64,
-)  # shape (4, 10)
+)
 
 # GRAD_AT_QUAD[q, a, i] = dN_a / d(xi_i) at quadrature point q
 GRAD_AT_QUAD: NDArray = np.array(
     [shape_gradients(float(pt[0]), float(pt[1]), float(pt[2])) for pt in TET10_QUAD_POINTS],
     dtype=np.float64,
-)  # shape (4, 10, 3)
+)
 
 # ---------------------------------------------------------------------------
 # Physical-space gradient computation
@@ -249,7 +249,7 @@ def reference_gradient_at_physical(
     ValueError
         If det(J0) <= 0 — the element is inverted or degenerate.
     """
-    dN_dxi = GRAD_AT_QUAD[q]  # (10, 3)
+    dN_dxi = GRAD_AT_QUAD[q]
 
     # Reference Jacobian: J0 = dX/dxi = X^T @ dN/dxi  ->  (3, 3)
     J0 = X_elem.T @ dN_dxi
@@ -262,6 +262,6 @@ def reference_gradient_at_physical(
     J0_inv = np.linalg.inv(J0)
 
     # dN/dX = dN/dxi @ J0^{-1}
-    dNdX: NDArray = dN_dxi @ J0_inv  # (10, 3)
+    dNdX: NDArray = dN_dxi @ J0_inv
 
     return dNdX, detJ0

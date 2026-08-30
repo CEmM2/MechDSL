@@ -1,10 +1,9 @@
 """Unit tests for numerical-guard injection (Task P2-3).
 
-MFront-mimic Cycle M0, Phase 2 (``dev/plans/mfront_cycleM0.md`` lines 83-86).
-This is the phase's key correctness task (plan risk R2): the guards emitted by
-:func:`mechdsl.lawgen.sympy_to_taichi.lower_expression` must reproduce the
-hand-authored guards in Cycle 0's ``swift_voce.py`` so the P4-2 numerical
-equivalence gate (``rtol=1e-10``) holds.
+Part of the MechDSL lawgen test suite. Correctness-critical: the guards
+emitted by :func:`mechdsl.lawgen.sympy_to_taichi.lower_expression` must match
+the hand-authored guards in the reference ``swift_voce.py`` so the
+numerical-equivalence check (``rtol=1e-10``) holds.
 
 Covers the five ``test_plan.cases``:
 
@@ -128,12 +127,12 @@ def test_sqrt_argument_wrapped_with_ti_max() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Case 4 — division denominators are guarded (SIGN-PRESERVING; Gate-B Finding 1).
+# Case 4 — division denominators are guarded (SIGN-PRESERVING).
 # ---------------------------------------------------------------------------
 #
 # The denominator guard must PRESERVE the denominator's sign. A plain
 # ``ti.max(ti.abs(b), 1e-12)`` returns ``|b|`` and flips the sign of ``a/b`` for
-# a runtime-negative ``b`` (``a/|b|`` != ``a/b``) — silently wrong (R2). The
+# a runtime-negative ``b`` (``a/|b|`` != ``a/b``) — silently wrong. The
 # sign-preserving form keeps ``b``'s sign and floors only its magnitude to
 # 1e-12; it is a no-op for ``|b| >= 1e-12`` (returns ``b``), and returns
 # ``+1e-12`` / ``-1e-12`` for a near-zero positive / negative ``b``.

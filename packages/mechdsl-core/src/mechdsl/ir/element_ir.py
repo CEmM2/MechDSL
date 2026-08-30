@@ -130,19 +130,18 @@ class BasisFunctions:
 
 
 # ---------------------------------------------------------------------------
-# Execution-contract enrichment (recovery-plan Phase 4 / R3.1 / P4-1).
+# Execution-contract enrichment.
 #
-# Pre-P4-1, downstream codegen and lowering re-derived facts about each
-# element's reference volume, the constitutive call's input/output shapes,
-# and the local force / tangent layout from a mix of `element_type` strings,
-# `quadrature.n_points`, and hard-coded knowledge of MVP Hex8. P4-1 promotes
-# those facts into four small frozen dataclasses that ride on `ElementIR` as
-# optional fields with safe defaults so legacy callers continue working.
+# Downstream codegen and lowering used to re-derive each element's reference
+# volume, the constitutive call's input/output shapes, and the local force /
+# tangent layout from `element_type` strings, `quadrature.n_points`, and
+# hard-coded Hex8 knowledge. Those facts are promoted into four small frozen
+# dataclasses that ride on `ElementIR` as optional fields with safe defaults
+# so legacy callers continue working.
 #
 # The four contracts deliberately stay backend-agnostic — no Taichi-specific
 # slot names, no Voigt-specific field layouts that would leak into MFEM /
-# MOOSE. Per the Phase 4 constraints: "Avoid backend-specific leakage into
-# IR types."
+# MOOSE.
 # ---------------------------------------------------------------------------
 
 
@@ -390,14 +389,14 @@ class ElementIR:
     configuration: str = "reference"  # "reference" (TL) or "current" (UL)
     integration_rule: IntegrationRule = IntegrationRule.FULL
 
-    # Recovery-plan P4-1 execution-contract enrichment. Optional; safe defaults.
+    # Execution-contract enrichment. Optional; safe defaults.
     geometry: GeometrySummary | None = None
     material_eval: MaterialEvalContract | None = None
     local_force: LocalForceDescriptor | None = None
     local_tangent: LocalTangentDescriptor | None = None
 
-    # constitutive_latex P5-1: per-element fiber-orientation field data carried
-    # down from ProblemIR.fiber_field (anisotropic models, HGO). One unit-ish
+    # Per-element fiber-orientation field data carried down from
+    # ProblemIR.fiber_field (anisotropic models, HGO). One unit-ish
     # direction per fiber family; None for isotropic problems. Held as a plain
     # data tuple so the Element IR stays decoupled from the Mechanics-IR
     # FiberFieldSpec type. This is the no-layer-bypass carry: frontend directive
@@ -431,7 +430,7 @@ class ElementIR:
                 f"got {type(self.integration_rule).__name__}. "
                 "See Plan B phase B5 (§B5.4) for the integration-rule axis."
             )
-        # Reduced integration is currently only implemented for Hex8 (Plan B §B5.4).
+        # Reduced integration is currently only implemented for Hex8.
         if self.integration_rule == IntegrationRule.REDUCED and self.element_type != "hex8":
             raise ValueError(
                 f"Reduced integration is only implemented for hex8, got "
@@ -440,7 +439,7 @@ class ElementIR:
                 "Plan B phase B5."
             )
 
-        # P4-1: enriched execution-contract consistency checks. Each runs only
+        # Enriched execution-contract consistency checks. Each runs only
         # when the optional descriptor is populated, so legacy callers that
         # leave the fields at None see no behaviour change.
         if self.geometry is not None and self.geometry.n_quad != self.quadrature.n_points:
@@ -480,7 +479,7 @@ class ElementIR:
                 )
 
     # ------------------------------------------------------------------
-    # Serialization (recovery-plan P4-1 / P4-5).
+    # Serialization.
     #
     # ElementIR carries numpy arrays via QuadratureRule and a basis-function
     # object; the round-trip serialization here is intentionally narrow —
@@ -657,7 +656,7 @@ def create_hex8_element_ir(
 
 
 # ---------------------------------------------------------------------------
-# Tet4 constructors  (Plan B §B5.1)
+# Tet4 constructors
 # ---------------------------------------------------------------------------
 
 
@@ -711,7 +710,7 @@ def create_tet4_element_ir(
 
 
 # ---------------------------------------------------------------------------
-# Tet10 constructors  (Plan B §B5.2)
+# Tet10 constructors
 # ---------------------------------------------------------------------------
 
 
@@ -768,7 +767,7 @@ def create_tet10_element_ir(
 
 
 # ---------------------------------------------------------------------------
-# Hex20 constructors  (Plan B §B5.3)
+# Hex20 constructors
 # ---------------------------------------------------------------------------
 
 

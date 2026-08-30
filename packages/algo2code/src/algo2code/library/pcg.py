@@ -54,9 +54,6 @@ faithful to this canonical LaTeX. Behaviour is also pinned by
 from __future__ import annotations
 
 # ── Canonical algorithm source ───────────────────────────────────────────────
-# Verbatim copy of `pcg_algorithm_latex.latex` in
-# dev/tasks/recovery_plan_latex_contract/json/P6-1.json.  Do NOT edit without
-# updating the task JSON in the same commit.
 PCG_ALGORITHM_LATEX: str = r"""% algorithm pcg
 % backend taichi
 % args A:matrix, b:vector, x:vector, apply_M_inv:callable, tol:scalar, maxiter:scalar

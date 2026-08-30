@@ -109,7 +109,7 @@ Any energy you can write in LaTeX can be compiled without touching the model cod
 ```
 
 The example energy snippets in
-[`dev/examples/`](https://github.com/SOSOVSKI/MechDSL/tree/main/dev/examples)
+[`examples/`](https://github.com/CEmM2/MechDSL/tree/main/examples)
 (`neo_hookean_energy.tex`, `mooney_rivlin_energy.tex`, `ogden_energy.tex`,
 `hgo_energy.tex`, `svk_energy.tex`) show the exact LaTeX the parser accepts.
 

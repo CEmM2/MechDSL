@@ -115,7 +115,7 @@ def _c_from_strain(strain: tuple[tuple[sp.Symbol, ...], ...]) -> sp.Matrix:
     return 2 * e + sp.eye(3)
 
 
-# Named-invariant authoring contract (P2-1). Each entry maps an authored
+# Named-invariant authoring contract. Each entry maps an authored
 # scalar symbol name (emitted by nrpylatex from ``\mathrm{<name>}``) to a
 # callable that builds the invariant as a SymPy scalar on C = 2E + I, drawing
 # every definition from symbolic/invariants.py so this module never re-derives
@@ -148,17 +148,16 @@ _INVARIANT_REGISTRY: dict[str, _InvariantBinder] = {
 }
 
 # Invariant symbols that are recognised but require a fiber direction, which
-# is not plumbed until Phase 5 (P5-1). Authoring one today is rejected with a
-# phase pointer rather than silently treated as a free parameter.
+# is not plumbed in this path. Authoring one is rejected with a clear error
+# rather than silently treated as a free parameter.
 _FIBER_INVARIANTS: dict[str, str] = {
     "I4f": "I4 = a·C·a",
     "I5f": "I5 = a·C²·a",
 }
 
 # Any authored symbol matching this shape is treated as an *intended* invariant
-# (so an unknown one is rejected with a phase pointer instead of being mistaken
-# for a free material parameter). Bare Greek/Latin parameter names (mu, kappa,
-# aleph, …) do not match.
+# (so an unknown one is rejected instead of being mistaken for a free material
+# parameter). Bare Greek/Latin parameter names (mu, kappa, aleph, …) do not match.
 _INVARIANT_NAME_RE = re.compile(r"^(?:I\d+\w*|Ibar\d+|J(?:det)?)$")
 
 

@@ -197,7 +197,6 @@ class TaichiEmitter:
         collector = KernelCollector()
         collector.scan(self.algo.body)
 
-        # Pre-scan for temp count
         self._pre_scan_temps(self.algo.body)
 
         parts = []

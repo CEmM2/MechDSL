@@ -243,12 +243,12 @@ class TestVerificationE2:
         u_vec = np.array([1.5, -2.3, 0.7])
 
         # Nodal values: all nodes have the same vector
-        u_nodal = np.tile(u_vec, (8, 1))  # (8, 3)
+        u_nodal = np.tile(u_vec, (8, 1))
 
         for q_idx, pt in enumerate(quad.points):
             xi, eta, zeta = pt
-            N = basis.evaluate(xi, eta, zeta)  # (8,)
-            u_h = N @ u_nodal  # (3,)
+            N = basis.evaluate(xi, eta, zeta)
+            u_h = N @ u_nodal
             np.testing.assert_allclose(
                 u_h,
                 u_vec,
@@ -315,7 +315,7 @@ class TestVerificationE3:
 
             # Jacobian J_{iI} = sum_a (dN_a/d(xi_I)) * X_{a,i}
             # shape: J = dN_dxi.T @ X_nodes  → (3, 3)
-            J = dN_dxi.T @ X_nodes  # (3, 3)
+            J = dN_dxi.T @ X_nodes
             detJ = float(np.linalg.det(J))
 
             assert abs(detJ - expected_detJ) < 1e-14, (
@@ -357,8 +357,8 @@ class TestVerificationE3:
 
         for q_idx, pt in enumerate(quad.points):
             xi, eta, zeta = pt
-            dN_dxi = basis.gradient(xi, eta, zeta)  # (8, 3)
-            J = dN_dxi.T @ X_nodes  # (3, 3)
+            dN_dxi = basis.gradient(xi, eta, zeta)
+            J = dN_dxi.T @ X_nodes
             detJ = float(np.linalg.det(J))
 
             assert abs(detJ - expected_detJ) < 1e-12, (

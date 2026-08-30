@@ -283,8 +283,7 @@ class Algo2CodePCGSolver:
         precond_fn: Callable[[np.ndarray], np.ndarray] | None = None,
     ) -> None:
         # Bind the identity preconditioner at construction time so the
-        # algorithm body never sees `None`. Matches the contract in the
-        # P6-1 task JSON (`preconditioner_contract` field).
+        # algorithm body never sees `None`.
         self._apply_M_inv: Callable[[np.ndarray], np.ndarray] = (
             precond_fn if precond_fn is not None else _identity
         )
@@ -394,23 +393,15 @@ class Algo2CodePCGSolver:
 
 
 # ---------------------------------------------------------------------------
-# P6-2 — Solver-mode factories.
-#
-# Purely additive surface introduced by Task P6-2 of the recovery plan.
-# Everything above this banner (including ``LinearSolverInterface``,
-# ``CGSolver``, ``PCGSolver``, ``ScipyCGSolver``, ``_identity``, and
-# ``Algo2CodePCGSolver``) MUST remain byte-identical to its P6-1 form; this
-# block only appends new module-level callables and a private alias.
+# Solver-mode factories.
 # ---------------------------------------------------------------------------
 
-# ``Literal`` is imported here at the bottom of the module — after the
-# byte-identity-protected block (lines 1-391, P6-1 Gate-A invariant) — so that
-# ``LinearSolverInterface``, ``CGSolver``, ``PCGSolver``, ``ScipyCGSolver``,
-# ``_identity``, and ``Algo2CodePCGSolver`` remain byte-identical to their
-# P6-1 form (verified via SHA-256 of ``ast.dump``). Once that protection
-# is lifted, this import can move into the ``TYPE_CHECKING`` block at the
-# top of the module (``from __future__ import annotations`` on line 15
-# already makes the annotation lazy at runtime).
+# ``Literal`` is imported here at the bottom of the module so the solver
+# classes above remain byte-identical to their previously verified form
+# (checked via SHA-256 of ``ast.dump``). Once that protection is lifted,
+# this import can move into the ``TYPE_CHECKING`` block at the top of the
+# module (``from __future__ import annotations`` already makes the
+# annotation lazy at runtime).
 from typing import Literal as _Literal  # noqa: E402  (intentional bottom-of-module import)
 
 _SolverMode = _Literal["fallback", "generated"]
@@ -483,7 +474,7 @@ def build_solver(
 
 
 # ---------------------------------------------------------------------------
-# PlanJune14 P4-3 — selectable all-Taichi seam solve path (Option 1, opt-in).
+# Selectable all-Taichi seam solve path (opt-in).
 #
 # The seam path is NOT a ``build_solver`` mode: it does not implement the
 # host-NumPy ``LinearSolverInterface`` (matvec-callback) contract consumed by

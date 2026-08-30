@@ -12,7 +12,7 @@ This module provides the fiber-aware derivation that handles both.
 Authoring contract
 ------------------
 The energy is authored once for a SINGLE (generic) fiber family in named
-invariants (see ``dev/examples/hgo_energy.tex``)::
+invariants (see ``examples/hgo_energy.tex``)::
 
     Psi = (mu/2)(Ibar1 - 3) + (kappa/2)(Jdet - 1)^2
         + (k1/2k2)(exp(k2 (Ibar4 - 1)^2) - 1)
@@ -143,15 +143,13 @@ class AnisotropicEnergyModel:
     iso_pk2: sp.ImmutableDenseMatrix  # S_iso+vol(E, *iso_params)
     fiber_pk2: sp.ImmutableDenseMatrix  # S_fib(E, a0,a1,a2, *fiber_params) — active branch
     fiber_ibar4: sp.Expr  # Ibar4(E, a0,a1,a2) for the Macaulay gate
-    fiber_symbols: tuple[sp.Symbol, sp.Symbol, sp.Symbol]  # a0, a1, a2
+    fiber_symbols: tuple[sp.Symbol, sp.Symbol, sp.Symbol]
     iso_param_symbols: tuple[sp.Symbol, ...]
     fiber_param_symbols: tuple[sp.Symbol, ...]
     parameters: dict[sp.Symbol, str]  # sanitised -> original LaTeX name
     _iso_fn: Callable[..., NDArray]
     _fiber_fn: Callable[..., NDArray]
     _ibar4_fn: Callable[..., float]
-
-    # ------------------------------------------------------------------
 
     def _iso_args(self, e_strain: NDArray, params: dict[str, float]) -> list[float]:
         flat = [e_strain[i, j] for i in range(3) for j in range(3)]
