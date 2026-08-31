@@ -1,0 +1,55 @@
+name: PyPI publish
+
+# Fires on version tags. Guarded to the public CEmM2 mirror: the private repo
+# carries this file too, but only the mirror is registered with PyPI.
+#
+# One publish job per package, each bound to its own GitHub environment —
+# PyPI requires every pending trusted publisher to have a UNIQUE
+# (owner, repo, workflow, environment) tuple, so the environment name is the
+# per-project discriminator:
+#   mechdsl-core -> environment pypi-mechdsl-core
+#   algo2code    -> environment pypi-algo2code
+#   ti-runtime   -> environment pypi-ti-runtime
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.repository_owner == 'CEmM2'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Build each package into its own dist dir
+        run: |
+          for pkg in mechdsl-core algo2code ti-runtime; do
+            (cd "packages/$pkg" && uv build --out-dir "$GITHUB_WORKSPACE/dist/$pkg")
+          done
+          ls -laR dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [mechdsl-core, algo2code, ti-runtime]
+    environment: pypi-${{ matrix.package }}
+    permissions:
+      id-token: write   # OIDC token for PyPI trusted publishing — no API keys
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Publish ${{ matrix.package }} (trusted publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/${{ matrix.package }}
