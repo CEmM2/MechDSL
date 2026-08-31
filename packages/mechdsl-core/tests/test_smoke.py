@@ -20,7 +20,12 @@ SUBPACKAGES = [
 def test_version():
     import mechdsl
 
-    assert mechdsl.__version__ == "0.2.0"
+    # Compare against the installed distribution metadata instead of a
+    # hardcoded literal, so version bumps can't break this test while
+    # __init__.__version__ <-> pyproject drift still fails it.
+    from importlib.metadata import version
+
+    assert mechdsl.__version__ == version("mechdsl-core")
 
 
 @pytest.mark.parametrize("pkg", SUBPACKAGES)
