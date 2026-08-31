@@ -11,9 +11,9 @@ SUBPACKAGES = [
 
 
 def test_version():
-    import algo2code
-
     from importlib.metadata import version
+
+    import algo2code
 
     assert algo2code.__version__ == version("algo2code")
 
