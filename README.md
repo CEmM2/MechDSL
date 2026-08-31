@@ -11,12 +11,12 @@
 > models from LaTeX; don't hand-code what the compiler should generate.**
 
 📖 **New here? Start with the [documentation](docs/index.md)** —
-[Getting started](docs/getting-started.md) ·
-[Core concepts](docs/concepts.md) ·
-[LaTeX directive reference](docs/latex-directives.md) ·
-[Constitutive models](docs/constitutive-models.md) ·
-[Examples](docs/examples.md) ·
-[FAQ](docs/faq.md)
+[Getting started](docs/mechdsl-core/getting-started.md) ·
+[Core concepts](docs/mechdsl-core/concepts.md) ·
+[LaTeX directive reference](docs/mechdsl-core/latex-directives.md) ·
+[Constitutive models](docs/mechdsl-core/constitutive-models.md) ·
+[Examples](docs/mechdsl-core/examples.md) ·
+[FAQ](docs/reference/faq.md)
 
 MechDSL is a monorepo for LaTeX-to-code compilers aimed at computational mechanics.
 `mechdsl-core` compiles 3D solid mechanics problems — Total Lagrangian and Updated
@@ -239,14 +239,14 @@ User-facing documentation lives in [`docs/`](docs/) and is built as a
 | Page | What it covers |
 |------|----------------|
 | [Home](docs/index.md) | What MechDSL is and why to use it |
-| [Getting started](docs/getting-started.md) | Install with `uv`, first solver, `.tex` and energy-derived inputs |
-| [Core concepts](docs/concepts.md) | LaTeX-first idea, six-layer pipeline, hyperelastic vs. dissipative, support tiers |
-| [LaTeX directive reference](docs/latex-directives.md) | Every `% mechanics` directive with examples |
-| [Constitutive models](docs/constitutive-models.md) | Model catalog with runnable snippets |
-| [Algorithm transpiler (algo2code)](docs/algo2code.md) | How return-maps/PCG are transpiled from `algpseudocode` |
-| [Examples gallery](docs/examples.md) | Cantilever, Cook's membrane, necking bar, patch test, cyclic plasticity |
-| [How it works](docs/architecture.md) | Layers, IR discipline, determinism, verification |
-| [FAQ & troubleshooting](docs/faq.md) | Common questions and fixes |
+| [Getting started](docs/mechdsl-core/getting-started.md) | Install with `uv`, first solver, `.tex` and energy-derived inputs |
+| [Core concepts](docs/mechdsl-core/concepts.md) | LaTeX-first idea, six-layer pipeline, hyperelastic vs. dissipative, support tiers |
+| [LaTeX directive reference](docs/mechdsl-core/latex-directives.md) | Every `% mechanics` directive with examples |
+| [Constitutive models](docs/mechdsl-core/constitutive-models.md) | Model catalog with runnable snippets |
+| [Algorithm transpiler (algo2code)](docs/algo2code/index.md) | How return-maps/PCG are transpiled from `algpseudocode` |
+| [Examples gallery](docs/mechdsl-core/examples.md) | Cantilever, Cook's membrane, necking bar, patch test, cyclic plasticity |
+| [How it works](docs/reference/architecture.md) | Layers, IR discipline, determinism, verification |
+| [FAQ & troubleshooting](docs/reference/faq.md) | Common questions and fixes |
 
 Build or preview the site locally:
 
