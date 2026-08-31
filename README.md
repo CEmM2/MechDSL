@@ -32,8 +32,34 @@ viscoplasticity, and Lemaitre continuum damage. Backends: Taichi (MVP-stable), M
 |---------|------|-------------|
 | `mechdsl-core` | `packages/mechdsl-core/` | LaTeX tensor expressions and programmatic mechanics contexts to FEM solver code |
 | `algo2code` | `packages/algo2code/` | LaTeX algorithm boxes (`algpseudocode`) to executable code |
+| `ti-runtime` | `packages/ti-runtime/` | Neutral Taichi runtime: vector primitives and solver/operator injection seams |
+
+## Try it in the browser
+
+[`mechdsl-workbench`](https://github.com/CEmM2/mechdsl-workbench) is a companion
+browser workbench: LaTeX on the left, the compiled mechanics or transpiled
+algorithm on the right. It installs this repository's packages at a pinned
+release and is the fastest way to try the language before committing to the
+pipeline documentation.
 
 ## Installation
+
+### From PyPI
+
+```bash
+pip install mechdsl-core              # emission only: LaTeX -> emitted solver source (Taichi-free)
+pip install "mechdsl-core[verify]"    # full install: run and verify solves
+pip install algo2code                 # just the algorithm transpiler (stdlib-only)
+pip install ti-runtime                # just the Taichi runtime
+```
+
+The `[verify]` extra is the complete installation — it pulls in `taichi`,
+`ti-runtime`, and `algo2code` so compiled problems can actually be solved and
+verified. Expect a noticeably larger download (Taichi alone is ~170 MB); the
+base `mechdsl-core` install stays lean and is all you need for code emission,
+transpilation, and the `mechdsl.integration` capability surface.
+
+### From source
 
 Clone the repository, install the workspace with `uv`, and keep all commands under `uv run`:
 

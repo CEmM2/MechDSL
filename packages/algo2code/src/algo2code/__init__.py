@@ -8,7 +8,7 @@ Usage:
     taichi_code = transpile(latex_source, backend='taichi')
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from .algo_parser import parse_algorithm
 from .ast_nodes import Algorithm, VarType

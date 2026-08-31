@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "algo2code"
-version = "0.2.0"
+version = "0.2.1"
 description = "Transpile LaTeX algorithm boxes (algpseudocode) to executable Taichi/NumPy/C code"
 readme = "README.md"
 license = "MIT"
@@ -14,20 +14,20 @@ authors = [
 ]
 keywords = ["latex", "algorithm", "transpiler", "taichi", "code-generation"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
 ]
+# Zero runtime dependencies — stdlib only
+dependencies = []
+
 [tool.uv]
 # Supply-chain safety: ignore any package version uploaded after this date.
 # This blocks compromised releases from the recent pip/npm supply-chain attacks.
 # Bump this date intentionally (and audit the diff in uv.lock) when upgrading deps.
 exclude-newer = "2026-02-20T00:00:00Z"
-
-# Zero runtime dependencies — stdlib only (P4 from spec)
-dependencies = []
 
 [project.urls]
 Repository = "https://github.com/CEmM2/MechDSL"

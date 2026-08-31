@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ti-runtime"
-version = "0.2.0"
+version = "0.2.1"
 description = "Neutral Taichi runtime: vector primitives, Tier-1 @ti.func helpers, and solver/operator injection seams for MechDSL-generated code"
 readme = "README.md"
 license = "MIT"
@@ -14,7 +14,7 @@ authors = [
 ]
 keywords = ["taichi", "fem", "matrix-free", "runtime", "kernels"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",

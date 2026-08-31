@@ -6,7 +6,7 @@ See the module-level READMEs for the Seams & Bodies contract.
 
 from __future__ import annotations
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from . import fields, hex8, seams, tensor_ti, vector_ops
 from .seams import (

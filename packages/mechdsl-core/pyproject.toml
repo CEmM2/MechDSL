@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mechdsl-core"
-version = "0.2.0"
+version = "0.2.1"
 description = "MechDSL core — LaTeX tensor expressions to FEM solver code"
 readme = "README.md"
 license = "MIT"
@@ -14,7 +14,7 @@ authors = [
 ]
 keywords = ["fem", "finite-elements", "computational-mechanics", "dsl", "taichi", "code-generation"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -40,18 +40,19 @@ dependencies = [
 # `mechdsl-core[verify]` to run verification / solves. opt-einsum stays a base
 # dep — it is a 0.4 MB pure-Python compile-time requirement of the emit path.
 #
-# PlanJune14 P3-2: the generated matrix-free SVK tangent @ti.kernel emits
+# The generated matrix-free SVK tangent @ti.kernel emits
 # `from ti_runtime import ...` (Tier-1 tensor helpers + hex8 shape gradients +
-# the apply_A injection seam), establishing the mechdsl-core -> ti-runtime
-# production dependency edge. ti-runtime is Taichi-bearing, so it rides in the
-# `verify` extra alongside taichi — the base install (emit / transpile /
-# capabilities) stays Taichi-free.
-# PlanJune14 P4-2: the generated matrix-free PCG solver is transpiled from
-# `dev/algorithms/pcg.tex` via `algo2code` in runtime mode and injected through
-# the ti_runtime `set_solver` seam (mechdsl.solver.seam_solve). algo2code is a
-# stdlib-only compile-time tool — it rides in the `verify` extra alongside the
-# rest of the on-device seam path; the base install stays algo2code/Taichi-free.
-verify = ["torch>=2.0", "taichi>=1.7", "ti-runtime", "algo2code"]
+# the apply_A injection seam) — the mechdsl-core -> ti-runtime production
+# dependency edge. ti-runtime is Taichi-bearing, so it rides in the `verify`
+# extra alongside taichi; the base install (emit / transpile / capabilities)
+# stays Taichi-free. The generated matrix-free PCG solver is transpiled via
+# `algo2code` in runtime mode and injected through the ti_runtime `set_solver`
+# seam; algo2code is a stdlib-only compile-time tool and rides in the same
+# extra. `verify` is the full install (~1 GB closure via Taichi) — everything
+# needed to run and verify solves, not just emit code.
+# NOTE: the AD oracle uses central finite differences (mechdsl.verify.ad_oracle)
+# — torch was never imported anywhere and is deliberately NOT a dependency.
+verify = ["taichi>=1.7", "ti-runtime>=0.2.1,<0.3", "algo2code>=0.2.1,<0.3"]
 
 [project.scripts]
 mechdsl-lawgen = "mechdsl.lawgen.cli:main"

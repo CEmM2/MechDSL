@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-31
+
+### Changed — packaging for PyPI
+
+- **`mechdsl-core[verify]` slimmed and pinned**: `ti-runtime` and `algo2code` now carry version bounds (`>=0.2.1,<0.3`), and `torch` was removed from the extra — it was never imported anywhere (the AD oracle is finite-difference based), and dropping it spares ~2 GB per install.
+- **`algo2code` metadata fix**: the empty `dependencies` declaration moved into `[project]` where PEP 621 expects it (it had been sitting under `[tool.uv]`).
+- **License text ships in every artifact**: `LICENSE` copied into each package directory so sdists/wheels carry it.
+- **Development status**: all packages now classify as `3 - Alpha`.
+- **README**: PyPI installation section (lean core vs. full `[verify]` install).
+
 ## [0.2.0] - 2026-06-16
 
 ### Added — Fully-generated solver over a lean Taichi runtime
