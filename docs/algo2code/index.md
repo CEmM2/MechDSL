@@ -9,6 +9,12 @@ It is deliberately tiny: **zero runtime dependencies** (stdlib only), and it nev
 `mechdsl`. The relationship is strict producer/consumer — mechdsl-core consumes
 `algo2code`-generated artifacts, not the other way around.
 
+It is on PyPI under the MIT license and installs standalone — no `mechdsl-core` needed:
+
+```bash
+pip install algo2code
+```
+
 ---
 
 ## Why a separate package
@@ -47,7 +53,8 @@ The authoritative reference is `dev/design_docs/11-ALGO2CODE.md`.
 
 <div class="grid cards" markdown>
 
-- :material-rocket-launch: **[Getting started](getting-started.md)** — install and transpile your first algorithm.
+- :material-download: **[Installation](../installation.md)** — every package, extra, and the from-source workflow.
+- :material-rocket-launch: **[Getting started](getting-started.md)** — `pip install`, then transpile your first algorithm.
 - :material-code-tags: **[Usage](usage.md)** — the `transpile` API, the algorithm library, and the solver seam.
 - :material-cards: **[Examples](examples.md)** — runnable transpile snippets for the J2 family and PCG.
 

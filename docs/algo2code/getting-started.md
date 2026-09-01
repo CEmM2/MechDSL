@@ -1,27 +1,43 @@
 # Getting started
 
-This page takes you from a fresh clone to a transpiled algorithm.
+This page takes you from an empty environment to a transpiled algorithm.
 
-## Prerequisites
+## Install
 
-`algo2code` is part of the MechDSL [uv](https://docs.astral.sh/uv/) workspace, so the
-simplest way to get it is the workspace install:
+`algo2code` is on PyPI and installs on its own — you do not need `mechdsl-core`, and
+you do not need the monorepo:
 
 ```bash
-git clone https://github.com/CEmM2/MechDSL.git
-cd MechDSL
-uv sync --all-packages --all-groups --all-extras
+pip install algo2code
 ```
 
+It requires Python 3.11, 3.12, or 3.13 (`requires-python = ">=3.11,<3.14"`) and
+nothing else.
+
 !!! tip "Zero runtime dependencies"
-    `algo2code` is **standard-library only** — it imports nothing at runtime beyond the
-    Python stdlib, and it never imports `mechdsl`. That means the package directory
+    `algo2code` is **standard-library only** — its `dependencies` list is literally
+    empty, it imports nothing at runtime beyond the Python stdlib, and it never imports
+    `mechdsl`. That also means the package directory
     (`packages/algo2code/src/algo2code/`) is self-contained and can be vendored into
     another project by copying it, with no dependency footprint.
 
-!!! warning "Always go through `uv run`"
-    Never call `python` or `pytest` directly inside the workspace — prefix every command
-    with `uv run` so it uses the project's locked environment.
+`algo2code` also arrives automatically with `pip install "mechdsl-core[verify]"`, since
+the full engine uses it to generate the matrix-free PCG solver.
+
+??? note "Installing from source instead"
+    `algo2code` is one of the three packages in the MechDSL
+    [uv](https://docs.astral.sh/uv/) workspace. For the test suite or to contribute:
+
+    ```bash
+    git clone https://github.com/CEmM2/MechDSL.git
+    cd MechDSL
+    uv sync --all-packages --all-groups --all-extras
+    ```
+
+    Inside a source checkout, never call `python` or `pytest` directly — prefix every
+    command with `uv run` so it uses the project's locked environment.
+
+See [Installation](../installation.md) for the full matrix across all packages.
 
 ## Your first transpile
 
@@ -38,7 +54,7 @@ print(code)        # Taichi-compatible Python source, as text
 Run it:
 
 ```bash
-uv run python first_algo.py
+python first_algo.py
 ```
 
 ### What just happened
@@ -77,3 +93,5 @@ radial_return_j2 = ns["radial_return_j2"]   # now a real callable
   how the transpiled code is wired into the mechdsl-core solver.
 - [Examples](examples.md) — runnable snippets for the J2 return-map family and the PCG
   solver.
+- [Browser workbench](../workbench.md) — paste an `algorithmic` block into a pane and
+  read the generated Taichi next to it.

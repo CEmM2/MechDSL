@@ -1,34 +1,60 @@
 # Getting started
 
-This page takes you from a fresh clone to a compiled solver bundle.
+This page takes you from an empty environment to a compiled solver bundle.
 
 ## Prerequisites
 
-- **Python 3.12** (the workspace pins `>=3.12,<3.13`).
-- **[uv](https://docs.astral.sh/uv/)** — the package/environment manager this project
-  uses. Install it with `curl -LsSf https://astral.sh/uv/install.sh | sh` or `brew install uv`.
-
-!!! warning "Always go through `uv run`"
-    Never call `python`, `pytest`, `ruff`, or `mypy` directly — they may not be on your
-    PATH or may pick up the wrong environment. Prefix every project command with
-    `uv run`.
+- **Python 3.11, 3.12, or 3.13** — `mechdsl-core` declares
+  `requires-python = ">=3.11,<3.14"`.
+- Nothing else. There is no compiler toolchain to set up and no system FEM library to
+  build; Taichi ships prebuilt wheels and is only needed if you want to *run* solves.
 
 ## Install
 
-```bash
-git clone https://github.com/CEmM2/MechDSL.git
-cd MechDSL
-uv sync --all-packages --all-groups --all-extras
-```
-
-`uv sync` installs both workspace packages (`mechdsl-core` and `algo2code`) and their
-dependencies into a local `.venv`.
-
-Verify the install by running the fast test suite:
+`mechdsl-core` is on PyPI, so the quickest start is one command:
 
 ```bash
-uv run pytest -m "not slow and not gpu" -q
+pip install mechdsl-core
 ```
+
+That is all you need for everything on this page: parsing directives, deriving
+stress and tangent, and emitting Taichi source. It pulls no Taichi, so the install
+stays small.
+
+If you want to **execute and verify** the code you generate, take the full engine
+instead — it adds `taichi`, `ti-runtime`, and `algo2code`:
+
+```bash
+pip install "mechdsl-core[verify]"
+```
+
+??? note "Installing from source instead"
+    If you want the runnable `examples/` tree, the test suite, or you intend to
+    contribute, clone the [uv](https://docs.astral.sh/uv/) workspace:
+
+    ```bash
+    git clone https://github.com/CEmM2/MechDSL.git
+    cd MechDSL
+    uv sync --all-packages --all-groups --all-extras
+    ```
+
+    `uv sync` installs all three workspace packages (`mechdsl-core`, `algo2code`, and
+    `ti-runtime`) and their dependencies into a local `.venv`. Inside a source
+    checkout, prefix **every** command with `uv run` — never call `python`, `pytest`,
+    `ruff`, or `mypy` directly, since they may not be on your PATH or may pick up the
+    wrong environment. Verify with the fast test tier:
+
+    ```bash
+    uv run pytest -m "not slow and not gpu" -q
+    ```
+
+The full install matrix — every package, every extra, the workbench — is on the
+[Installation](../installation.md) page.
+
+!!! tip "The commands below"
+    Snippets on this page are written for a `pip install`ed MechDSL, so they call
+    `python` directly. In a **source checkout**, prefix them with `uv run`
+    (`uv run python first_run.py`).
 
 ## Your first solver bundle
 
@@ -54,11 +80,12 @@ print("content hash:", bundle.content_hash())
 Run it:
 
 ```bash
-uv run python first_run.py
+python first_run.py
 ```
 
-A runnable copy of this lives at
-[`examples/run_compile_latex.py`](https://github.com/CEmM2/MechDSL/blob/main/examples/run_compile_latex.py):
+A runnable copy of this lives in the repository at
+[`examples/run_compile_latex.py`](https://github.com/CEmM2/MechDSL/blob/main/examples/run_compile_latex.py),
+so from a source checkout you can skip straight to:
 
 ```bash
 uv run python examples/run_compile_latex.py
@@ -131,3 +158,5 @@ for the full list of derivable energies.
 - [LaTeX directive reference](latex-directives.md) — the complete directive grammar.
 - [Examples gallery](examples.md) — runnable benchmarks (Cook's membrane, necking bar,
   patch test, cyclic plasticity).
+- [Browser workbench](../workbench.md) — the same compiler with a UI, if you'd rather
+  edit LaTeX in a pane than in a script.

@@ -12,6 +12,13 @@ The same `.tex` file renders normally through `pdflatex` (the directives are LaT
 comments) **and** is executable input to the compiler. Your paper's source can be your
 simulation's source.
 
+It is published on PyPI under the MIT license:
+
+```bash
+pip install mechdsl-core              # emit code — Taichi-free, small install
+pip install "mechdsl-core[verify]"    # the full engine — run and verify solves
+```
+
 ---
 
 ## Why a colleague should care
@@ -74,11 +81,14 @@ See the full [constitutive model catalog](constitutive-models.md) and the
 
 <div class="grid cards" markdown>
 
-- :material-rocket-launch: **[Getting started](getting-started.md)** — install with `uv`, run your first solver in a few minutes.
+- :material-download: **[Installation](../installation.md)** — every package, extra, and the from-source workflow.
+- :material-rocket-launch: **[Getting started](getting-started.md)** — `pip install`, then your first solver in a few minutes.
 - :material-school: **[Core concepts](concepts.md)** — the LaTeX-first idea, the six-layer pipeline, and the support tiers.
 - :material-code-tags: **[LaTeX directive reference](latex-directives.md)** — every `% mechanics` directive, with examples.
 - :material-function-variant: **[Constitutive models](constitutive-models.md)** — the model catalog with runnable snippets.
 - :material-cards: **[Examples gallery](examples.md)** — cantilever, Cook's membrane, necking bar, patch test, cyclic plasticity.
+- :material-chip: **[ti-runtime](../ti-runtime/index.md)** — the runtime the emitted kernels actually land on.
+- :material-application-brackets: **[Browser workbench](../workbench.md)** — the same compiler, driven from a UI.
 - :material-help-circle: **[FAQ & troubleshooting](../reference/faq.md)** — common questions and fixes.
 
 </div>
