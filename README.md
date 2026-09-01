@@ -11,6 +11,7 @@
 > models from LaTeX; don't hand-code what the compiler should generate.**
 
 📖 **New here? Start with the [documentation](docs/index.md)** —
+[Installation](docs/installation.md) ·
 [Getting started](docs/mechdsl-core/getting-started.md) ·
 [Core concepts](docs/mechdsl-core/concepts.md) ·
 [LaTeX directive reference](docs/mechdsl-core/latex-directives.md) ·
@@ -38,9 +39,17 @@ viscoplasticity, and Lemaitre continuum damage. Backends: Taichi (MVP-stable), M
 
 [`mechdsl-workbench`](https://github.com/CEmM2/mechdsl-workbench) is a companion
 browser workbench: LaTeX on the left, the compiled mechanics or transpiled
-algorithm on the right. It installs this repository's packages at a pinned
-release and is the fastest way to try the language before committing to the
-pipeline documentation.
+algorithm on the right. It is the fastest way to try the language before
+committing to the pipeline documentation.
+
+```bash
+pip install "mechdsl-workbench[mechdsl]"   # workbench + the MechDSL engine
+mechdsl-workbench                          # then open http://127.0.0.1:8000
+```
+
+The `[mechdsl]` extra pulls `mechdsl-core[verify]` and `algo2code` from PyPI. The
+workbench pins Python 3.12 (`>=3.12,<3.13`), narrower than this repository's
+`>=3.11,<3.14`. See [the workbench docs page](docs/workbench.md).
 
 ## Installation
 
@@ -265,11 +274,14 @@ User-facing documentation lives in [`docs/`](docs/) and is built as a
 | Page | What it covers |
 |------|----------------|
 | [Home](docs/index.md) | What MechDSL is and why to use it |
-| [Getting started](docs/mechdsl-core/getting-started.md) | Install with `uv`, first solver, `.tex` and energy-derived inputs |
+| [Installation](docs/installation.md) | Every package and extra on PyPI, plus the from-source `uv` workflow |
+| [Getting started](docs/mechdsl-core/getting-started.md) | `pip install`, first solver, `.tex` and energy-derived inputs |
 | [Core concepts](docs/mechdsl-core/concepts.md) | LaTeX-first idea, six-layer pipeline, hyperelastic vs. dissipative, support tiers |
 | [LaTeX directive reference](docs/mechdsl-core/latex-directives.md) | Every `% mechanics` directive with examples |
 | [Constitutive models](docs/mechdsl-core/constitutive-models.md) | Model catalog with runnable snippets |
 | [Algorithm transpiler (algo2code)](docs/algo2code/index.md) | How return-maps/PCG are transpiled from `algpseudocode` |
+| [ti-runtime](docs/ti-runtime/index.md) | The neutral Taichi runtime: seams, primitives, and the operator contract |
+| [Browser workbench](docs/workbench.md) | Installing and running the companion browser app |
 | [Examples gallery](docs/mechdsl-core/examples.md) | Cantilever, Cook's membrane, necking bar, patch test, cyclic plasticity |
 | [How it works](docs/reference/architecture.md) | Layers, IR discipline, determinism, verification |
 | [FAQ & troubleshooting](docs/reference/faq.md) | Common questions and fixes |

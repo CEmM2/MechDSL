@@ -1,0 +1,744 @@
+/* ==========================================================================
+   MechDSL documentation theme
+   --------------------------------------------------------------------------
+   Ports the sosovski.group site's sketchbook look (paper ground, hand-drawn
+   borders, hard offset shadows, Baloo 2 / Patrick Hand / Cabin Sketch) onto
+   MkDocs Material. Token names and values mirror GroupWebSite's
+   src/styles/global.css so the docs read as part of the same site.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cabin+Sketch:wght@700&family=Patrick+Hand&display=swap');
+
+/* --------------------------------------------------------------------------
+   1. Tokens
+   -------------------------------------------------------------------------- */
+
+:root,
+[data-md-color-scheme="default"] {
+  --paper: #f7ead0;
+  --paper-2: #fff8e7;
+  --surface: #fffaf0;
+  --elev: #f0dfbd;
+  --ink: #2b2118;
+  --muted: #6d5b45;
+  --line: #9f744b;
+  --line-soft: rgba(159, 116, 75, 0.35);
+  --gold: #d8aa55;
+  --teal: #2f6f78;
+  --blue: #4e7d96;
+  --sage: #718a5d;
+  --rust: #a24d37;
+  --shadow: 5px 6px 0 rgba(43, 33, 24, 0.92);
+  --shadow-sm: 3px 4px 0 var(--ink);
+  --radius: 22px;
+  --font-hand: 'Patrick Hand', 'Baloo 2', system-ui, sans-serif;
+  --font-sketch: 'Cabin Sketch', 'Baloo 2', system-ui, sans-serif;
+
+  /* Material bindings */
+  --md-default-fg-color: var(--ink);
+  --md-default-fg-color--light: var(--muted);
+  --md-default-fg-color--lighter: rgba(109, 91, 69, 0.5);
+  --md-default-fg-color--lightest: var(--line-soft);
+  --md-default-bg-color: var(--paper-2);
+  --md-primary-fg-color: var(--paper);
+  --md-primary-bg-color: var(--ink);
+  --md-primary-bg-color--light: var(--muted);
+  --md-accent-fg-color: var(--rust);
+  --md-typeset-color: var(--ink);
+  --md-typeset-a-color: var(--teal);
+  --md-code-bg-color: #fdf3dd;
+  --md-code-fg-color: #3b2d20;
+  --md-footer-bg-color: var(--paper);
+  --md-footer-fg-color: var(--ink);
+  --md-shadow-z1: none;
+  --md-shadow-z2: none;
+  --md-shadow-z3: none;
+}
+
+/* Night-desk variant: the same palette, inked rather than papered. */
+[data-md-color-scheme="slate"] {
+  --paper: #241c15;
+  --paper-2: #2e251c;
+  --surface: #332a20;
+  --elev: #3d3226;
+  --ink: #f4e6cb;
+  --muted: #c3ad8d;
+  --line: #b9884f;
+  --line-soft: rgba(185, 136, 79, 0.4);
+  --gold: #e0b76a;
+  --teal: #79bfc7;
+  --blue: #8fb4c9;
+  --sage: #a7c08a;
+  --rust: #e08b6c;
+  --shadow: 5px 6px 0 rgba(0, 0, 0, 0.65);
+  --shadow-sm: 3px 4px 0 rgba(0, 0, 0, 0.65);
+
+  --md-default-fg-color: var(--ink);
+  --md-default-fg-color--light: var(--muted);
+  --md-default-fg-color--lighter: rgba(195, 173, 141, 0.5);
+  --md-default-fg-color--lightest: var(--line-soft);
+  --md-default-bg-color: var(--paper-2);
+  --md-primary-fg-color: var(--paper);
+  --md-primary-bg-color: var(--ink);
+  --md-accent-fg-color: var(--gold);
+  --md-typeset-color: var(--ink);
+  --md-typeset-a-color: var(--teal);
+  --md-code-bg-color: #2a2219;
+  --md-code-fg-color: #e8dcc2;
+  --md-footer-bg-color: var(--paper);
+  --md-footer-fg-color: var(--ink);
+}
+
+/* --------------------------------------------------------------------------
+   2. Paper ground
+   -------------------------------------------------------------------------- */
+
+body {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(159, 116, 75, 0.18) 1.2px, transparent 0) 0 0 / 28px 28px,
+    linear-gradient(135deg, #f4e2bd 0%, var(--paper) 45%, #ead2a7 100%);
+  background-attachment: fixed;
+  text-rendering: optimizeLegibility;
+}
+
+[data-md-color-scheme="slate"] body {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(185, 136, 79, 0.14) 1.2px, transparent 0) 0 0 / 28px 28px,
+    linear-gradient(135deg, #1d1710 0%, var(--paper) 45%, #191410 100%);
+}
+
+.md-main__inner {
+  margin-top: 1.6rem;
+}
+
+/* The content sheet: a page of paper laid on the desk. */
+.md-content__inner {
+  background: var(--paper-2);
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.6rem clamp(1rem, 3vw, 2.4rem) 2.4rem;
+  margin-bottom: 2.4rem;
+}
+
+.md-content__inner::before {
+  height: 0;
+}
+
+/* --------------------------------------------------------------------------
+   3. Header & navigation
+   -------------------------------------------------------------------------- */
+
+.md-header {
+  background: rgba(247, 234, 208, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 3px solid var(--line);
+  box-shadow: 0 4px 0 rgba(43, 33, 24, 0.12);
+  color: var(--ink);
+}
+
+[data-md-color-scheme="slate"] .md-header {
+  background: rgba(36, 28, 21, 0.92);
+}
+
+.md-header__title {
+  font: 800 1.25rem/1 var(--md-text-font-family);
+  letter-spacing: 0.02em;
+}
+
+.md-header__button.md-logo img {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  border: 2px solid var(--line);
+  background: var(--paper-2);
+}
+
+.md-search__form {
+  background: var(--paper-2);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 2px 3px 0 var(--ink);
+}
+
+.md-search__form:hover {
+  background: var(--surface);
+}
+
+.md-search__input::placeholder {
+  color: var(--muted);
+}
+
+.md-search__output {
+  border-radius: var(--radius);
+  border: 3px solid var(--line);
+  overflow: hidden;
+}
+
+/* Sidebar links styled like the group site's nav pills. */
+.md-nav {
+  font-size: 0.74rem;
+}
+
+.md-nav__title {
+  font: 800 0.78rem/1.2 var(--md-text-font-family);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.md-nav__link {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-weight: 700;
+  color: var(--ink);
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.md-nav__link:focus,
+.md-nav__link:hover {
+  color: var(--rust);
+  border-color: var(--line-soft);
+  background: var(--paper-2);
+}
+
+.md-nav__link--active,
+.md-nav__item .md-nav__link--active {
+  color: var(--ink);
+  border-color: var(--line);
+  background: var(--paper-2);
+  box-shadow: 2px 3px 0 var(--ink);
+}
+
+.md-nav--secondary .md-nav__link--active {
+  box-shadow: none;
+  background: transparent;
+  border-color: transparent;
+  color: var(--rust);
+}
+
+/* --------------------------------------------------------------------------
+   4. Typography
+   -------------------------------------------------------------------------- */
+
+.md-typeset {
+  font-size: 0.79rem;
+  line-height: 1.65;
+}
+
+.md-typeset h1 {
+  font-weight: 800;
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  margin-bottom: 0.6rem;
+}
+
+.md-typeset h2 {
+  font-weight: 800;
+  font-size: 1.65rem;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-top: 2.2rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 3px solid var(--line-soft);
+}
+
+.md-typeset h3 {
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+  color: var(--teal);
+}
+
+.md-typeset h4,
+.md-typeset h5 {
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.md-typeset a {
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18em;
+}
+
+.md-typeset a:hover {
+  color: var(--rust);
+}
+
+.md-typeset hr {
+  border-bottom: 3px dashed var(--line-soft);
+  margin: 2rem 0;
+}
+
+/* Material ships these under [dir=ltr], which outranks a bare .md-typeset
+   selector — match that specificity or the accent bar never lands. */
+.md-typeset blockquote,
+[dir="ltr"] .md-typeset blockquote {
+  border-left: 10px solid var(--teal);
+  border-right: none;
+  border-radius: 0 12px 12px 0;
+  background: rgba(255, 248, 231, 0.72);
+  color: var(--ink);
+  padding: 0.6rem 1rem;
+  margin-left: 0;
+}
+
+[data-md-color-scheme="slate"] .md-typeset blockquote {
+  background: rgba(51, 42, 32, 0.7);
+}
+
+.md-typeset blockquote strong {
+  color: var(--rust);
+}
+
+.md-typeset kbd {
+  background: var(--elev);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 2px 3px 0 var(--ink);
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------------------
+   5. Code
+   -------------------------------------------------------------------------- */
+
+.md-typeset code {
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  padding: 0.08em 0.35em;
+}
+
+.md-typeset pre > code {
+  border: none;
+  padding: 0.7rem 1rem;
+}
+
+.md-typeset .highlight,
+.md-typeset pre {
+  border-radius: 14px;
+}
+
+/* Border and shadow on the frame; the inner <code> keeps Material's own
+   horizontal scroll, so wide lines stay reachable rather than clipped. */
+.md-typeset .highlight > pre,
+.md-typeset > pre {
+  border: 3px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.md-typeset .highlight > pre > code,
+.md-typeset > pre > code {
+  border-radius: 11px;
+}
+
+.md-typeset .highlight [data-linenos]::before {
+  background: var(--elev);
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.md-clipboard {
+  color: var(--muted);
+}
+
+.md-clipboard:hover {
+  color: var(--rust);
+}
+
+/* Tabbed code blocks */
+.md-typeset .tabbed-set > input:checked + label {
+  color: var(--teal);
+  border-color: var(--teal);
+  font-weight: 800;
+}
+
+.md-typeset .tabbed-labels > label {
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   6. Tables
+   -------------------------------------------------------------------------- */
+
+.md-typeset table:not([class]) {
+  border: 3px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+  overflow: hidden;
+  font-size: 0.72rem;
+}
+
+.md-typeset table:not([class]) th {
+  background: var(--elev);
+  color: var(--ink);
+  font-weight: 800;
+  border-bottom: 3px solid var(--line);
+}
+
+.md-typeset table:not([class]) td {
+  border-top: 1px solid var(--line-soft);
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background: rgba(240, 223, 189, 0.35);
+}
+
+/* Code spans in tables wrap at token boundaries rather than mid-identifier. */
+.md-typeset table:not([class]) td code {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* --------------------------------------------------------------------------
+   7. Admonitions — the group site's callout, colour-coded
+   -------------------------------------------------------------------------- */
+
+.md-typeset .admonition,
+.md-typeset details {
+  border: 3px dashed var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: rgba(255, 248, 231, 0.78);
+  box-shadow: none;
+  font-size: 0.76rem;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .admonition,
+[data-md-color-scheme="slate"] .md-typeset details {
+  background: rgba(51, 42, 32, 0.75);
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary,
+[dir="ltr"] .md-typeset .admonition-title,
+[dir="ltr"] .md-typeset summary {
+  background: transparent;
+  border: none;
+  border-left-width: 0;
+  border-radius: 0;
+  font-weight: 800;
+  font-size: 0.86rem;
+}
+
+/* Material tints each title bar with the type colour at 10% opacity, scoped
+   as `.md-typeset .tip>.admonition-title` (0,3,1). Match that to keep the
+   title flush with the callout body. */
+.md-typeset .admonition > .admonition-title,
+.md-typeset .admonition > summary,
+.md-typeset details > .admonition-title,
+.md-typeset details > summary {
+  background-color: transparent;
+}
+
+.md-typeset .admonition-title::before,
+.md-typeset summary::before {
+  top: 0.62rem;
+}
+
+/* Material scopes its per-type colours as `.md-typeset .admonition.tip`
+   (specificity 0,3,0), so a bare `.md-typeset .tip` never wins. Every rule
+   below matches that shape deliberately. */
+
+/* note / info / abstract -> teal */
+.md-typeset .admonition.note,
+.md-typeset details.note,
+.md-typeset .admonition.info,
+.md-typeset details.info,
+.md-typeset .admonition.abstract,
+.md-typeset details.abstract {
+  border-color: var(--teal);
+}
+
+.md-typeset .note > .admonition-title,
+.md-typeset .note > summary,
+.md-typeset .info > .admonition-title,
+.md-typeset .info > summary,
+.md-typeset .abstract > .admonition-title,
+.md-typeset .abstract > summary {
+  color: var(--teal);
+}
+
+.md-typeset .note > .admonition-title::before,
+.md-typeset .note > summary::before,
+.md-typeset .info > .admonition-title::before,
+.md-typeset .info > summary::before,
+.md-typeset .abstract > .admonition-title::before,
+.md-typeset .abstract > summary::before {
+  background-color: var(--teal);
+}
+
+/* tip / success / example -> sage */
+.md-typeset .admonition.tip,
+.md-typeset details.tip,
+.md-typeset .admonition.success,
+.md-typeset details.success,
+.md-typeset .admonition.example,
+.md-typeset details.example {
+  border-color: var(--sage);
+}
+
+.md-typeset .tip > .admonition-title,
+.md-typeset .tip > summary,
+.md-typeset .success > .admonition-title,
+.md-typeset .success > summary,
+.md-typeset .example > .admonition-title,
+.md-typeset .example > summary {
+  color: var(--sage);
+}
+
+.md-typeset .tip > .admonition-title::before,
+.md-typeset .tip > summary::before,
+.md-typeset .success > .admonition-title::before,
+.md-typeset .success > summary::before,
+.md-typeset .example > .admonition-title::before,
+.md-typeset .example > summary::before {
+  background-color: var(--sage);
+}
+
+/* warning / question -> gold (darkened for text contrast on cream) */
+.md-typeset .admonition.warning,
+.md-typeset details.warning,
+.md-typeset .admonition.question,
+.md-typeset details.question {
+  border-color: var(--gold);
+}
+
+.md-typeset .warning > .admonition-title,
+.md-typeset .warning > summary,
+.md-typeset .question > .admonition-title,
+.md-typeset .question > summary {
+  color: #8a6320;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .warning > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset .warning > summary,
+[data-md-color-scheme="slate"] .md-typeset .question > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset .question > summary {
+  color: var(--gold);
+}
+
+.md-typeset .warning > .admonition-title::before,
+.md-typeset .warning > summary::before,
+.md-typeset .question > .admonition-title::before,
+.md-typeset .question > summary::before {
+  background-color: #8a6320;
+}
+
+/* danger / failure / bug -> rust */
+.md-typeset .admonition.danger,
+.md-typeset details.danger,
+.md-typeset .admonition.failure,
+.md-typeset details.failure,
+.md-typeset .admonition.bug,
+.md-typeset details.bug {
+  border-color: var(--rust);
+}
+
+.md-typeset .danger > .admonition-title,
+.md-typeset .danger > summary,
+.md-typeset .failure > .admonition-title,
+.md-typeset .failure > summary,
+.md-typeset .bug > .admonition-title,
+.md-typeset .bug > summary {
+  color: var(--rust);
+}
+
+.md-typeset .danger > .admonition-title::before,
+.md-typeset .danger > summary::before,
+.md-typeset .failure > .admonition-title::before,
+.md-typeset .failure > summary::before,
+.md-typeset .bug > .admonition-title::before,
+.md-typeset .bug > summary::before {
+  background-color: var(--rust);
+}
+
+/* --------------------------------------------------------------------------
+   8. Cards, buttons, ornaments
+   -------------------------------------------------------------------------- */
+
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  background: var(--surface);
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.05rem;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid > .card:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 2px 0 var(--ink);
+  border-color: var(--teal);
+}
+
+.md-typeset .grid.cards > ul > li > hr {
+  border-bottom: 3px dashed var(--line-soft);
+  margin: 0.6rem 0;
+}
+
+.md-typeset .md-button {
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-weight: 900;
+  color: var(--ink);
+  background: var(--gold);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.md-typeset .md-button:hover,
+.md-typeset .md-button:focus {
+  background: var(--gold);
+  border-color: var(--ink);
+  color: var(--ink);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 2px 0 var(--ink);
+}
+
+.md-typeset .md-button--primary {
+  background: var(--teal);
+  color: var(--paper-2);
+  border-color: var(--ink);
+}
+
+.md-typeset .md-button--primary:hover,
+.md-typeset .md-button--primary:focus {
+  background: var(--teal);
+  color: var(--paper-2);
+}
+
+/* Hand-lettered aside, as on the group site. */
+.md-typeset .note-hand {
+  font-family: var(--font-hand);
+  font-size: 1.25rem;
+  line-height: 1.3;
+  color: var(--muted);
+  transform: rotate(-0.6deg);
+  display: block;
+  margin: 1.2rem 0;
+}
+
+/* Rotated sticker label. */
+.md-typeset .ribbon {
+  display: inline-block;
+  font-family: var(--font-sketch);
+  color: var(--ink);
+  background: var(--gold);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  padding: 0.12rem 0.55rem;
+  transform: rotate(-1deg);
+  box-shadow: 2px 3px 0 var(--ink);
+}
+
+/* Pill tags for package/tier badges. */
+.md-typeset .tag-pill {
+  display: inline-block;
+  border: 2px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  color: var(--muted);
+  background: #fff4d8;
+  font-weight: 800;
+  font-size: 0.72rem;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .tag-pill {
+  background: var(--elev);
+}
+
+/* Banner image on the landing page. */
+.md-typeset .hero-banner {
+  display: block;
+  width: 100%;
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin: 0 0 1.6rem;
+}
+
+.md-typeset figure img {
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.md-typeset figcaption {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   9. Footer
+   -------------------------------------------------------------------------- */
+
+.md-footer {
+  border-top: 3px solid var(--line);
+  background: rgba(247, 234, 208, 0.9);
+  color: var(--ink);
+}
+
+[data-md-color-scheme="slate"] .md-footer {
+  background: rgba(36, 28, 21, 0.9);
+}
+
+.md-footer-meta {
+  background: transparent;
+  border-top: 1px solid var(--line-soft);
+}
+
+.md-footer__link {
+  color: var(--ink);
+  font-weight: 800;
+  opacity: 1;
+}
+
+.md-footer__link:hover {
+  color: var(--rust);
+}
+
+.md-copyright,
+.md-copyright__highlight {
+  color: var(--muted);
+}
+
+.md-footer-nav__link,
+.md-social__link {
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------------------
+   10. Small screens
+   -------------------------------------------------------------------------- */
+
+@media screen and (max-width: 76.1875em) {
+  .md-nav--primary .md-nav__title {
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: none;
+    border-bottom: 3px solid var(--line);
+  }
+
+  .md-nav--primary {
+    background: var(--paper-2);
+  }
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-content__inner {
+    border-width: 2px;
+    border-radius: 16px;
+    padding: 1.1rem 0.9rem 1.6rem;
+    box-shadow: 3px 4px 0 rgba(43, 33, 24, 0.9);
+  }
+}

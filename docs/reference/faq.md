@@ -2,6 +2,44 @@
 
 ## Frequently asked
 
+### How do I install it? Is it on PyPI?
+
+Yes — every package is published on PyPI under the MIT license, so `pip install` is the
+normal way in:
+
+```bash
+pip install mechdsl-core                   # the compiler, Taichi-free
+pip install "mechdsl-core[verify]"         # the full engine: run and verify solves
+pip install algo2code                      # the transpiler alone, stdlib-only
+pip install ti-runtime                     # the Taichi runtime alone
+pip install "mechdsl-workbench[mechdsl]"   # the browser workbench plus the engine
+```
+
+You do **not** need to clone the repository or install `uv` unless you want the
+runnable `examples/` tree, the test suite, or to contribute. Full matrix on the
+[Installation](../installation.md) page.
+
+### Why does the base install not include Taichi?
+
+Because only one entry point needs it. Emission, transpilation, `capabilities()`, and
+`model_catalog()` are proven Taichi-free by the test suite; only
+`mechdsl.integration.verify()` imports Taichi, and it does so lazily at call time. That
+lets downstream consumers depend on `mechdsl-core` for code generation without pulling
+Taichi's ~170 MB into their dependency closure. `pip install "mechdsl-core[verify]"`
+when you actually want to run solves.
+
+### Which Python version do I need?
+
+`mechdsl-core`, `algo2code`, and `ti-runtime` accept **Python 3.11–3.13**
+(`>=3.11,<3.14`). The `mechdsl-workbench` companion is narrower and pins **Python 3.12**
+(`>=3.12,<3.13`).
+
+### Can I try it without writing any code?
+
+Yes. `pip install "mechdsl-workbench[mechdsl]"`, run `mechdsl-workbench`, and open
+<http://127.0.0.1:8000> — LaTeX in the left pane, generated Taichi in the right. See
+[the workbench page](../workbench.md).
+
 ### Is this a replacement for Abaqus / ANSYS / a full FE package?
 
 No. MechDSL is a **compiler** that generates solver code from a LaTeX description of a
@@ -58,11 +96,26 @@ numpy. See [the algo2code page](../algo2code/usage.md#how-the-j2-family-is-wired
 
 ### `command not found` / wrong package versions
 
-You're probably calling `python`/`pytest`/`ruff` directly. Always prefix with `uv run`.
-If the environment looks stale, re-sync:
+**In a source checkout:** you're probably calling `python`/`pytest`/`ruff` directly.
+Always prefix with `uv run`. If the environment looks stale, re-sync:
 
 ```bash
 uv sync --all-packages --all-groups --all-extras
+```
+
+**With a `pip install`ed MechDSL:** check you're in the environment you installed into
+(`python -c "import mechdsl; print(mechdsl.__file__)"`) and that the interpreter is
+3.11–3.13. A `pip install` puts MechDSL in whatever environment `pip` points at, so a
+virtualenv you forgot to activate is the usual culprit.
+
+### `ModuleNotFoundError: No module named 'taichi'`
+
+Expected on the base install — it is deliberately Taichi-free. Anything that *runs*
+generated code (`mechdsl.integration.verify()`, the solver path, the `slow`/`gpu` tests)
+needs the full engine:
+
+```bash
+pip install "mechdsl-core[verify]"
 ```
 
 ### A construct raises "planned in phase ..."

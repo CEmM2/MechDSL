@@ -8,18 +8,23 @@ use_directory_urls: false
 
 theme:
   name: material
+  logo: assets/mechdsl-mark.webp
+  favicon: assets/mechdsl-mark.webp
+  font:
+    text: Baloo 2
+    code: JetBrains Mono
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
@@ -34,6 +39,9 @@ theme:
     - search.suggest
     - search.highlight
 
+extra_css:
+  - stylesheets/mechdsl.css
+
 markdown_extensions:
   - admonition
   - attr_list
@@ -45,12 +53,17 @@ markdown_extensions:
       anchor_linenums: true
   - pymdownx.superfences
   - pymdownx.inlinehilite
+  # Required for the :material-*: / :octicons-*: icon shortcodes used in the card grids.
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.details
 
 nav:
   - Home: index.md
+  - Installation: installation.md
   - mechdsl-core:
       - Introduction: mechdsl-core/index.md
       - Getting started: mechdsl-core/getting-started.md
@@ -63,6 +76,10 @@ nav:
       - Getting started: algo2code/getting-started.md
       - Usage: algo2code/usage.md
       - Examples: algo2code/examples.md
+  - ti-runtime:
+      - Introduction: ti-runtime/index.md
+  - Workbench:
+      - Browser workbench: workbench.md
   - Reference:
       - How it works: reference/architecture.md
       - FAQ & troubleshooting: reference/faq.md
@@ -71,3 +88,10 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/CEmM2/MechDSL
+      name: MechDSL on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/mechdsl-core/
+      name: mechdsl-core on PyPI
+    - icon: fontawesome/solid/flask
+      link: https://sosovski.group/
+      name: The research group site

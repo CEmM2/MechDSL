@@ -22,6 +22,12 @@ representation. Information only ever flows downward, through the IRs.
 Supporting packages: `mechdsl.solver` (Newton driver + imported linear solver adapter)
 and `mechdsl.lib` (the Tier-1 `@ti.func` library and plasticity orchestration).
 
+Beneath all of that sits [`ti-runtime`](../ti-runtime/index.md), the neutral Taichi
+runtime that **generated** code lands on — vector primitives, Tier-1 `@ti.func` tensor
+helpers, Hex8 shape gradients, and the injection seams. The direction matters: emitted
+artifacts import `ti_runtime`, never `mechdsl`, so a generated kernel outlives the
+compiler run that produced it.
+
 ```text
 LaTeX ──▶ SymPy tensors ──▶ ProblemIR ──▶ ElementIR ──▶ EinsumIR ──▶ Taichi
         frontend        symbolic       lowering      optimiser     codegen
@@ -69,6 +75,41 @@ The two packages have a strict consumer/producer relationship: `mechdsl-core` co
 The seam is the `LinearSolverInterface` protocol in `mechdsl.solver.import_adapter`, which
 the Newton driver calls through. See [the algo2code page](../algo2code/index.md) for the full
 story, and `dev/design_docs/11-ALGO2CODE.md` for the authoritative reference.
+
+## `mechdsl.integration` — the public façade { #integration-facade }
+
+Everything above describes the machinery. Tools that *consume* MechDSL — the
+[browser workbench](../workbench.md), downstream adapters, anything embedding the
+compiler — should not reach into it. They call `mechdsl.integration`, the stable,
+machine-readable Tier-1 surface, which is exactly five entry points:
+
+| Function | Returns | Needs Taichi? |
+|---|---|---|
+| `capabilities()` | A manifest: version, profiles, backends, actions, models | No |
+| `model_catalog()` | Every constitutive model with tier, dissipative flag, params, state variables | No |
+| `compile_from_sources(...)` | `{element_ir_summary, emitted_source, content_hash, derived_energy_present}` | No |
+| `transpile_algorithm(algpseudocode, backend)` | `{code, entry_point, line_count, valid_python}` | No |
+| `verify(kind, params)` | `{kind, passed, details}` | **Yes** |
+
+```python
+from mechdsl.integration import capabilities, compile_from_sources
+
+caps = capabilities()
+print(caps["taichi_required_for"])   # -> ["verify"]
+
+result = compile_from_sources(problem_source="% mechanics dim 3\n...")
+print(result["content_hash"])        # 64-char sha-256 hex digest
+```
+
+**The Taichi-required-for contract:** `capabilities()` declares
+`taichi_required_for: ["verify"]`. The other four entry points are guaranteed never to
+trigger `ti.init`, so importing `mechdsl.integration` and calling them is safe in a
+Taichi-free environment — which is why the base `pip install mechdsl-core` can leave
+Taichi out entirely (see [Installation](../installation.md)). Only `verify()` pays the
+Taichi cost, and it imports lazily at call time.
+
+This is a machine API contract, not a convenience library; entry points are not added to
+it without a deliberate design decision.
 
 ## Where to read more
 

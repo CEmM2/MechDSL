@@ -68,9 +68,11 @@ The J2 kinematic and mixed hardening models (`mechdsl.lib.plasticity_kinematic` 
 `plasticity_mixed`) are exercised on a uniaxial **cyclic** load path
 (loading → unloading → reverse) in the test suite. The kinematic/mixed models re-yield in
 reverse *below* the forward yield magnitude — the Bauschinger effect — which the isotropic
-model cannot reproduce. See
-[`packages/mechdsl-core/tests/plan_tests/constitutive_latex/`](https://github.com/CEmM2/MechDSL/tree/main/packages/mechdsl-core/tests/plan_tests/constitutive_latex)
-for the cyclic differential tests and the reduction cross-checks, and the
+model cannot reproduce. The hand-written reference kernels that pin this behaviour are
+[`ref_j2_kinematic.py`](https://github.com/CEmM2/MechDSL/blob/main/packages/mechdsl-core/tests/ref/ref_j2_kinematic.py)
+and
+[`ref_j2_mixed.py`](https://github.com/CEmM2/MechDSL/blob/main/packages/mechdsl-core/tests/ref/ref_j2_mixed.py);
+see the
 [constitutive model catalog](constitutive-models.md#j2-plasticity-kinematic-prager-hardening)
 for the API.
 
