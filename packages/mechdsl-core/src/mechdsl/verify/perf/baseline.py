@@ -1,9 +1,9 @@
 """Smoke baseline loader and per-benchmark delta reporter.
 
 The committed baseline at ``packages/mechdsl-core/tests/golden/perf/
-baseline_smoke.json`` records, for every Phase 10 task in the registry,
+baseline_smoke.json`` records, for every benchmark task in the registry,
 the smoke-run wallclock plus a small set of dimensionless metrics. Nightly
-CI (P9-2) loads the baseline and calls :func:`compare_to_baseline` to flag
+CI loads the baseline and calls :func:`compare_to_baseline` to flag
 per-benchmark, per-metric drift relative to the configured tolerance.
 
 The :class:`ComparisonReport` shape is stable and JSON round-trippable so

@@ -1,5 +1,4 @@
-% constitutive_latex Phase 6 (P6-2): J2 kinematic linear-hardening
-% radial-return algpseudocode source.
+% J2 kinematic linear-hardening radial-return algpseudocode source.
 %
 % Scalar return-map inner solve for J2 plasticity with LINEAR KINEMATIC
 % hardening (Prager). The yield surface translates (back-stress beta)
@@ -25,8 +24,8 @@
 % converges in a single step and every subsequent iteration leaves dl
 % unchanged at the exact root (res = 0 => the closed form above).
 % Authoring it as a loop
-% keeps P6-1/P6-2/P6-3 on one structural pattern that algo2code already
-% transpiles end-to-end.
+% keeps the isotropic, kinematic and mixed variants on one structural
+% pattern that algo2code already transpiles end-to-end.
 %
 % Back-stress update (Prager, discrete) is performed in TENSOR space by
 % the mechdsl-core wrapper:

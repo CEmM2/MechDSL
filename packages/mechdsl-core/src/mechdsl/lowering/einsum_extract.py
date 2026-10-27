@@ -1,6 +1,6 @@
 """Extract einsum strings from Element IR for the optimiser.
 
-This is the canonical location for einsum extraction, per ``.claude/rules/ir.md``.
+This is the canonical location for einsum extraction.
 The function is deterministic and runs once per localisation pass.
 """
 
@@ -153,7 +153,7 @@ def tangent_matvec_apply_spec(element_ir: ElementIR) -> EinsumSpec:
     that dict's three-key contract (``strain_displacement``,
     ``internal_force``, ``tangent_matvec``) is pinned by existing tests and
     golden artifacts. The matvec is an additional, optimiser-only view used
-    by the matrix-free codegen path (PlanJune14 P3-2).
+    by the matrix-free codegen path.
 
     Parameters
     ----------
@@ -213,7 +213,7 @@ def build_tangent_matvec_plan(element_ir: ElementIR) -> ContractionPlan:
     exactly as :func:`mechdsl.lowering.fe_localise.localise_and_optimize`
     does for the three standard specs.
 
-    The matrix-free tangent operator (PlanJune14 P3-2) *is* this optimised
+    The matrix-free tangent operator *is* this optimised
     contraction applied to ``v`` — the printer emits the recorded path rather
     than hand-rolling the contraction.
 

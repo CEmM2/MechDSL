@@ -1,6 +1,6 @@
 r"""J2 kinematic linear-hardening radial-return (algo2code interface hook).
 
-constitutive_latex Phase 6 (P6-2). Mirrors
+Mirrors
 :mod:`algo2code.library.radial_return_j2` (the isotropic power-law
 variant) for the linear-kinematic (Prager) hardening model:
 

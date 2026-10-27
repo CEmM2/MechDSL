@@ -1,7 +1,7 @@
-% Matrix-free Preconditioned Conjugate Gradient (PCG) — PlanJune14 P4-2.
+% Matrix-free Preconditioned Conjugate Gradient (PCG).
 %
-% The canonical PCG algorithm authored for the **all-Taichi on-device seam path**
-% (Option 1): the operator ``A`` and the preconditioner ``M_inv`` are both
+% The canonical PCG algorithm authored for the **all-Taichi on-device seam path**:
+% the operator ``A`` and the preconditioner ``M_inv`` are both
 % *callables* (matrix-free), so this box transpiles via
 % ``algo2code.transpile(..., runtime='ti_runtime')`` into a body that solves
 % ``A x = b`` over ``ti.Vector.field`` DOF vectors without ever forming or storing
@@ -12,7 +12,7 @@
 % Identical in algorithm to the canonical PCG LaTeX
 % (``algo2code.library.pcg.PCG_ALGORITHM_LATEX`` / the hand twin
 % ``mechdsl.solver.import_adapter.Algo2CodePCGSolver``) and to the matrix-free
-% ``_CALLABLE_PCG_LATEX`` proven runnable in P2-2.  The *only* surface change vs
+% ``_CALLABLE_PCG_LATEX`` proven runnable in runtime mode.  The *only* surface change vs
 % the canonical box is the operator type:
 %
 %   canonical:  ``% args A:matrix,    ... apply_M_inv:callable, ...``
@@ -21,7 +21,7 @@
 % A matrix ``A`` lowers to a dense scalar-indexed ``_matvec`` (incompatible with
 % the ``ti.Vector.field`` layout the seam uses); a callable ``A`` lowers to the
 % in-place ``A(out, p)`` operator call — the ``ti_runtime`` ``apply_A(out, x)``
-% seam contract.  The P2-2 runtime-mode guard requires exactly this: a callable
+% seam contract.  The runtime-mode guard requires exactly this: a callable
 % operator + a vector argument.
 %
 % Seam contract (mirrors ti_runtime.seams.LinearSolveContext)
@@ -29,7 +29,7 @@
 %   A(out, x)        — operator:        out = A @ x       (out FIRST)
 %   M_inv(r, z)      — preconditioner:  z   = M^{-1} r    (out LAST)
 %
-% This box productionizes the PJ-1 spike's hand-written ``pcg`` body
+% This box productionizes the spike's hand-written ``pcg`` body
 % (``packages/mechdsl-core/tests/spike/svk_hex8_taichi.py``): the generated body
 % maps line-for-line to that hand-written PCG, but is *derived from LaTeX* rather
 % than hand-coded.

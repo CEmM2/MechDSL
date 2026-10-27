@@ -13,11 +13,11 @@ Green-Naghdi  sigma_hat_GN = sigma_dot - Omega @ sigma - sigma @ Omega.T,
 ============  ================================================================
 
 This module exposes two layers of API: spatial tangent conversions (the
-P1-5 contracted surface) and direct rate functions (a documented scope
+contracted surface) and direct rate functions (a documented scope
 addition -- see "Out-of-scope additions" below).
 
 ================================================================
-Contracted scope -- Spatial tangent conversions (P1-5 deliverable)
+Contracted scope -- Spatial tangent conversions
 ================================================================
 
 Three functions, each consuming a 4th-order Lagrangian material tangent
@@ -40,8 +40,8 @@ spatial tangent ``c_ijkl`` corresponding to each objective rate:
   the function raises ``NotImplementedError`` with a pointer to the Plan B
   phase that will add support.
 
-Downstream, P1-4 consumes these at emission time for the UL linearised
-tangent term. The full-F Piola push-forward in ``truesdell_tangent``
+Downstream, the UL emitter consumes these at emission time for the UL
+linearised tangent term. The full-F Piola push-forward in ``truesdell_tangent``
 makes the conversion correct at any quadrature-point F, not just at the
 identity configuration.
 
@@ -50,15 +50,15 @@ Out-of-scope additions -- Direct rate functions
 ================================================================
 
 The three ``*_rate`` helpers below (``jaumann_rate``, ``truesdell_rate``,
-``green_naghdi_rate``) are NOT part of the contracted P1-5 scope. They
-exist because the P1-5 acceptance test "rigid rotation gives zero Cauchy
+``green_naghdi_rate``) are NOT part of the contracted scope. They
+exist because the acceptance test "rigid rotation gives zero Cauchy
 rate" is mathematically vacuous at the tangent level: under rigid
 rotation ``D = 0``, so any tangent contraction ``c : D`` is trivially
 zero -- it tests nothing. The rate functions are what actually carry the
 objective-rate invariance, and the rigid-rotation tests in
 ``tests/test_objective_rates.py`` exercise them directly.
 
-These helpers also make convenient debugging primitives for the P1-7
+These helpers also make convenient debugging primitives for the
 TL-vs-UL equivalence verification when manual stress-rate inspection is
 needed. They are tiny, self-contained, and have no callers in the main
 emission path.
@@ -249,7 +249,7 @@ def truesdell_tangent(
     sigma : Mat33
         Current Cauchy stress. Not consumed by the Truesdell push-forward
         itself but retained in the signature for API symmetry with the
-        Jaumann and Green-Naghdi variants -- downstream callers (P1-4) can
+        Jaumann and Green-Naghdi variants -- downstream callers can
         dispatch on the rate name without knowing which tangent variant
         actually needs sigma.
     F : Mat33 | None, optional
@@ -314,8 +314,8 @@ def jaumann_tangent(
     Returns
     -------
     Tensor4
-        Spatial Jaumann tangent ``c_Jau_ijkl``. P1-4 consumes this in the
-        UL linearised tangent kernel for the Jaumann-rate material term.
+        Spatial Jaumann tangent ``c_Jau_ijkl``. The UL emitter consumes this
+        in the UL linearised tangent kernel for the Jaumann-rate material term.
     """
     c_tru = truesdell_tangent(C4, sigma, F=F)
     correction = _prandtl_reuss_correction(sigma)

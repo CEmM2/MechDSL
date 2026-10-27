@@ -1,6 +1,6 @@
 r"""J2 mixed-hardening radial-return (algo2code interface hook).
 
-constitutive_latex Phase 6 (P6-3). Mirrors
+Mirrors
 :mod:`algo2code.library.radial_return_j2` (isotropic power-law) and
 :mod:`algo2code.library.radial_return_j2_kinematic` (linear kinematic)
 for the MIXED-hardening model — the yield surface BOTH translates

@@ -1,4 +1,4 @@
-"""Benchmark-local J2 helpers for Phase 10 prerequisite work.
+"""Benchmark-local J2 helpers.
 
 The helpers in this module provide a small, numpy-based J2 assembly surface for
 benchmark enablement. They intentionally do not modify the symbolic material

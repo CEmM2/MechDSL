@@ -16,14 +16,14 @@ The output is deterministic: same bundle -> identical source string.
 Uses ``ti.f64`` throughout.  Physics indices -> ``ti.static`` in emitted code;
 mesh indices -> runtime loops.  See ``dev/design_docs/07-CONVENTIONS.md``.
 
-Recovery P5-4 — enriched IR consumption
----------------------------------------
+Enriched IR consumption
+-----------------------
 The printer prefers :attr:`ArtifactBundle.element_ir_dict` (the canonical
-post-P4-5 contract surface carrying ``ElementIR.to_dict()``) over the
+contract surface carrying ``ElementIR.to_dict()``) over the
 legacy :attr:`ArtifactBundle.element_ir_summary` for element-identity
 fields (``element_type``, ``dim``, ``n_nodes``, ``n_quadrature_points``).
 The :func:`_ir_field` helper performs the priority lookup and falls back
-to ``element_ir_summary`` when ``element_ir_dict`` is empty (pre-P4-5
+to ``element_ir_summary`` when ``element_ir_dict`` is empty (older
 bundles), keeping legacy callers byte-identical.
 
 When enrichment blocks (``geometry``, ``material_eval``, ``local_force``,
@@ -34,8 +34,8 @@ to ``False`` so existing golden files (byte-equality regression guards)
 remain stable; tests that exercise the auditability path opt-in
 explicitly.
 
-P9-2 template-family dispatch
------------------------------
+Template-family dispatch
+------------------------
 Per-contraction shape choices (displacement-gradient scatter, force
 integration, tangent contractions) are routed through the module-level
 :data:`family_emitters` dict, keyed on :class:`Family`.  Every contraction
@@ -80,7 +80,7 @@ class EmissionContext:
     """Tracks state during code emission.
 
     The ``verbose`` flag (default ``False``) gates auditability comments
-    that surface enriched-IR contract fields (P5-4) in the emitted file's
+    that surface enriched-IR contract fields in the emitted file's
     docstring header.  Defaults to off so existing golden snapshots remain
     byte-identical; tests / debugging callers may set it to ``True`` to
     inspect the contract surface that drove the emission.
@@ -138,7 +138,7 @@ def _ir_field(bundle: ArtifactBundle, key: str, default: Any) -> Any:
     Parameters
     ----------
     bundle : ArtifactBundle
-        The pipeline artifact bundle.  Post-P4-5 bundles carry both
+        The pipeline artifact bundle.  Enriched bundles carry both
         ``element_ir_dict`` (canonical) and ``element_ir_summary`` (legacy).
     key : str
         The field name to read.  Note that ``element_ir_dict`` uses
@@ -157,7 +157,7 @@ def _ir_field(bundle: ArtifactBundle, key: str, default: Any) -> Any:
     -------
     Any
         The value from ``element_ir_dict[key]`` if present and the dict is
-        non-empty (post-P4-5 path); else from ``element_ir_summary[key]``
+        non-empty (canonical path); else from ``element_ir_summary[key]``
         (legacy back-compat); else *default*.  Typed as ``Any`` because
         ``ArtifactBundle`` dict payloads are heterogeneous (``int`` for
         ``n_nodes``/``dim``, ``str`` for ``element_type``, nested ``dict``
@@ -173,12 +173,12 @@ def _ir_field(bundle: ArtifactBundle, key: str, default: Any) -> Any:
 
 
 def _ir_block(bundle: ArtifactBundle, block_name: str) -> dict[str, object] | None:
-    """Return one of the four P4-1 enrichment blocks, or ``None``.
+    """Return one of the four enrichment blocks, or ``None``.
 
     The enrichment blocks live under :attr:`ArtifactBundle.element_ir_dict`
-    (canonical) with a redundant copy under :attr:`element_ir_summary`
-    (P4-3).  This helper prefers the canonical dict and falls back to the
-    summary when ``element_ir_dict`` is empty (pre-P4-5 bundles).
+    (canonical) with a redundant copy under :attr:`element_ir_summary`.
+    This helper prefers the canonical dict and falls back to the
+    summary when ``element_ir_dict`` is empty (older bundles).
 
     Parameters
     ----------
@@ -207,7 +207,7 @@ def _ir_block(bundle: ArtifactBundle, block_name: str) -> dict[str, object] | No
 def _n_quadrature_points(bundle: ArtifactBundle, default: int = 8) -> int:
     """Quadrature-point count, preferring the geometry block over summary.
 
-    Post-P4-5 bundles expose ``n_quad`` via ``element_ir_dict["geometry"]``;
+    Enriched bundles expose ``n_quad`` via ``element_ir_dict["geometry"]``;
     legacy bundles only expose ``n_quadrature_points`` on the summary.
     Both paths converge here so the printer's emit_constants only has one
     code path.
@@ -228,8 +228,7 @@ def _is_plastic_material(model: str) -> bool:
     """Return True when *model* follows the plastic/damage history-field path.
 
     Models that need per-QP ``alpha`` history plus a radial-return
-    ``constitutive_update_plastic`` in the emitted kernel.  Lemaitre (Plan B
-    phase B6, task P6-2) layers a damage update on top of the J2 power-law
+    ``constitutive_update_plastic`` in the emitted kernel.  Lemaitre layers a damage update on top of the J2 power-law
     return map, so it shares the same ``alpha``/``plastic_strain`` plumbing
     plus its own ``damage_D``/``is_deleted`` fields (see
     :func:`mechdsl.solver.history_fields.create_lemaitre_history`).
@@ -245,7 +244,7 @@ def _is_damage_material(model: str) -> bool:
 def _emits_generated_tangent_matvec(bundle: ArtifactBundle) -> bool:
     """True when the generated matrix-free tangent matvec ``@ti.kernel`` is emitted.
 
-    The runtime-q kernels (PlanJune14 WI-1) from
+    The runtime-q kernels from
     :func:`emit_svk_tangent_matvec_kernel` / :func:`emit_j2_tangent_matvec_kernel`
     are the SOLE consumers of the device-resident quadrature fields
     ``_GRAD_AT_QUAD_F`` / ``_QUAD_WEIGHTS_F``. They are emitted only for the
@@ -253,7 +252,7 @@ def _emits_generated_tangent_matvec(bundle: ArtifactBundle) -> bool:
     in :func:`emit`, ~L3239/3247). Gating the quad-field emission on this same
     predicate keeps every other golden (Lemaitre, UL, derived, explicit)
     byte-identical — otherwise dead quad-field declarations leak into formulations
-    that never use them (the WI-1 regression the UL golden test caught).
+    that never use them (a regression the UL golden test caught).
     """
     model = bundle.problem_ir_dict.get("material", {}).get("model", "svk")
     configuration = bundle.problem_ir_dict.get("configuration", "reference")
@@ -493,7 +492,7 @@ def _emit_family_fallback_taichi(ctx: EmissionContext) -> None:
     contraction hits this path, but the entry exists so the dispatch
     table is total over :data:`FAMILIES`.
     """
-    ctx.emit("# (P9-2 fallback: no template override — caller emits inline)")
+    ctx.emit("# (family fallback: no template override — caller emits inline)")
 
 
 # Family-emitter dispatch table. Keyed on :class:`Family`; each
@@ -543,10 +542,10 @@ def _dispatch_family(family: Family, ctx: EmissionContext, *args: object) -> boo
 def emit_preamble(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     """Emit imports and ti.init.
 
-    Recovery P5-4: element identity fields are sourced from
-    ``element_ir_dict`` first (post-P4-5 canonical contract surface),
+    Element identity fields are sourced from
+    ``element_ir_dict`` first (the canonical contract surface),
     falling back to ``element_ir_summary`` for legacy bundles.  When
-    ``ctx.verbose`` is true and the four P4-1 enrichment blocks are
+    ``ctx.verbose`` is true and the four enrichment blocks are
     populated, additional auditability comments surface
     ``material_eval`` / ``geometry`` / ``local_force`` / ``local_tangent``
     fields in the docstring header.  Verbose comments are gated to keep
@@ -580,7 +579,7 @@ def emit_preamble(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
 
 
 def _emit_enrichment_audit(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
-    """Emit auditability comments for the four P4-1 enrichment blocks.
+    """Emit auditability comments for the four enrichment blocks.
 
     Called from :func:`emit_preamble` only when ``ctx.verbose`` is true.
     Each line is a ``# Field: value`` comment surfacing one fact from the
@@ -598,7 +597,7 @@ def _emit_enrichment_audit(ctx: EmissionContext, bundle: ArtifactBundle) -> None
         return
 
     ctx.emit("")
-    ctx.emit("Enriched-IR contract surface (recovery P5-4 audit):")
+    ctx.emit("Enriched-IR contract surface (audit):")
     if material_eval is not None:
         if "stress_measure" in material_eval:
             ctx.emit(f"  Stress measure   : {material_eval['stress_measure']}")
@@ -636,7 +635,7 @@ def emit_constants(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     Writes Hex8 quadrature tables as Python list literals that Taichi
     kernels can index into at compile time via ``ti.static``.
 
-    Recovery P5-4: ``n_nodes`` and ``dim`` come from
+    ``n_nodes`` and ``dim`` come from
     :func:`_ir_field` (prefers ``element_ir_dict`` over the legacy
     ``element_ir_summary``); the quadrature-point count comes from
     :func:`_n_quadrature_points`, which prefers the
@@ -703,7 +702,7 @@ def emit_field_declarations(ctx: EmissionContext, bundle: ArtifactBundle) -> Non
     ctx.emit("elem_nodes = ti.field(dtype=ti.i32)             # connectivity")
     if _emits_generated_tangent_matvec(bundle):
         ctx.emit("")
-        ctx.emit("# Quadrature tables as ti.fields (PlanJune14 WI-1): the matrix-free")
+        ctx.emit("# Quadrature tables as ti.fields: the matrix-free")
         ctx.emit("# tangent matvec kernels run the q-loop at RUNTIME (the ÷8 JIT-budget")
         ctx.emit("# lever), so they cannot index the Python-list constants GRAD_AT_QUAD /")
         ctx.emit("# QUAD_WEIGHTS by a runtime q. These device-resident copies are filled")
@@ -1021,7 +1020,7 @@ def _emit_j2_constitutive(ctx: EmissionContext, params: dict[str, object]) -> No
 def _emit_lemaitre_constitutive(ctx: EmissionContext, params: dict[str, object]) -> None:
     """Emit Lemaitre damage-coupled J2 power-law constitutive update.
 
-    Plan B phase B6, task P6-2.  Wraps :func:`_emit_j2_constitutive`'s
+    Wraps :func:`_emit_j2_constitutive`'s
     ``constitutive_update_plastic`` (which implements the undamaged radial
     return on the elastic predictor — i.e. the effective-stress field by
     strain equivalence).  After the J2 step the wrapper evaluates the de
@@ -1033,12 +1032,12 @@ def _emit_lemaitre_constitutive(ctx: EmissionContext, params: dict[str, object])
     then forms the nominal PK2 stress  ``sigma_nominal = (1 - D_new) * sigma_eff``.
 
     The returned ``alpha_new`` and ``D_new`` are written back by the caller.
-    Caveat (Gate B medium, P6-1 forward-warning): the tangent used by
+    Caveat: the tangent used by
     ``tangent_matvec`` is the **undamaged J2** algorithmic tangent, not a
     damage-aware consistent tangent.  Under actively evolving damage Newton
     drops from super-linear to sub-linear convergence; this is acceptable
-    for P6-2/P6-3 because the notched bar runs quasi-statically with small
-    D increments per step.  A damage-aware tangent is a Phase 10 V&V item.
+    for the notched-bar benchmark, which runs quasi-statically with small
+    D increments per step.  A damage-aware tangent is future V&V work.
     """
     ctx.emit("@ti.func")
     ctx.emit("def constitutive_update_lemaitre(")
@@ -1279,13 +1278,13 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
     # know the generated residual shape mutates across Newton steps only
     # by dropping elements (never by bringing them back).
     if is_damage:
-        ctx.emit("# NOTE (P6-2, Plan B phase B6): element deletion is one-way.  Once")
+        ctx.emit("# NOTE: element deletion is one-way.  Once")
         ctx.emit("# ``is_deleted[e] != 0`` the element contributes zero to both the")
         ctx.emit("# internal force and the tangent matvec.  The residual-norm sum")
         ctx.emit("# therefore ranges only over active DOFs; Newton's convergence")
         ctx.emit("# tolerances are unaffected because deleted-element residual rows")
         ctx.emit("# are already zeroed here.  Tangent uses the undamaged J2 tangent")
-        ctx.emit("# (see P6-1 forward-warning, Option A).")
+        ctx.emit("# (see the undamaged-tangent caveat in the Lemaitre model notes).")
         ctx.emit("")
 
     if is_damage:
@@ -1321,7 +1320,7 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
         ctx.emit("for e in range(n_elem):")
         with ctx.indent_block():
             if is_damage:
-                ctx.emit("# P6-2 element deletion: skip elements flagged as failed")
+                ctx.emit("# Element deletion: skip elements flagged as failed")
                 ctx.emit("if is_deleted[e] != 0:")
                 with ctx.indent_block():
                     ctx.emit("continue")
@@ -1467,7 +1466,7 @@ def emit_internal_force_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
             # --- End of QP loop: damage may have advanced; check deletion ---
             if is_damage:
                 ctx.emit("")
-                ctx.emit("# P6-2: flag element as deleted if any QP breaches D_crit.")
+                ctx.emit("# Flag element as deleted if any QP breaches D_crit.")
                 ctx.emit("# One-way: once set, stays set (see module docstring note).")
                 ctx.emit("elem_failed = 0")
                 ctx.emit("for q_chk in ti.static(range(N_QP)):")
@@ -1494,7 +1493,7 @@ def _emit_tl_tangent_qp_body(
 ) -> None:
     """Emit the Total Lagrangian QP-inner body for the tangent matvec.
 
-    Factored out of ``emit_tangent_matvec_kernel`` by P1-4 to enable TL/UL
+    Factored out of ``emit_tangent_matvec_kernel`` to enable TL/UL
     dispatch. ``derived_lines`` (when given) replaces the SVK/J2 material branch
     with the LaTeX-derived stress + ``dS = C_IJKL : dE`` lines from
     :func:`energy_emitter.emit_derived_tangent_matvec_body`, so a derived bundle
@@ -1739,9 +1738,9 @@ def emit_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
             ctx.emit("")
             ctx.emit("Notes")
             ctx.emit("-----")
-            ctx.emit("Lemaitre path (P6-2) uses the **undamaged J2** algorithmic tangent.")
-            ctx.emit("A damage-aware consistent tangent is a Phase 10 V&V item — see the")
-            ctx.emit("P6-1 forward-warning at ``symbolic/models/lemaitre.py:244-252``.")
+            ctx.emit("Lemaitre path uses the **undamaged J2** algorithmic tangent.")
+            ctx.emit("A damage-aware consistent tangent is future V&V work — see the")
+            ctx.emit("undamaged-tangent caveat in ``symbolic/models/lemaitre.py``.")
             ctx.emit("Under actively evolving damage Newton drops from super-linear to")
             ctx.emit("sub-linear convergence; acceptable for quasi-static notched-bar runs.")
             ctx.emit("Deleted elements (``is_deleted[e] != 0``) contribute zero to K @ v.")
@@ -1802,7 +1801,7 @@ def emit_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> 
         ctx.emit("for e in range(n_elem):")
         with ctx.indent_block():
             if is_damage:
-                ctx.emit("# P6-2: deleted elements contribute zero to the tangent matvec")
+                ctx.emit("# Deleted elements contribute zero to the tangent matvec")
                 ctx.emit("if is_deleted_np[e] != 0:")
                 with ctx.indent_block():
                     ctx.emit("continue")
@@ -1960,7 +1959,7 @@ def _emit_svk_consistent_tangent_A(ctx: EmissionContext) -> None:
 
 
 def _emit_optimised_matvec_contraction(ctx: EmissionContext, plan: ContractionPlan) -> None:
-    """Emit the P3-1 optimiser-recorded matvec contraction as ``ti.static`` loops.
+    """Emit the optimiser-recorded matvec contraction as ``ti.static`` loops.
 
     The matrix-free tangent contraction is ``qaI,qiIjJ,qbJ,bj->qai`` with the
     operand order ``(dN, A, dN, v)``. We do **not** hand-roll a contraction
@@ -1980,14 +1979,14 @@ def _emit_optimised_matvec_contraction(ctx: EmissionContext, plan: ContractionPl
     keeps the contraction optimiser-derived rather than hand-written, while
     fitting the JIT budget (203 estimated lines, Tier 2).
 
-    Guard: P3-2's MVP path assumes the canonical 3-step SVK Hex8 path. If a
+    Guard: the MVP path assumes the canonical 3-step SVK Hex8 path. If a
     future ElementIR yields a different path the emitter fails loud rather than
     silently emitting a mismatched contraction.
     """
     expected_path = [(2, 3), (1, 2), (0, 1)]
     if list(plan.contraction_path) != expected_path:
         raise NotImplementedError(
-            "P3-2 generated matrix-free SVK tangent expects the canonical "
+            "The generated matrix-free SVK tangent expects the canonical "
             f"opt_einsum path {expected_path} for '{plan.einsum_string}', got "
             f"{plan.contraction_path}. A path-generic emitter is planned for a "
             "later phase (multi-element support); for the Hex8 SVK MVP the "
@@ -2042,20 +2041,20 @@ def _emit_optimised_matvec_contraction(ctx: EmissionContext, plan: ContractionPl
 
 
 def emit_svk_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
-    """Emit the generated ``@ti.kernel`` matrix-free SVK tangent operator (P3-2).
+    """Emit the generated ``@ti.kernel`` matrix-free SVK tangent operator.
 
     Emits ``svk_tangent_matvec_apply(out, v, lam, mu)`` — a ``@ti.kernel``
     that applies ``K(u)·v`` fully matrix-free over all elements. It recomputes
     the tangent per matvec (locked decision D-A; element tangents are never
     stored), forms the consistent two-point SVK tangent ``A(i,I,j,J)`` per
     quadrature point from the Tier-1 ``ti_runtime`` kinematics helpers, and
-    applies it to ``v`` via the **P3-1 optimiser-recorded contraction path**
+    applies it to ``v`` via the **optimiser-recorded contraction path**
     (consumed from :func:`build_tangent_matvec_plan`). The result scatters to
     the global ``out`` field via atomic add, targeting the ``ti_runtime``
     ``apply_A(out, x)`` injection seam.
 
     Only emitted for the SVK / Total-Lagrangian / reference / named-model path
-    (see :func:`emit`). J2's algorithmic tangent (P5-1), the LaTeX-derived
+    (see :func:`emit`). J2's algorithmic tangent, the LaTeX-derived
     tangent, and the Updated-Lagrangian push-forward stay on the host
     ``tangent_matvec`` route for now.
 
@@ -2074,10 +2073,10 @@ def emit_svk_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle)
     plan = build_tangent_matvec_plan(element_ir)
 
     ctx.emit("# " + "=" * 70)
-    ctx.emit("# Generated matrix-free SVK tangent @ti.kernel (PlanJune14 P3-2)")
+    ctx.emit("# Generated matrix-free SVK tangent @ti.kernel")
     ctx.emit("#")
     ctx.emit("# Applies K(u)·v fully matrix-free (D-A: element tangents never stored),")
-    ctx.emit("# recomputed per matvec. The tangent contraction rides the P3-1")
+    ctx.emit("# recomputed per matvec. The tangent contraction rides the")
     ctx.emit(
         f"# opt_einsum ContractionPlan ('{plan.einsum_string}', path {list(plan.contraction_path)},"
     )
@@ -2103,7 +2102,7 @@ def emit_svk_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle)
         ctx.emit("Taichi's implicit atomic add. ``u`` (current Newton iterate) and the")
         ctx.emit("mesh fields ``x_ref`` / ``elem_nodes`` are read live.")
         ctx.emit("")
-        ctx.emit("The tangent contraction is the P3-1 opt_einsum ContractionPlan for")
+        ctx.emit("The tangent contraction is the opt_einsum ContractionPlan for")
         ctx.emit(f"``{plan.einsum_string}`` (operands dNdX, A, dNdX, v), realised as the")
         ctx.emit(f"recorded path {list(plan.contraction_path)} (tier {plan.tier}, within")
         ctx.emit("the 512-line @ti.func JIT budget).")
@@ -2125,7 +2124,7 @@ def emit_svk_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle)
                 with ctx.indent_block():
                     ctx.emit("X_elem[a, d] = x_ref[nid][d]")
             ctx.emit("")
-            ctx.emit("# Quadrature loop (RUNTIME — PlanJune14 WI-1 JIT-budget lever).")
+            ctx.emit("# Quadrature loop (RUNTIME — the JIT-budget lever).")
             ctx.emit("# Runtime q divides the per-QP unroll by N_QP (8); physics indices")
             ctx.emit("# i,I,j,J,a,d stay ti.static. The body can no longer index the")
             ctx.emit("# Python-list quad constants by a runtime q, so it reads the")
@@ -2174,10 +2173,10 @@ def emit_svk_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle)
 
 
 # ---------------------------------------------------------------------------
-# PlanJune14 P5-1 — generated @ti.kernel matrix-free J2 algorithmic tangent
+# Generated @ti.kernel matrix-free J2 algorithmic tangent
 #
-# The dissipative-model counterpart of ``emit_svk_tangent_matvec_kernel``
-# (P3-2). J2 plasticity is dissipative, so the tangent is the **algorithmic
+# The dissipative-model counterpart of ``emit_svk_tangent_matvec_kernel``.
+# J2 plasticity is dissipative, so the tangent is the **algorithmic
 # consistent tangent** — the linearisation of the radial-return map, NOT
 # ∂²Ψ/∂E² (``.claude/rules/symbolic.md``). It is state-dependent: every matvec
 # re-runs the return map per quadrature point with the **on-device** history
@@ -2193,10 +2192,10 @@ def emit_svk_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle)
 #
 # (matching ``ref_hex8_plastic.element_tangent_matvec_plastic``:
 # ``dP = grad_v @ S + F @ (C_ep : dE)`` with ``dE = sym(F^T grad_v)``). Once
-# ``A`` is formed the matvec rides the **same** P3-1 opt_einsum ContractionPlan
+# ``A`` is formed the matvec rides the **same** opt_einsum ContractionPlan
 # (``qaI,qiIjJ,qbJ,bj->qai``) realised by ``_emit_optimised_matvec_contraction``
 # — the contraction is path-driven and JIT-budget-checked exactly as for SVK
-# (Tier 2, ~203 lines, primary PJ risk). The on-device ``C_ep`` assembly uses
+# (Tier 2, ~203 lines). The on-device ``C_ep`` assembly uses
 # the closed Simo & Hughes §3.4 Box 3.5 form, byte-for-byte the algebra of
 # ``j2_power_law.assemble_j2_like_tangent`` / ``elastic_tangent``, so the
 # generated operator matches the reference algorithmic tangent to f64 precision.
@@ -2400,7 +2399,7 @@ def _emit_j2_consistent_tangent_A(ctx: EmissionContext) -> None:
 
 
 def emit_j2_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
-    """Emit the generated ``@ti.kernel`` matrix-free J2 tangent operator (P5-1).
+    """Emit the generated ``@ti.kernel`` matrix-free J2 tangent operator.
 
     Emits ``j2_tangent_matvec_apply(out, v, lam, mu, sigma_y0, K_hard, n_hard)``
     — a ``@ti.kernel`` that applies the **J2 algorithmic consistent tangent**
@@ -2413,7 +2412,7 @@ def emit_j2_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) 
     stress ``S`` and the rank-4 algorithmic tangent ``C_ep``
     (:func:`_emit_j2_algorithmic_tangent_C`), folds them into the consistent
     two-point tangent ``A(i,I,j,J)`` (:func:`_emit_j2_consistent_tangent_A`),
-    and applies it to ``v`` via the **same** P3-1 optimiser-recorded contraction
+    and applies it to ``v`` via the **same** optimiser-recorded contraction
     path as SVK (:func:`_emit_optimised_matvec_contraction`). The result
     scatters to the global ``out`` field via atomic add, targeting the
     ``ti_runtime`` ``apply_A(out, x)`` injection seam.
@@ -2433,14 +2432,14 @@ def emit_j2_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) 
     plan = build_tangent_matvec_plan(element_ir)
 
     ctx.emit("# " + "=" * 70)
-    ctx.emit("# Generated matrix-free J2 algorithmic-tangent @ti.kernel (PlanJune14 P5-1)")
+    ctx.emit("# Generated matrix-free J2 algorithmic-tangent @ti.kernel")
     ctx.emit("#")
     ctx.emit("# Applies the J2 ALGORITHMIC CONSISTENT TANGENT K(u)·v fully matrix-free")
     ctx.emit("# (D-A: element tangents never stored), recomputed per matvec. The tangent")
     ctx.emit("# is the linearisation of the radial-return map (NOT d2Psi/dE2 — J2 is")
     ctx.emit("# dissipative; see .claude/rules/symbolic.md). History alpha[e, q] is read")
     ctx.emit("# on-device (read-only); it advances only in compute_internal_force. The")
-    ctx.emit(f"# contraction rides the P3-1 opt_einsum ContractionPlan ('{plan.einsum_string}',")
+    ctx.emit(f"# contraction rides the opt_einsum ContractionPlan ('{plan.einsum_string}',")
     ctx.emit(f"# path {list(plan.contraction_path)}, tier {plan.tier}) — the same path as the")
     ctx.emit("# SVK kernel; kinematics use the Tier-1 ti_runtime @ti.func helpers.")
     ctx.emit("# " + "=" * 70)
@@ -2468,7 +2467,7 @@ def emit_j2_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) 
         ctx.emit("live; ``alpha`` is NOT written (history advances in compute_internal_force).")
         ctx.emit("")
         ctx.emit("The tangent is the J2 algorithmic consistent tangent (linearisation of")
-        ctx.emit("the radial-return map). The contraction is the P3-1 opt_einsum")
+        ctx.emit("the radial-return map). The contraction is the opt_einsum")
         ctx.emit(f"ContractionPlan for ``{plan.einsum_string}`` (operands dNdX, A, dNdX, v),")
         ctx.emit(f"realised as the recorded path {list(plan.contraction_path)} (tier {plan.tier}).")
         ctx.emit('"""')
@@ -2489,7 +2488,7 @@ def emit_j2_tangent_matvec_kernel(ctx: EmissionContext, bundle: ArtifactBundle) 
                 with ctx.indent_block():
                     ctx.emit("X_elem[a, d] = x_ref[nid][d]")
             ctx.emit("")
-            ctx.emit("# Quadrature loop (RUNTIME — PlanJune14 WI-1 JIT-budget lever).")
+            ctx.emit("# Quadrature loop (RUNTIME — the JIT-budget lever).")
             ctx.emit("# Runtime q divides the per-QP unroll by N_QP (8); physics indices")
             ctx.emit("# i,I,j,J,K,M,a,d stay ti.static. The body can no longer index the")
             ctx.emit("# Python-list quad constants by a runtime q, so it reads the")
@@ -2810,7 +2809,7 @@ def emit_newton_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
 
 
 def emit_explicit_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
-    """Emit central-difference explicit-dynamics driver (Plan B §B7, P7-1).
+    """Emit central-difference explicit-dynamics driver.
 
     Emits:
       * a Taichi velocity field ``v`` of shape ``(n_nodes, 3)`` storing the
@@ -2827,7 +2826,7 @@ def emit_explicit_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
 
         with the deleted-element guard ``if is_deleted[e] != 0: continue``
         baked into the internal-force accumulation so deleted elements
-        contribute zero inertia / internal force (Phase 6 carry-forward).
+        contribute zero inertia / internal force.
 
     Callers drive the time loop externally: compute ``f_int`` via the
     already-emitted ``compute_internal_force`` helper, then call
@@ -2856,7 +2855,7 @@ def emit_explicit_driver(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     ctx.emit("@ti.kernel")
     ctx.emit("def advance_one_step(dt: ti.f64):")
     with ctx.indent_block():
-        ctx.emit('"""One central-difference step (Plan B §B7, P7-1).')
+        ctx.emit('"""One central-difference step.')
         ctx.emit("")
         ctx.emit("    v^{n+1/2} = v^{n-1/2} + dt * M_inv * (f_ext - f_int)")
         ctx.emit("    u^{n+1}   = u^{n}      + dt * v^{n+1/2}")
@@ -2986,7 +2985,7 @@ def emit_neumann_f_ext_kernel(
     when wiring up the Newton driver. Side effect: lines appended to
     ``ctx``.
 
-    Acceptance contract (post_recovery_plan P1-4):
+    Acceptance contract:
 
     1. Generated source zeroes ``f_ext`` for every node before applying
        the Neumann contribution; nodes outside the tagged surface stay
@@ -3003,7 +3002,7 @@ def emit_neumann_f_ext_kernel(
 
     ctx.emit("# " + "=" * 70)
     ctx.emit(f"# Neumann f_ext kernel for BC '{spec.bc_name}' (surface '{spec.surface_tag}')")
-    ctx.emit("# Emitted by post_recovery_plan P1-4 (Taichi printer Neumann emitter)")
+    ctx.emit("# Emitted by the Taichi printer Neumann emitter (literal-baked form)")
     ctx.emit("# " + "=" * 70)
     ctx.emit("")
     ctx.emit("@ti.kernel")
@@ -3049,9 +3048,9 @@ def emit_neumann_f_ext_kernel_for_ir(
     """Emit a Neumann ``f_ext`` kernel parametric in face-area factor.
 
     Companion to :func:`emit_neumann_f_ext_kernel`. The literal-baked form
-    (P1-4) is right for golden tests where the lowering pre-distributes
+    is right for golden tests where the lowering pre-distributes
     the per-node force; this parametric form is right for the canonical
-    LaTeX façade (P1-5), which builds the kernel from the IR
+    LaTeX façade, which builds the kernel from the IR
     ``BoundaryCondition`` alone — no mesh, no face area available at
     compile time.
 
@@ -3073,7 +3072,7 @@ def emit_neumann_f_ext_kernel_for_ir(
 
     ctx.emit("# " + "=" * 70)
     ctx.emit(f"# Neumann f_ext kernel for BC '{bc_name}' (surface '{surface_tag}')")
-    ctx.emit("# Emitted by post_recovery_plan P1-5 (façade-driven, parametric form)")
+    ctx.emit("# Emitted by the Taichi printer Neumann emitter (façade-driven, parametric form)")
     ctx.emit("# " + "=" * 70)
     ctx.emit("")
     ctx.emit("@ti.kernel")
@@ -3294,7 +3293,7 @@ def emit_main(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
         ctx.emit("")
         ctx.emit("# Run Newton solver")
         if is_damage:
-            ctx.emit("# NOTE (P6-2): Lemaitre damage requires incremental load stepping")
+            ctx.emit("# NOTE: Lemaitre damage requires incremental load stepping")
             ctx.emit("# with alpha/D snapshot-rollback on non-convergence.  The standalone")
             ctx.emit("# __main__ path does not implement this; use the newton_solve() API")
             ctx.emit("# directly with your own load-stepping driver.  bc_values is")
@@ -3405,12 +3404,12 @@ def emit(bundle: ArtifactBundle) -> str:
         emit_explicit_driver(ctx, bundle)
     else:
         emit_tangent_matvec_kernel(ctx, bundle)
-        # PlanJune14 P3-2: emit the generated matrix-free SVK tangent @ti.kernel
-        # *alongside* the host tangent_matvec, for the SVK / Total-Lagrangian /
-        # reference / named-model path only. The host route stays the default
-        # the emitted Newton driver drives (flipping the default is P4-3); the
-        # generated @ti.kernel is the optimiser-routed, ti_runtime-seam operator
-        # that downstream tasks (P4-3, P5-1, P7-2) consume. Gating on this exact
+        # Emit the generated matrix-free SVK tangent @ti.kernel *alongside* the
+        # host tangent_matvec, for the SVK / Total-Lagrangian / reference /
+        # named-model path only. The host route stays the default the emitted
+        # Newton driver drives; the generated @ti.kernel is the optimiser-routed,
+        # ti_runtime-seam operator that the seam solver path consumes. Gating on
+        # this exact
         # path keeps every other golden (Lemaitre, UL, derived, explicit)
         # byte-identical.
         configuration = bundle.problem_ir_dict.get("configuration", "reference")
@@ -3454,8 +3453,7 @@ class TaichiCodegenFacade:
     The underlying module-level functions remain the implementation; they
     are importable and callable without going through this façade.  This
     façade exists purely to satisfy the design-doc-aligned API shape
-    described in ``dev/design_docs/05-CODEGEN.md`` and the recovery plan
-    §Phase 5 (R4.3).
+    described in ``dev/design_docs/05-CODEGEN.md``.
 
     Usage
     -----
@@ -3493,7 +3491,7 @@ class TaichiCodegenFacade:
         facade.main(ctx, bundle)
         source = ctx.get_source()
 
-        # Verbose audit (recovery P5-4):
+        # Verbose audit:
         ctx = facade.make_context(verbose=True)
         facade.preamble(ctx, bundle)
         # ... ctx.code now includes enriched-IR audit block.
@@ -3510,7 +3508,7 @@ class TaichiCodegenFacade:
         ----------
         verbose : bool, default False
             When True, the emission pipeline appends an "Enriched-IR contract
-            surface (recovery P5-4 audit)" block to the emitted file's
+            surface (audit)" block to the emitted file's
             docstring whenever the bundle carries enrichment data. Default
             emission is byte-identical to legacy output.
         """
@@ -3545,11 +3543,11 @@ class TaichiCodegenFacade:
         return emit_tangent_matvec_kernel(ctx, bundle)
 
     def svk_tangent_matvec_kernel(self, ctx: EmissionContext, bundle: ArtifactBundle) -> None:
-        """Delegate to :func:`emit_svk_tangent_matvec_kernel` (P3-2 generated kernel)."""
+        """Delegate to :func:`emit_svk_tangent_matvec_kernel` (generated kernel)."""
         return emit_svk_tangent_matvec_kernel(ctx, bundle)
 
     def j2_tangent_matvec_kernel(self, ctx: EmissionContext, bundle: ArtifactBundle) -> None:
-        """Delegate to :func:`emit_j2_tangent_matvec_kernel` (P5-1 generated kernel)."""
+        """Delegate to :func:`emit_j2_tangent_matvec_kernel` (generated kernel)."""
         return emit_j2_tangent_matvec_kernel(ctx, bundle)
 
     def validate_mesh(self, ctx: EmissionContext) -> None:

@@ -1,6 +1,6 @@
 # ======================================================================
 # Neumann f_ext kernel for BC 'load' (surface 'z1')
-# Emitted by post_recovery_plan P1-4 (Taichi printer Neumann emitter)
+# Emitted by the Taichi printer Neumann emitter (literal-baked form)
 # ======================================================================
 
 @ti.kernel

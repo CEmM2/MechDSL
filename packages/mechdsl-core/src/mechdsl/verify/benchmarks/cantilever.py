@@ -1,4 +1,4 @@
-"""Public cantilever benchmark harness for Phase 10 prerequisite closure."""
+"""Public cantilever benchmark harness."""
 
 from __future__ import annotations
 

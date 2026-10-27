@@ -5,11 +5,11 @@ Implements:
 - run_rigid_body_test() — rigid body motion test (internal force norm < 1e-12)
 - generate_irregular_mesh() — perturbed Hex8 mesh for patch test on irregular geometry
 
-Design decision (Phase 3):
+Design decision:
     These tests use the handwritten reference solver (ref_hex8_elastic.py), NOT
     the generated solver.  The patch test and rigid body test validate fundamental
     mechanics correctness of the numerical method.  Generated-vs-reference
-    comparison is Phase 4's job.
+    comparison is the job of the separate codegen equivalence tests.
 
 Patch test formulation:
     For a Hex8 element with trilinear shape functions, a constant Green-Lagrange

@@ -1,4 +1,4 @@
-"""Generated-tests emitter, one pytest file per scalar plasticity law (Task P3-2).
+"""Generated-tests emitter, one pytest file per scalar plasticity law.
 
 Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
 Taichi carrier).
@@ -20,8 +20,8 @@ that :func:`emit_tests` writes contains, in order:
   compares a central finite-difference derivative w.r.t. that factor's **own**
   primary variable against the *analytic* derivative (``sympy.diff``, lowered
   through the same ``lambdify`` path) at the sample points, to ``rtol = 1e-5``
-  (standard FD precision — deliberately **not** the ``1e-10`` P4-2 equivalence
-  gate). A factor that is constant in its primary (e.g. a rate-independent
+  (standard FD precision — deliberately **not** the ``1e-10`` numerical
+  equivalence gate). A factor that is constant in its primary (e.g. a rate-independent
   ``H = 1``) has analytic derivative ``0`` and FD ``≈ 0``, so the general
   FD-vs-analytic check passes without any special-casing.
 * ``test_monotonicity`` — emitted **iff** ``spec.monotone_check`` is ``True``:
@@ -174,7 +174,7 @@ def _ordered_symbol_names(spec: PlasticityCarrierSpec, primary_name: str) -> lis
     Primary variable first, then the remaining variable bindings, then the
     material parameters — each group in the spec's own declaration order and with
     duplicates removed. A stable order keeps the generated file byte-deterministic
-    (P3-3 lists these tests in the manifest) and lets the reference/FD/monotone
+    (the manifest lists these tests) and lets the reference/FD/monotone
     tests share one argument tuple.
     """
     ordered: list[str] = [primary_name]
@@ -449,7 +449,7 @@ def _render_header(spec: PlasticityCarrierSpec) -> str:
     monotone = "yes" if spec.monotone_check else "no"
     return (
         f'"""Auto-generated tests for plasticity carrier {spec.name!r} '
-        f"(MechDSL lawgen P3-2).\n\n"
+        f"(MechDSL lawgen).\n\n"
         f"DO NOT EDIT BY HAND — regenerate via mechdsl.lawgen.test_emitter.emit_tests.\n\n"
         f"Reference eval + per-factor FD-derivative (rtol={FD_RTOL!r}) self-consistency\n"
         f"checks over {N_SAMPLE_POINTS} sample points, with fixed placeholder parameters "

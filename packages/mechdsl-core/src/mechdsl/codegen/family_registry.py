@@ -1,14 +1,13 @@
-"""Layer 4b — contraction-family registry (Phase 9 / Task P9-1).
+"""Layer 4b — contraction-family registry.
 
 Authoritative families are defined in
 ``dev/design_docs/09-EINSUM-OPTIMISER.md §9``. This module is the
 executable mirror of §9.2-9.4 plus a minimal pattern-matching
-classifier used by the P9-1 spec-completeness tests.
+classifier used by the spec-completeness tests.
 
-P9-2 will wire :func:`classify_einsum_string` into the
-``optimize_contraction`` / ``plan_contraction`` flow and attach the
-resulting :class:`Family` to :class:`ContractionResult`. P9-1 only
-ships the registry.
+:mod:`mechdsl.codegen.einsum_optimizer` wires :func:`classify_einsum_string`
+into the ``optimize_contraction`` / ``plan_contraction`` flow and attaches
+the resulting :class:`Family` to :class:`ContractionResult`.
 """
 
 from __future__ import annotations
@@ -203,9 +202,9 @@ def classify_einsum_string(
 ) -> Family:
     """Classify an einsum contraction into a named :class:`Family`.
 
-    This is the P9-1 design scaffold. Unrecognised strings resolve to
-    :attr:`Family.FALLBACK`; P9-2 will refine the pattern-matching
-    using operand shapes to split coarser families if needed.
+    Unrecognised strings resolve to :attr:`Family.FALLBACK`; the
+    pattern-matching may later be refined using operand shapes to split
+    coarser families if needed.
     """
     _ = operand_shapes  # reserved for future refinement
     if einsum_string in _EXACT_MATCH:

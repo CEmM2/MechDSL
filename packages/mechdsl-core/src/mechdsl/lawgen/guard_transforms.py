@@ -1,4 +1,4 @@
-"""Numerical-guard injection for the SymPy → Taichi lowerer (Task P2-3).
+"""Numerical-guard injection for the SymPy → Taichi lowerer.
 
 Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
 Taichi carrier). Correctness-critical: the guards emitted here must match the
@@ -43,7 +43,7 @@ From ``NumerixWeave/libs/ticonstit/.../generated/plasticity/swift_voce.py``
 
 * Swift ``(peeq + p0)**n`` and ``p0**n`` → **floor the base** with
   ``ti.max(base, 1e-12)`` then ``ti.pow`` — *only* when the exponent is
-  non-integer. An integer power needs no floor (and P2-4 inlines small-int
+  non-integer. An integer power needs no floor (and the printer inlines small-int
   powers to multiplication anyway).
 * ``exp(-b*peeq)`` is **UNGUARDED**, matching the Voce idiom (physical domain
   ``peeq >= 0`` ⇒ argument ``<= 0`` ⇒ ``exp in (0, 1]``, no overflow). Guarding
@@ -140,7 +140,7 @@ def inject_guards(expr: sp.Expr) -> sp.Expr:
     Rules (see the module docstring for the golden anchoring):
 
     * ``Pow(base, 1/2)`` (``sqrt``)              → positive-floor the base.
-    * ``Pow(base, non-negative integer)``        → **no** guard (P2-4 inlines).
+    * ``Pow(base, non-negative integer)``        → **no** guard (the printer inlines).
     * ``Pow(base, non-integer: fractional or symbolic, any sign)`` → positive
       base-floor via ``ti.pow`` (a fractional power's base must be positive).
     * ``Pow(base, negative integer)`` (``1/x``, ``1/x**2``) → sign-preserving
@@ -205,7 +205,7 @@ def _guard_pow(base: sp.Expr, exp: sp.Expr) -> sp.Expr:
        (Gate-B Finding 2).
     3. ``exp`` a negative integer (``x**-1``, ``x**-2``) → genuine reciprocal:
        sign-preserving denominator guard (unless ``base`` is a nonzero constant).
-    4. ``exp`` a non-negative integer → no guard (exact; P2-4 inlines small ints).
+    4. ``exp`` a non-negative integer → no guard (exact; the printer inlines small ints).
     """
     # 1. sqrt: SymPy's ``Pow(x, 1/2)``. Floor the radicand; the printer routes
     # the half-exponent to ``ti.sqrt`` → ``ti.sqrt(ti.max(x, 1e-12))``.

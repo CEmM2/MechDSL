@@ -1,4 +1,4 @@
-"""Generated Newmark-beta time integration over the ``ti_runtime`` seam (PlanJune14 P6-1).
+"""Generated Newmark-beta time integration over the ``ti_runtime`` seam.
 
 The temporal twin of :mod:`mechdsl.solver.seam_solve`: it transpiles the
 canonical Newmark-beta step authored in ``algo2code/library/algorithms/newmark.tex`` via
@@ -11,8 +11,8 @@ is the injected acceleration solve ``solve_a`` (the matrix-free seam, the
 temporal analogue of the PCG operator ``A``).
 
 Proves the "any algorithm box" claim end-to-end: the *same* Seams & Bodies
-pattern that drives the generated linear solver (P4) and the dissipative J2 model
-(P5-1) also drives a generated *time integrator* — MechDSL owns the stable
+pattern that drives the generated linear solver and the dissipative J2 model
+also drives a generated *time integrator* — MechDSL owns the stable
 ``TimeIntegrationContext`` wrapper; algo2code generates the body.
 
 Build mechanism
@@ -21,13 +21,13 @@ Reuses the shared :mod:`mechdsl.solver._seam_runtime` plumbing
 (:func:`~mechdsl.solver._seam_runtime.import_generated_module` +
 :func:`~mechdsl.solver._seam_runtime.strip_ti_init`; the caller owns Taichi init /
 the device), and caches the transpiled-and-imported module once per process so
-repeated steps do not leak tempdirs / ``sys.modules`` entries (the P4-2 minor).
+repeated steps do not leak tempdirs / ``sys.modules`` entries.
 
 Taichi note
 -----------
 The generated module is written to a real ``.py`` file and imported (not
-``exec``'d): Taichi needs ``inspect.getsource`` on the driver, mirroring the
-``seam_solve`` / P2-2 pattern.
+``exec``'d): Taichi needs ``inspect.getsource`` on the driver, mirroring
+``seam_solve``.
 """
 
 # NOTE: no ``from __future__ import annotations`` — downstream callers wire this
@@ -65,7 +65,7 @@ def transpile_seam_newmark() -> str:
     The module-level ``ti.init`` line is stripped: the **caller** owns Taichi
     initialisation (device/arch), so the generated body is device-agnostic — it
     runs on whatever arch the caller's ``ti.init`` selected. (Re-init here would
-    free already-allocated DOF fields — the P2-2 finding; shared with
+    free already-allocated DOF fields; shared with
     :func:`mechdsl.solver.seam_solve.transpile_seam_pcg`.)
 
     The emitted ``newmark_step`` body advances ``(u, v, a)`` one step with only

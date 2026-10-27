@@ -1,22 +1,22 @@
-"""Generated matrix-free PCG over the ``ti_runtime`` seams (PlanJune14 P4-2).
+"""Generated matrix-free PCG over the ``ti_runtime`` seams.
 
-This module is the **all-Taichi on-device seam path** (Option 1): it transpiles
+This module is the **all-Taichi on-device seam path**: it transpiles
 the canonical matrix-free PCG authored in ``algo2code/library/algorithms/pcg.tex`` via
 ``algo2code`` in *runtime mode*, imports the generated ``pcg`` body, and binds it
 through the ``ti_runtime`` ``LinearSolveContext.set_solver`` seam.  The resulting
 solver solves ``A x = b`` over ``ti.Vector.field`` DOF vectors with **no NumPy in
 the hot path** — the operator is the injected matrix-free ``apply_A`` (e.g. the
-P3-2 generated SVK tangent), and the preconditioner is the injected
+generated SVK tangent), and the preconditioner is the injected
 ``apply_preconditioner``.
 
 It deliberately does **not** route through the NumPy
 ``import_adapter.LinearSolverInterface`` / ``newton.py`` matvec callback: that is
 the host-NumPy path, whereas this is the on-device Taichi path the spike
-(``tests/spike/svk_hex8_taichi.py``) demonstrates and PJ-1 gated.
+(``tests/spike/svk_hex8_taichi.py``) demonstrates.
 
 Productionization template
 --------------------------
-The PJ-1 spike's hand-written :func:`pcg` body is the template.  P4-2 makes that
+The spike's hand-written :func:`pcg` body is the template.  This module makes that
 body *generated*: :func:`build_seam_pcg` returns the transpiled-and-imported
 ``pcg`` callable; :func:`bind_generated_pcg_solver` wires it into a
 ``LinearSolveContext`` so ``ctx.solver.solve(b, x, tol, maxiter)`` runs the
@@ -26,7 +26,7 @@ Taichi note
 -----------
 The generated module is written to a real ``.py`` file and imported (not
 ``exec``'d): Taichi needs ``inspect.getsource`` on the driver, mirroring
-``tests/_e2e_helpers._import_generated_module`` and the P2-2 pattern.
+``tests/_e2e_helpers._import_generated_module``.
 """
 
 # NOTE: no ``from __future__ import annotations`` — downstream callers wire this
@@ -62,7 +62,7 @@ def transpile_seam_pcg() -> str:
 
     The module-level ``ti.init`` line is stripped: the **caller** owns Taichi
     initialisation, and therefore the device/arch. (Re-init here would free
-    already-allocated DOF fields — the P2-2 finding.) The generated body is thus
+    already-allocated DOF fields.) The generated body is thus
     device-agnostic — it runs on whatever arch the caller's ``ti.init`` selected.
 
     The emitted ``pcg`` body is matrix-free: it calls the injected operator

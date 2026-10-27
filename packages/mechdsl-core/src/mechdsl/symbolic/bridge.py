@@ -1,6 +1,6 @@
 """Adapter from ``nrpylatex`` AST output to mechdsl symbolic types.
 
-post_recovery_plan Phase 4 (P4-2). The bridge sits between the
+The bridge sits between the
 :mod:`mechdsl.frontend.math_parser` output and the existing symbolic
 machinery in :mod:`mechdsl.symbolic`. It is the **only** module that
 imports ``nrpylatex`` types beyond the parser wrapper.
@@ -24,11 +24,10 @@ rank-4 (UUUU/…)  ``tensor4``   Tangent moduli C_IJKL. Accepted by the
                                 budget counter in
                                 :mod:`mechdsl.codegen.einsum_optimizer`
                                 (≤ 512 unrolled lines per ``@ti.func``).
-                                Full Taichi emission is wired in P3-3.
 ================  ============  =========================================
 
-Rank-1, rank-3, and rank > 4 raise :class:`BridgeError` with a
-phase-pointer message.
+Rank-1, rank-3, and rank > 4 raise :class:`BridgeError` naming the
+supported subset.
 
 The bridge does **not** mutate or extend any existing symbolic type;
 it only constructs new dataclass nodes that downstream code can reason
@@ -47,8 +46,8 @@ from mechdsl.frontend.math_parser import EquationSemantics, IndexClassification
 
 class BridgeError(RuntimeError):
     """Raised when an nrpylatex namespace entry cannot be mapped onto
-    a supported mechdsl symbolic node. Always carries the phrase
-    ``post_recovery_plan Phase 4`` so the bridge surface is traceable.
+    a supported mechdsl symbolic node. The message always names the
+    supported subset so the bridge surface is traceable.
     """
 
 
@@ -129,7 +128,7 @@ def convert(
     if not isinstance(indexed_symbol, nrpylatex.IndexedSymbol):
         raise BridgeError(
             f"convert expected nrpylatex.IndexedSymbol or Constant for {name!r}, got "
-            f"{type(indexed_symbol).__name__} — post_recovery_plan Phase 4."
+            f"{type(indexed_symbol).__name__}."
         )
 
     rank = int(getattr(indexed_symbol, "rank", 0) or 0)
@@ -173,7 +172,7 @@ def convert(
         f"convert: rank-{rank} tensor {name!r} is not supported. The bridge "
         "maps rank-0 (constant or scalar), rank-2 tensors, and rank-4 tangent "
         "moduli. Ranks 1, 3, and > 4 are not part of the mechdsl supported "
-        "subset — post_recovery_plan Phase 4."
+        "subset."
     )
 
 
@@ -199,13 +198,13 @@ def convert_equation(equation: EquationSemantics) -> SymbolicEquation:
     if not isinstance(equation, EquationSemantics):
         raise BridgeError(
             f"convert_equation expected EquationSemantics, got "
-            f"{type(equation).__name__}. Unsupported bridge node; "
-            "full grammar lowering is deferred to post_recovery_plan Phase 4."
+            f"{type(equation).__name__}. Only assignment equations produced by "
+            "parse_math are supported; full grammar lowering is not implemented."
         )
     if not equation.lhs or not equation.rhs:
         raise BridgeError(
             "convert_equation requires assignment equations with both LHS and RHS. "
-            "Full grammar relation nodes are deferred to post_recovery_plan Phase 4."
+            "Full grammar relation nodes are not supported."
         )
     return SymbolicEquation(
         lhs=equation.lhs,

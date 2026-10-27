@@ -25,15 +25,15 @@ from mechdsl.symbolic.convected import UnsupportedError
 class LocalisationError(UnsupportedError, ValueError):
     """Raised when ``localise()`` rejects a stable-path combination.
 
-    Recovery-plan P4-4 (R3.4) added this exception to give the lowering
+    This exception gives the lowering
     layer a single, named rejection class with a stable contract: every
     instance carries a clear phase pointer in its message naming the
     Plan-B phase that adds support for the rejected combination.
 
     Subclasses :class:`UnsupportedError` so callers that catch the
     broader rule-defined "outside supported subset" exception
-    (per ``.claude/rules/ir.md``) keep working. Also subclasses
-    :class:`ValueError` for back-compat with pre-P4-4 callers that caught
+    keep working. Also subclasses
+    :class:`ValueError` for back-compat with older callers that caught
     the bare ``ValueError`` raised by the old in-line rejection paths.
     """
 
@@ -79,17 +79,17 @@ _SYMMETRIC_TANGENT_MODELS: frozenset[str] = frozenset({"svk", "j2_power_law"})
 
 
 def _enrich_element_ir(legacy_ir: ElementIR, problem_ir: ProblemIR) -> ElementIR:
-    """Populate the P4-1 execution-contract dataclasses on an ``ElementIR``.
+    """Populate the execution-contract dataclasses on an ``ElementIR``.
 
-    Recovery-plan P4-3 (R3.3) makes the IR the *primary* output of lowering:
+    The IR is the *primary* output of lowering:
     the enriched ``ElementIR`` is built first and the einsum optimizer view
-    is derived from it. Pre-P4-3 ``localise()`` returned a bare ElementIR
+    is derived from it. Previously ``localise()`` returned a bare ElementIR
     (no contract dataclasses populated); this helper is the centralised
     derivation that ``localise()`` calls before extracting einsum specs.
 
     The four contract blocks are derived from the ``ProblemIR`` /
     ``ElementIR`` semantics — no Taichi-specific assumptions — so the
-    enrichment stays backend-agnostic per the Phase 4 constraint.
+    enrichment stays backend-agnostic.
 
     Parameters
     ----------
@@ -153,7 +153,7 @@ class EinsumSpec:
 
     .. note::
 
-       Recovery-plan P4-2 (R3.2) demoted ``EinsumSpec`` from a primary
+       ``EinsumSpec`` was demoted from a primary
        semantic carrier to a *derived view* over :class:`ElementIR`. The
        canonical semantic source for element-level information is now
        ``ElementIR`` (see :mod:`mechdsl.ir.element_ir`); ``EinsumSpec``
@@ -186,7 +186,7 @@ class LocalisationResult:
 
     .. note::
 
-       Recovery-plan P4-2 (R3.2) demoted ``LocalisationResult`` from "the
+       ``LocalisationResult`` was demoted from "the
        primary semantic carrier downstream consumers should read" to a
        derived bundle. The semantic source of truth is the ``element_ir``
        field; ``einsum_specs`` is a derived optimizer view recomputed
@@ -214,9 +214,9 @@ class LocalisationResult:
 
         This makes the derived-view relationship explicit: callers build
         (or modify) ``ElementIR`` independently — possibly enriching it
-        with the P4-1 contract dataclasses — and then materialize the
-        optimizer view on demand. Pre-P4-2, ``localise()`` was the only
-        production path; ``from_element_ir`` is the post-P4-2 reverse
+        with the execution-contract dataclasses — and then materialize the
+        optimizer view on demand. Originally ``localise()`` was the only
+        production path; ``from_element_ir`` is the reverse
         constructor that lets test fixtures and downstream consumers
         derive the view without re-running the full ``ProblemIR ->
         ElementIR`` pass.
@@ -225,7 +225,7 @@ class LocalisationResult:
         ----------
         element_ir
             The primary semantic carrier produced upstream. Optionally
-            carries P4-1 enrichment (geometry, material_eval, force /
+            carries the execution-contract enrichment (geometry, material_eval, force /
             tangent descriptors); this method does not require those
             fields to be populated.
         problem_ir
@@ -251,7 +251,7 @@ class LocalisationResult:
 def _check_stable_path_combo(problem_ir: ProblemIR) -> None:
     """Reject ``ProblemIR`` configurations the lowering pass cannot lower.
 
-    Recovery-plan P4-4 (R3.4) centralises the previously-scattered
+    This guard centralises the previously-scattered
     rejection logic into a single guard with a stable contract:
 
     1. Every rejection raises :class:`LocalisationError` (a subclass of
@@ -351,7 +351,7 @@ def localise(problem_ir: ProblemIR) -> LocalisationResult:
 def _contraction_result_to_plan(result: ContractionResult) -> ContractionPlan:
     """Convert a :class:`ContractionResult` to a :class:`ContractionPlan`.
 
-    P9-2 propagates the template-family classification from the optimiser
+    The template-family classification is propagated from the optimiser
     result into the serialisable plan. The family is stored as the enum
     *name* string so the artifact bundle stays JSON-round-trippable without
     a custom enum encoder.

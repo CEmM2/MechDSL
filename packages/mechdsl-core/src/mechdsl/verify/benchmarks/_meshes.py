@@ -1,4 +1,4 @@
-"""Benchmark-local mesh helpers for Phase 10 prerequisite work.
+"""Benchmark-local mesh helpers.
 
 This module is intentionally geometry-only: it creates coordinates,
 connectivity, and boundary node sets, then validates element orientation. It
@@ -54,7 +54,7 @@ _HEX8_TO_TETS: Final[tuple[tuple[int, int, int, int], ...]] = (
 
 @dataclass(frozen=True)
 class BenchmarkMesh:
-    """Geometry data shared by Phase 10 benchmark prerequisites."""
+    """Geometry data shared by the benchmark harnesses."""
 
     element_type: str
     coordinates: NDArray[np.float64]
@@ -115,7 +115,7 @@ def structured_block_mesh(
     ny: int = 1,
     nz: int = 1,
 ) -> BenchmarkMesh:
-    """Build a structured block mesh for Phase 10 benchmark prerequisites."""
+    """Build a structured block mesh for the benchmark harnesses."""
 
     _validate_block_inputs(length=length, width=width, height=height, nx=nx, ny=ny, nz=nz)
     hex8 = _structured_hex8_block(length=length, width=width, height=height, nx=nx, ny=ny, nz=nz)

@@ -106,7 +106,7 @@ class ContractionResult:
         budget_detail: Human-readable budget summary.
         family: :class:`Family` classification — the *realisation* decision
             (which per-backend emitter owns this contraction). Orthogonal to
-            ``tier``. Added in P9-2. Defaults to :attr:`Family.FALLBACK` so
+            ``tier``. Defaults to :attr:`Family.FALLBACK` so
             hand-built ``ContractionResult`` instances (e.g. in unit tests
             that exercise the budget path) remain valid without having to
             thread a classification through every construction site.
@@ -426,7 +426,7 @@ def family_emitters_enabled() -> bool:
        tier-only path. Any other non-empty value forces family dispatch.
     2. Module-level :data:`FAMILY_EMITTERS_ENABLED` (default ``True``).
 
-    The env-var override exists so the P9-2 equivalence tests can exercise
+    The env-var override exists so the family-emitter equivalence tests can exercise
     the legacy path in a subprocess without restarting the interpreter.
     """
     env = os.environ.get("MECHDSL_FAMILY_EMITTERS")

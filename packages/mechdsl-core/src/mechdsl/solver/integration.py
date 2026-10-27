@@ -1,11 +1,9 @@
 """Solver integration layer — single mode-selector entry point.
 
-Per recovery plan Phase 6 (R5.2)
-``dev/plans/recovery_plan_latex_contract.md`` line 318:
 :func:`select_linear_solver` is the integration-layer hook that callers
 (tests, future Newton wiring) use to request the imported fallback or the
 ``algo2code``-generated PCG without reaching past the interface. The default
-mode remains ``"fallback"`` until the generated path is stabilised by P6-3.
+mode remains ``"fallback"`` until the generated path is stabilised.
 """
 
 from __future__ import annotations

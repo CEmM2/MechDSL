@@ -29,7 +29,7 @@ def test_compile_latex_docstring_mentions_boundary_condition() -> None:
     assert doc is not None, "compile_latex has no docstring"
     assert "BoundaryCondition" in doc, (
         "compile_latex docstring lost its reference to BoundaryCondition — "
-        "the BC handoff contract paragraph must remain (post_recovery_plan P3-1)."
+        "the BC hand-off contract paragraph must remain."
     )
 
 
@@ -44,7 +44,7 @@ def test_compile_latex_docstring_describes_f_ext_caller_provisioning() -> None:
     lowered = doc.lower()
     assert any(token in lowered for token in CALLER_PROVISIONING_TOKENS), (
         "compile_latex docstring must describe f_ext as caller-provisioned "
-        f"(any of {CALLER_PROVISIONING_TOKENS} expected post_recovery_plan P3-1)."
+        f"(any of {CALLER_PROVISIONING_TOKENS} expected)."
     )
 
 
@@ -56,7 +56,4 @@ def test_compile_latex_docstring_names_dirichlet_and_neumann() -> None:
     doc = inspect.getdoc(compile_latex)
     assert doc is not None, "compile_latex has no docstring"
     for kind in ("Dirichlet", "Neumann"):
-        assert kind in doc, (
-            f"compile_latex docstring must name {kind} as a supported BC kind "
-            "(post_recovery_plan P3-1)."
-        )
+        assert kind in doc, f"compile_latex docstring must name {kind} as a supported BC kind."

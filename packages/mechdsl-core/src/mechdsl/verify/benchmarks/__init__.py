@@ -1,44 +1,44 @@
-"""Benchmark harness for MechDSL physical verification (Phase 10).
+"""Benchmark harness for MechDSL physical verification.
 
 Public API
 ----------
 BenchmarkResult
     Frozen dataclass: displacements, newton_iters, wallclock_s, extras.
 CantileverParameters
-    P10-2: elastic cantilever benchmark setup for TL/UL x material x element matrix.
+    Elastic cantilever benchmark setup for TL/UL x material x element matrix.
 run_cantilever_benchmark
-    P10-2: cantilever tip displacement vs Euler-Bernoulli beam theory.
+    Cantilever tip displacement vs Euler-Bernoulli beam theory.
 CookMembraneParameters
-    P10-3: locked TL + J2 + Hex8 Cook's membrane benchmark setup.
+    Locked TL + J2 + Hex8 Cook's membrane benchmark setup.
 run_cook_membrane_benchmark
-    P10-3: Cook's membrane regression vs committed Hex8 reference.
+    Cook's membrane regression vs committed Hex8 reference.
 PlateWithHoleParameters
-    P10-5: Kirsch plate-with-hole benchmark setup for Hex8/Hex20.
+    Kirsch plate-with-hole benchmark setup for Hex8/Hex20.
 run_plate_with_hole_benchmark
-    P10-5: plate-with-hole stress concentration vs Kirsch K_t = 3.
+    Plate-with-hole stress concentration vs Kirsch K_t = 3.
 run_thick_cylinder_benchmark
-    P10-4: thick-walled internally-pressurised cylinder vs Lame solution.
+    Thick-walled internally-pressurised cylinder vs Lame solution.
 run_necking_bar_benchmark
     Necking bar benchmark (MVP plasticity reference).
 run_notched_bar_benchmark
-    P10-8: notched bar with Lemaitre damage; load-displacement history and
+    Notched bar with Lemaitre damage; load-displacement history and
     damage-field localisation.
 build_notched_bar_mesh
-    P10-8 public mesh builder (Hex8 rectangular bar + semi-circular notch).
+    Notched-bar public mesh builder (Hex8 rectangular bar + semi-circular notch).
 NotchedBarMesh
-    P10-8 mesh bundle (coords, connectivity, boundary sets, notch root).
+    Notched-bar mesh bundle (coords, connectivity, boundary sets, notch root).
 run_hgo_uniaxial
-    P10-9: HGO fiber-reinforced strip uniaxial stretch benchmark.
+    HGO fiber-reinforced strip uniaxial stretch benchmark.
 hgo_analytical_uniaxial_stress
-    P10-9: closed-form HGO uniaxial PK1 stress (reference curve).
+    Closed-form HGO uniaxial PK1 stress (reference curve).
 generate_strip_mesh
-    P10-9: rectangular Hex8 strip mesh generator.
+    Rectangular Hex8 strip mesh generator.
 fiber_direction_field
-    P10-9: per-element uniform fiber-direction field builder.
+    Per-element uniform fiber-direction field builder.
 TaylorImpactParameters
-    P8-1: public Taylor impact benchmark setup with smoke/nightly profiles.
+    Public Taylor impact benchmark setup with smoke/nightly profiles.
 run_taylor_impact_benchmark
-    P8-1: Taylor impact runner — wraps the Phase E7 internal explicit
+    Taylor impact runner — wraps the internal explicit
     runtime + JC return mapping + rigid-wall contact and packs Taylor
     metrics (final length, mushroom radius/diameter, peak PEEQ) into
     ``BenchmarkResult.extras``.

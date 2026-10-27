@@ -1,4 +1,4 @@
-"""Benchmark-local elastic helpers for Phase 10 cantilever prerequisites.
+"""Benchmark-local elastic helpers for the cantilever benchmark.
 
 This module is intentionally internal to `mechdsl.verify.benchmarks`. It
 provides cheap prescribed-displacement elastic assembly checks for the

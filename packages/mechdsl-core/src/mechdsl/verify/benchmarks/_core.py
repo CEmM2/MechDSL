@@ -1,18 +1,16 @@
 """Shared benchmark harness core - BenchmarkResult dataclass and post-processing helpers.
 
-This module is the common substrate for all P10 benchmark tasks:
-  - P10-4: thick cylinder (this module)
-  - P10-6: Cook's membrane
-  - P10-8: damage localisation
-  - P10-9: (reserved)
+This module is the common substrate for the physical benchmarks (thick
+cylinder, Cook's membrane, necking bar, notched bar with damage, HGO strip,
+...).
 
 Design constraints
 ------------------
-- No Taichi in gate-C benchmarks. All computations use the NumPy ref solver.
+- No Taichi in the CPU benchmarks. All computations use the NumPy ref solver.
 - BenchmarkResult is frozen; post-processing helpers return new arrays.
 - element_cauchy_stress evaluates SVK at the element centroid (xi=eta=zeta=0)
-  and returns 3x3 Cauchy stress sigma = (1/J) F S F^T. P10-6/8/9 will import
-  this directly.
+  and returns 3x3 Cauchy stress sigma = (1/J) F S F^T. The other benchmark
+  modules import this directly.
 """
 
 from __future__ import annotations

@@ -136,7 +136,7 @@ du = ti.Vector.field(3, dtype=ti.f64)           # displacement increment
 Kv = ti.Vector.field(3, dtype=ti.f64)           # tangent matvec result
 elem_nodes = ti.field(dtype=ti.i32)             # connectivity
 
-# Quadrature tables as ti.fields (PlanJune14 WI-1): the matrix-free
+# Quadrature tables as ti.fields: the matrix-free
 # tangent matvec kernels run the q-loop at RUNTIME (the ÷8 JIT-budget
 # lever), so they cannot index the Python-list constants GRAD_AT_QUAD /
 # QUAD_WEIGHTS by a runtime q. These device-resident copies are filled
@@ -328,10 +328,10 @@ def tangent_matvec(v_flat: np.ndarray, lam: float, mu: float) -> np.ndarray:
     return Kv.ravel()
 
 # ======================================================================
-# Generated matrix-free SVK tangent @ti.kernel (PlanJune14 P3-2)
+# Generated matrix-free SVK tangent @ti.kernel
 #
 # Applies K(u)·v fully matrix-free (D-A: element tangents never stored),
-# recomputed per matvec. The tangent contraction rides the P3-1
+# recomputed per matvec. The tangent contraction rides the
 # opt_einsum ContractionPlan ('qaI,qiIjJ,qbJ,bj->qai', path [(2, 3), (1, 2), (0, 1)],
 # tier 2). Kinematics use the Tier-1 ti_runtime @ti.func
 # helpers; the kernel targets the ti_runtime apply_A(out, x) seam.
@@ -354,7 +354,7 @@ def svk_tangent_matvec_apply(
     Taichi's implicit atomic add. ``u`` (current Newton iterate) and the
     mesh fields ``x_ref`` / ``elem_nodes`` are read live.
 
-    The tangent contraction is the P3-1 opt_einsum ContractionPlan for
+    The tangent contraction is the opt_einsum ContractionPlan for
     ``qaI,qiIjJ,qbJ,bj->qai`` (operands dNdX, A, dNdX, v), realised as the
     recorded path [(2, 3), (1, 2), (0, 1)] (tier 2, within
     the 512-line @ti.func JIT budget).
@@ -372,7 +372,7 @@ def svk_tangent_matvec_apply(
             for d in ti.static(range(DIM)):
                 X_elem[a, d] = x_ref[nid][d]
 
-        # Quadrature loop (RUNTIME — PlanJune14 WI-1 JIT-budget lever).
+        # Quadrature loop (RUNTIME — the JIT-budget lever).
         # Runtime q divides the per-QP unroll by N_QP (8); physics indices
         # i,I,j,J,a,d stay ti.static. The body can no longer index the
         # Python-list quad constants by a runtime q, so it reads the

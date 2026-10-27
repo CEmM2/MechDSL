@@ -1,7 +1,6 @@
 """Constitutive models.
 
-Support tier (per ``README.md`` Support tiers and
-``dev/plans/recovery_plan_latex_contract.md`` Phase 1 (R0)):
+Support tier (per ``README.md`` Support tiers):
 
 - **MVP-stable**: ``svk`` (St. Venant–Kirchhoff), ``j2_power_law`` (J2 plasticity
   with power-law hardening). Only these two are part of the canonical

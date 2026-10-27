@@ -31,9 +31,9 @@ class ContractionPlan:
         contraction_path: Pairwise contraction order produced by *opt_einsum*.
         estimated_flops: Estimated floating-point operations for the contraction.
         tier: Einsum tier classification (1, 2, or 3) — the scheduling axis.
-        family: Contraction family name (P9-2) — the realisation axis. Stored
+        family: Contraction family name — the realisation axis. Stored
             as the enum *name* string for JSON round-trip safety.  Defaults
-            to ``"FALLBACK"`` so bundles serialised before P9-2 deserialise
+            to ``"FALLBACK"`` so bundles serialised before the family axis existed deserialise
             cleanly; the Taichi/MFEM/MOOSE printers treat ``"FALLBACK"`` as
             the legacy emission path.
     """
@@ -87,22 +87,21 @@ class ArtifactBundle:
     The bundle captures:
     * The serialised ProblemIR (``problem_ir_dict``).
     * The canonical ElementIR contract-surface dict (``element_ir_dict``) —
-      added by recovery-plan P4-5 (R3.5) to reflect the post-P4-1 IR
-      ownership: ``ElementIR`` is the primary semantic carrier and the
+      reflects the IR ownership: ``ElementIR`` is the primary semantic carrier and the
       ``ContractionPlan`` tuple is the derived optimizer view. Defaults to
-      an empty dict so pre-P4-5 bundles round-trip cleanly.
+      an empty dict so older bundles round-trip cleanly.
     * Element IR metadata (``element_ir_summary``) — legacy summary kept
-      for back-compat with pre-P4-5 golden files. Excludes callable basis
+      for back-compat with older golden files. Excludes callable basis
       functions that cannot be serialised.
     * Optimised contraction plans (``contraction_plans``) — derived view.
     * The emitted Taichi source code (``emitted_source``).
     * Free-form ``metadata`` (commit hash, timestamps, compiler version, …).
 
-    Ownership hierarchy (post-P4-5):
+    Ownership hierarchy:
 
         problem_ir_dict   ──primary semantic input
         element_ir_dict   ──primary semantic carrier (ElementIR with
-                            P4-1 contract enrichment)
+                            contract enrichment)
         element_ir_summary──legacy summary, derived from element_ir_dict
         contraction_plans ──derived optimizer view over element_ir_dict
 
@@ -237,8 +236,8 @@ class ArtifactBundle:
     def to_dict(self) -> dict[str, Any]:
         """Full serialisation to a JSON-compatible dict.
 
-        Always emits ``element_ir_dict`` (the P4-5 canonical contract
-        surface) so post-P4-5 consumers see the primary semantic carrier;
+        Always emits ``element_ir_dict`` (the canonical contract
+        surface) so consumers see the primary semantic carrier;
         legacy ``element_ir_summary`` rides alongside for back-compat.
         """
         return {
@@ -257,7 +256,7 @@ class ArtifactBundle:
 
         Raises ``KeyError`` when required fields (``problem_ir_dict``,
         ``element_ir_summary``) are missing and ``TypeError`` on structural
-        problems. ``element_ir_dict`` is optional — pre-P4-5 bundles
+        problems. ``element_ir_dict`` is optional — older bundles
         rebuild with an empty dict so legacy goldens continue to round-trip.
         """
         missing = [k for k in ("problem_ir_dict", "element_ir_summary") if k not in d]

@@ -136,7 +136,7 @@ du = ti.Vector.field(3, dtype=ti.f64)           # displacement increment
 Kv = ti.Vector.field(3, dtype=ti.f64)           # tangent matvec result
 elem_nodes = ti.field(dtype=ti.i32)             # connectivity
 
-# Quadrature tables as ti.fields (PlanJune14 WI-1): the matrix-free
+# Quadrature tables as ti.fields: the matrix-free
 # tangent matvec kernels run the q-loop at RUNTIME (the ÷8 JIT-budget
 # lever), so they cannot index the Python-list constants GRAD_AT_QUAD /
 # QUAD_WEIGHTS by a runtime q. These device-resident copies are filled
@@ -419,14 +419,14 @@ def tangent_matvec(v_flat: np.ndarray, lam: float, mu: float,
     return Kv.ravel()
 
 # ======================================================================
-# Generated matrix-free J2 algorithmic-tangent @ti.kernel (PlanJune14 P5-1)
+# Generated matrix-free J2 algorithmic-tangent @ti.kernel
 #
 # Applies the J2 ALGORITHMIC CONSISTENT TANGENT K(u)·v fully matrix-free
 # (D-A: element tangents never stored), recomputed per matvec. The tangent
 # is the linearisation of the radial-return map (NOT d2Psi/dE2 — J2 is
 # dissipative; see .claude/rules/symbolic.md). History alpha[e, q] is read
 # on-device (read-only); it advances only in compute_internal_force. The
-# contraction rides the P3-1 opt_einsum ContractionPlan ('qaI,qiIjJ,qbJ,bj->qai',
+# contraction rides the opt_einsum ContractionPlan ('qaI,qiIjJ,qbJ,bj->qai',
 # path [(2, 3), (1, 2), (0, 1)], tier 2) — the same path as the
 # SVK kernel; kinematics use the Tier-1 ti_runtime @ti.func helpers.
 # ======================================================================
@@ -453,7 +453,7 @@ def j2_tangent_matvec_apply(
     live; ``alpha`` is NOT written (history advances in compute_internal_force).
 
     The tangent is the J2 algorithmic consistent tangent (linearisation of
-    the radial-return map). The contraction is the P3-1 opt_einsum
+    the radial-return map). The contraction is the opt_einsum
     ContractionPlan for ``qaI,qiIjJ,qbJ,bj->qai`` (operands dNdX, A, dNdX, v),
     realised as the recorded path [(2, 3), (1, 2), (0, 1)] (tier 2).
     """
@@ -470,7 +470,7 @@ def j2_tangent_matvec_apply(
             for d in ti.static(range(DIM)):
                 X_elem[a, d] = x_ref[nid][d]
 
-        # Quadrature loop (RUNTIME — PlanJune14 WI-1 JIT-budget lever).
+        # Quadrature loop (RUNTIME — the JIT-budget lever).
         # Runtime q divides the per-QP unroll by N_QP (8); physics indices
         # i,I,j,J,K,M,a,d stay ti.static. The body can no longer index the
         # Python-list quad constants by a runtime q, so it reads the

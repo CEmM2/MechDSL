@@ -5,9 +5,8 @@ a LaTeX source string and produces an :class:`~mechdsl.codegen.artifact.Artifact
 The lower-level :func:`compile` is preserved as a programmatic API that
 takes a pre-built :class:`~mechdsl.ir.mechanics_ir.ProblemIR`.
 
-See ``README.md`` Support tiers and
-``dev/plans/recovery_plan_latex_contract.md`` Phase 2 (R1) for the recovery
-context.
+See ``README.md`` Support tiers for which entry points are MVP-stable and
+which are experimental.
 """
 
 from __future__ import annotations
@@ -81,7 +80,7 @@ def compile_latex(
        frontend entry point that preserves directive-only behaviour while
        rejecting unsupported math-bearing sources before IR construction.
     2. Adapts the resulting context dict to a :class:`ProblemIR` via
-       :meth:`ProblemIR.from_latex_semantics` (fgram P6-1). This is the
+       :meth:`ProblemIR.from_latex_semantics`. This is the
        LaTeX-semantic constructor: its MVP-stable *core* (dim, formulation,
        element type, material, boundaries) is identical to
        :meth:`ProblemIR.from_context`, so the emitted Taichi code is
@@ -104,8 +103,7 @@ def compile_latex(
     ``mechdsl.codegen.moose_printer``) but they are not reachable through
     this façade and are not part of the stable contract.  Reaching those
     surfaces requires calling the experimental printers directly; see
-    ``README.md`` Support tiers and
-    ``dev/plans/recovery_plan_latex_contract.md`` Phase 5 (R4).
+    ``README.md`` Support tiers.
 
     Parameters
     ----------
@@ -114,7 +112,7 @@ def compile_latex(
     profile:
         Compile profile selector. Only ``"mvp"`` is currently accepted;
         other profiles (e.g. extended LaTeX math grammar via NRPyLaTeX,
-        non-canonical backends) are deferred to later recovery phases.
+        non-canonical backends) are not yet available.
     energy_source:
         Optional self-contained nrpylatex strain-energy block (``% declare``
         metric + ``EDD`` strain, then the scalar energy assignment). When
@@ -141,9 +139,9 @@ def compile_latex(
     - **Dirichlet** — fixed displacement components, applied at solve
       time by the runtime adapter.
     - **Neumann** — surface tractions. When the directive carries a
-      numeric traction triple, post_recovery_plan P1-5 emits an
-      ``f_ext`` initialisation kernel (see ``f_ext_kernel`` in
-      *Returns* below) and the bundle is self-contained for that BC.
+      numeric traction triple, the compiler emits an ``f_ext``
+      initialisation kernel (see ``f_ext_kernel`` in *Returns* below)
+      and the bundle is self-contained for that BC.
       Neumann BCs with a symbolic-string traction leave the kernel
       slot empty.
 
@@ -164,9 +162,9 @@ def compile_latex(
     ArtifactBundle
         The same bundle :func:`compile` produces, ready for golden-file
         comparison or Taichi emission. When the parsed problem contains
-        one or more Neumann BCs with numeric traction (post_recovery_plan
-        P1-5), the bundle's optional ``f_ext_kernel`` field carries the
-        emitted ``init_f_ext_from_neumann_<bc>`` kernel source. The kernel
+        one or more Neumann BCs with numeric traction, the bundle's
+        optional ``f_ext_kernel`` field carries the emitted
+        ``init_f_ext_from_neumann_<bc>`` kernel source. The kernel
         signature is parametric in ``f_factor`` (= face_area /
         n_face_nodes) so the runtime mesh adapter supplies the per-node
         weighting at call time. Pure Dirichlet problems and Neumann BCs
@@ -191,8 +189,7 @@ def compile_latex(
         raise ValueError(
             f"compile_latex profile={profile!r} is not supported. "
             f"Allowed profiles: {sorted(ALLOWED_PROFILES)}. "
-            "Broader profile support is planned for later recovery-plan "
-            "phases (see dev/plans/recovery_plan_latex_contract.md)."
+            "Broader profile support is planned."
         )
 
     if energy_source is not None and energy_file is not None:

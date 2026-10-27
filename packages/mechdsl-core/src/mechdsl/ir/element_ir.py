@@ -160,9 +160,9 @@ class GeometrySummary:
     """Per-element geometry summary — single source of truth for downstream.
 
     Captures the element's reference-cell volume, quadrature size, and
-    parametric dimension. Pre-P4-1 these were re-derived from
-    ``ElementIR.element_type`` everywhere that needed them; P4-1 promotes
-    them to a single dataclass so downstream consumers read one value.
+    parametric dimension. These used to be re-derived from
+    ``ElementIR.element_type`` everywhere that needed them; promoting them
+    to a single dataclass means downstream consumers read one value.
     """
 
     n_quad: int
@@ -276,9 +276,9 @@ class LocalForceDescriptor:
     Records the per-element force-vector size and a backend-agnostic
     contraction sketch. The descriptor is documentation-grade today — the
     Taichi printer and other emitters still write the actual contraction
-    inline. P4-1 promotes the layout to a first-class IR object so a future
-    P5-3 (codegen façade) can drive emission from this descriptor instead
-    of the printer's hard-coded knowledge.
+    inline. Promoting the layout to a first-class IR object lets a future
+    codegen façade drive emission from this descriptor instead of the
+    printer's hard-coded knowledge.
     """
 
     n_dof: int  # n_nodes * dim
@@ -364,8 +364,7 @@ class ElementIR:
         element topology and integration rule; Plan B §B5.5 adds the
         hourglass control required to stabilise reduced Hex8.
     geometry, material_eval, local_force, local_tangent
-        Optional execution-contract enrichment introduced by recovery
-        Phase 4 / R3.1 / P4-1. All four default to ``None`` so legacy
+        Optional execution-contract enrichment. All four default to ``None`` so legacy
         callers continue constructing ``ElementIR`` without source changes.
         When populated, they expose the per-element geometry summary,
         constitutive evaluation contract, and local force / tangent layout
@@ -519,7 +518,7 @@ class ElementIR:
         """Deserialize the contract surface, rebuilding basis / quadrature
         from the recorded element_type via the canonical constructors.
 
-        Accepts both legacy dicts (without the P4-1 enrichment keys) and
+        Accepts both legacy dicts (without the execution-contract enrichment keys) and
         enriched dicts. Missing enrichment keys rebuild as ``None``.
         """
         element_type = d["element_type"]
@@ -631,8 +630,8 @@ def create_hex8_element_ir(
     configuration
         ``"reference"`` (default, Plan A) or ``"current"`` (Plan B §B1.3).
         The configuration determines which Jacobian (J0 vs j) downstream
-        emitters will select. P1-1 only carries the tag; P1-2 populates the
-        actual j-Jacobian slots.
+        emitters will select. The tag is carried here; the actual
+        j-Jacobian slots are populated by the kinematics lowering.
     integration_rule
         :attr:`IntegrationRule.FULL` (default, 2x2x2 = 8 Gauss points) or
         :attr:`IntegrationRule.REDUCED` (1-point centre, Plan B §B5.4).

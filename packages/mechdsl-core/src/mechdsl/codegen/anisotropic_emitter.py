@@ -8,8 +8,8 @@ family needs two things it structurally cannot do (see :issue:`288`):
 1. a **data-dependent branch** — the fiber term is gated to tension by the
    Macaulay bracket ``<Ibar4 - 1>`` (active only when ``Ibar4 > 1``); and
 2. a **per-element fiber-direction gather** — the fiber stress depends on a
-   direction ``a`` that is per-element field data (P5-1
-   ``ProblemIR.fiber_field`` -> ``ElementIR.fiber_field``), not authored in the
+   direction ``a`` that is per-element field data
+   (``ProblemIR.fiber_field`` -> ``ElementIR.fiber_field``), not authored in the
    LaTeX, so the constitutive function gains a fiber-direction argument that the
    call site reads from the gathered field.
 

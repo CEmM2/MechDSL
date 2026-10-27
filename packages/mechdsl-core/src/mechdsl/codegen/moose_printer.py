@@ -1,11 +1,10 @@
 """MOOSE backend code printer — ArtifactBundle -> ComputeStressBase subclass.
 
-Support tier: **experimental** (see ``README.md`` Support tiers and
-``dev/plans/recovery_plan_latex_contract.md`` Phase 5 (R4)).
+Support tier: **experimental** (see ``README.md`` Support tiers).
 The MVP-stable canonical compile path is Taichi only; this backend is
 preserved in tree but is not part of the contract surface.
 
-Plan B Phase 8, Task P8-2.  Emits a MOOSE-flavoured C++ material class that
+Emits a MOOSE-flavoured C++ material class that
 subclasses ``ComputeStressBase`` and maps MVP tensor types to MOOSE's
 ``RankTwoTensor`` / ``RankFourTensor``.  The printer also fills a shipped
 ``moose_template/input_template.i`` deck so users get a ready-to-run tension
@@ -138,7 +137,7 @@ def _emit_family_tangent_double_contraction_moose(ctx: EmissionContext) -> None:
 
 def _emit_family_fallback_moose(ctx: EmissionContext) -> None:
     """MOOSE fallback marker. Unused on the SVK Hex8 happy path."""
-    ctx.emit("// (P9-2 fallback: no MOOSE template override)")
+    ctx.emit("// (family fallback: no MOOSE template override)")
 
 
 family_emitters: dict[Family, Callable[..., None]] = {
@@ -460,7 +459,7 @@ def emit_cpp(bundle: ArtifactBundle) -> str:
     ctx.emit(f"void {class_name}::computeQpStress()")
     ctx.emit("{")
     with ctx.indent_block():
-        ctx.emit("// Total-Lagrangian SVK stress update. Plan B Phase 8 MVP.")
+        ctx.emit("// Total-Lagrangian SVK stress update (MVP).")
         ctx.emit("// Reads _mechanical_strain[_qp] (a RankTwoTensor) and emits")
         ctx.emit("// _stress[_qp] = 2*mu*E + lambda*tr(E)*I as a RankTwoTensor.")
         ctx.emit("const RankTwoTensor E = _mechanical_strain[_qp];")

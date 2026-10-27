@@ -1,13 +1,13 @@
 """Plasticity dispatch — algo2code-generated path with imported fallback.
 
-post_recovery_plan Phase 5 (P5-3). The dispatcher's algo2code path now
-genuinely consumes ``algo2code.transpile`` end-to-end: the canonical
+The dispatcher's algo2code path consumes ``algo2code.transpile``
+end-to-end: the canonical
 algpseudocode at ``algo2code/library/algorithms/radial_return_j2.tex`` is transpiled
 to Python at module import time, exec'd into a namespace, and the
 resulting scalar Newton inner loop is invoked from inside the wrapper.
 The imported reference path remains as a feature-flagged fallback.
 
-Phase 5 also landed the algo2code parser fixes (multi-letter scratch
+This path relies on the algo2code parser fixes (multi-letter scratch
 identifiers and binary ``/`` in assignment LHS contexts) plus the
 Taichi codegen scalar-algorithm fix that previously blocked direct
 emission for radial-return.

@@ -1,21 +1,20 @@
-"""Simo and Hughes (1998) necking bar benchmark harness (P10-6).
+"""Simo and Hughes (1998) necking bar benchmark harness.
 
 This module wraps the existing TL + J2 + Hex8 necking bar benchmark from
 `tests/test_benchmarks.py::TestNeckingBar` into a reusable harness function
-that returns a `BenchmarkResult` consistent with the P10-4 pathfinder
+that returns a `BenchmarkResult` consistent with the thick-cylinder benchmark
 (`mechdsl.verify.benchmarks._core.BenchmarkResult`).
 The default TL Hex8 path remains the committed golden regression. The UL Hex8
 cell is enabled through the same injected reference solve and tagged as an
 updated-Lagrangian matrix cell, while lightweight prescribed-displacement smoke
-support exercises the Phase 10 J2 assembly helper for finite history checks.
+support exercises the benchmark-local J2 assembly helper for finite history checks.
 
 Reference
 ---------
 The load-displacement curve is compared against a committed golden file
 (`tests/golden/necking_bar_reference.npz`) generated from the same handwritten
-plastic reference kernel. The 2% tolerance is the MVP acceptance criterion
-from Simo and Hughes (1998), Chapter 4, and from
-dev/design_docs/07-CONVENTIONS.md section 6.
+plastic reference kernel. The 2% tolerance follows Simo and Hughes (1998),
+Chapter 4, and the project's verification conventions.
 """
 
 from __future__ import annotations
@@ -290,7 +289,7 @@ def _run_reference_necking(
 
 
 def _run_prescribed_necking_smoke(params: NeckingBarParameters) -> BenchmarkResult:
-    """Run a cheap necking-bar history update through Phase 10 J2 helpers."""
+    """Run a cheap necking-bar history update through the benchmark-local J2 helpers."""
 
     raw_mesh = generate_necking_bar_mesh(
         params.nx,

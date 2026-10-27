@@ -1,8 +1,8 @@
 """Smoke-registry runner + baseline comparison CLI.
 
 This module is the canonical entry point invoked by nightly CI to enforce the
-"no >10% regression vs the committed baseline" gate (P9-2 acceptance
-criterion). It is also useful as a local dev verification step:
+"no >10% regression vs the committed baseline" gate. It is also useful as a
+local dev verification step:
 
 ::
 
@@ -50,7 +50,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m mechdsl.verify.perf.run_compare",
         description=(
-            "Run the Phase 10 smoke benchmark registry and compare against "
+            "Run the smoke benchmark registry and compare against "
             "the committed baseline. Exit non-zero on >tolerance regression."
         ),
     )

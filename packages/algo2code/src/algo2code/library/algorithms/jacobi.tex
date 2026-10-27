@@ -1,4 +1,4 @@
-% Point-Jacobi preconditioner apply (PlanJune14 P4-1).
+% Point-Jacobi preconditioner apply.
 %
 % Computes the Jacobi (diagonal) preconditioned vector:
 %
@@ -9,8 +9,8 @@
 % small positive guard against near-zero diagonal entries. All operands are
 % degree-of-freedom vectors (one value per node or per component).
 %
-% Grammar note (2026-06-15, P4-1):
-% -----------------------------------
+% Grammar note:
+% -------------
 % algo2code currently lowers vector/vector division (`z = r / d`) to the Python
 % expression `z = (r / d)`, which is not runnable for `ti.Vector.field` operands
 % (Taichi raises TypeError: unsupported operand type(s) for /: MatrixField /
@@ -18,7 +18,7 @@
 % callable-matvec, but has no `vec_ediv` (elementwise divide) primitive.
 %
 % The clean fix is a new `vec_ediv(z, r, d, eps)` primitive in ti_runtime
-% vector_ops — exactly what P4-1 adds.  The generated body below is therefore
+% vector_ops.  The generated body below is therefore
 % realised as a thin `@ti.data_oriented` adapter
 % (`mechdsl.solver.jacobi_preconditioner.GeneratedJacobiPreconditioner`) whose
 % `_apply` kernel calls `ti_runtime.vector_ops.ediv(z, r, d, eps)` — a

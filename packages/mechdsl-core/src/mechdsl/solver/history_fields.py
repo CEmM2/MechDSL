@@ -96,7 +96,7 @@ def create_lemaitre_history(n_elem: int, n_qp: int = 8) -> HistoryFields:
     """Create history fields for Lemaitre damage coupled to J2 power-law plasticity.
 
     Extends :func:`create_j2_history` with two additional fields specific to
-    the damage branch (Plan B phase B6, task P6-2):
+    the damage branch (Plan B phase B6):
 
     - ``"alpha"``: equivalent plastic strain ``(n_elem, n_qp)``
     - ``"plastic_strain"``: plastic strain tensor in Voigt ``(n_elem, n_qp, 6)``

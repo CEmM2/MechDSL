@@ -29,8 +29,8 @@ Two frontend realities are handled here:
   to the identity, collapsing ``nrpylatex``'s symbolic ``gUU = inverse(gDD)``
   to delta with no determinant denominators.
 
-Named-invariant authoring (P2-1)
---------------------------------
+Named-invariant authoring
+-------------------------
 A strain energy may instead be authored in *named invariants* of the right
 Cauchy-Green tensor ``C = 2E + I`` — ``\\bar I_1``, ``\\bar I_2``, ``J``, … —
 so that ``nrpylatex`` never has to parse ``\\det`` / ``\\log`` (a frontend
@@ -61,8 +61,8 @@ authored as     symbol                                      definition on C = 2E
 ``\\mathrm{Jdet}``   ``Jdet``   ``sqrt(det C)``
 ``\\mathrm{Ibar1}``  ``Ibar1``  ``I1 * I3^{-1/3}``
 ``\\mathrm{Ibar2}``  ``Ibar2``  ``I2 * I3^{-2/3}``
-``\\mathrm{I4f}``    ``I4f``    ``a·C·a``      (fiber a — Phase 5 / P5-1)
-``\\mathrm{I5f}``    ``I5f``    ``a·C²·a``     (fiber a — Phase 5 / P5-1)
+``\\mathrm{I4f}``    ``I4f``    ``a·C·a``      (fiber direction a)
+``\\mathrm{I5f}``    ``I5f``    ``a·C²·a``     (fiber direction a)
 ==============  ==========================================  ============================
 """
 
@@ -334,16 +334,16 @@ def _bind_invariants(
         if name in _FIBER_INVARIANTS:
             raise EnergyDerivationError(
                 f"invariant {name!r}{loc} ({_FIBER_INVARIANTS[name]}) requires a "
-                "fiber direction; anisotropic I4/I5 fiber plumbing is planned for "
-                "Phase 5 (P5-1)."
+                "fiber direction; use the fiber-aware derivation in "
+                "mechdsl.symbolic.anisotropic_energy for I4/I5 energies."
             )
         binder = _INVARIANT_REGISTRY.get(name)
         if binder is None:
             raise EnergyDerivationError(
                 f"invariant {name!r}{loc} is not a supported named invariant; the "
                 f"authoring contract covers {sorted(_INVARIANT_REGISTRY)} "
-                "(isotropic) and I4/I5 fiber invariants are planned for "
-                "Phase 5 (P5-1)."
+                "(isotropic); I4/I5 fiber invariants need the fiber-aware derivation "
+                "in mechdsl.symbolic.anisotropic_energy."
             )
         if c is None:
             c = _c_from_strain(strain)

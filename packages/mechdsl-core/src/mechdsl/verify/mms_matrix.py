@@ -1,4 +1,4 @@
-"""Matrix-capable MMS convergence helpers for Phase 10.
+"""Matrix-capable MMS convergence helpers for the benchmark suite.
 
 This module intentionally does not modify ``run_mms_convergence(lam, mu, ...)``.
 It adds a separate result surface for the broader element/material MMS matrix.
@@ -49,7 +49,7 @@ _DEFAULT_MATRIX: tuple[MMSMatrixCase, ...]
 
 @dataclass(frozen=True)
 class MMSMatrixCase:
-    """One element/material entry in the Phase 10 MMS matrix."""
+    """One element/material entry in the MMS matrix."""
 
     element_type: MMSElementType
     material: MMSMaterial
@@ -94,7 +94,7 @@ class MMSMatrixResult:
 
 
 def default_mms_matrix_cases() -> tuple[MMSMatrixCase, ...]:
-    """Return the planned Phase 10 MMS matrix entries."""
+    """Return the default MMS matrix entries."""
 
     return _DEFAULT_MATRIX
 
@@ -107,7 +107,7 @@ def run_mms_convergence_matrix(
     A: float = 1.0e-3,
     tol: float = 0.1,
 ) -> MMSMatrixResult:
-    """Run the additive Phase 10 MMS matrix API.
+    """Run the additive MMS matrix API.
 
     The existing Hex8 SVK full-solve path remains available through the legacy
     API and is used for cases with ``policy='svk_full_solve'``. The default

@@ -9,7 +9,7 @@ This is the *skeleton* CLI: it wires the ``mechdsl-lawgen compile <law.yaml>
 mode — prints the *emission plan* without writing any files.
 
 There is deliberately **no** lowering / codegen here. Turning the R/H/Q
-expressions into Taichi source is Phase 2's job (``taichi_printer`` is not
+expressions into Taichi source is the lowerer's job (``taichi_printer`` is not
 imported). Likewise there is no ``import ticonstit`` and no NumerixWeave import:
 the MechDSL↔NumerixWeave seam is committed artifacts only. The CLI depends only
 on :mod:`mechdsl.lawgen`, the standard library, :mod:`yaml`, and :mod:`sympy`.
@@ -364,7 +364,7 @@ def format_emission_plan(
 ) -> str:
     """Render the human-readable emission plan for ``--dry-run``.
 
-    The exact line prefixes below are a stable contract: Phase 4's end-to-end
+    The exact line prefixes below are a stable contract: the end-to-end CLI
     test asserts against them. Keep them in sync if you change the format.
     """
     paths = _planned_paths(out_dir, spec)
@@ -485,7 +485,7 @@ def _emit(
 
     Byte-stability: the emitted carrier, manifest, and test are deterministic for a
     fixed spec (no timestamps / absolute paths embedded), so two runs produce
-    byte-identical output — the P4-1 determinism acceptance criterion.
+    byte-identical output — the determinism guarantee the generated artifacts carry.
     """
     paths = _planned_paths(out_dir, spec)
     module = snake_case_module_name(spec.name)

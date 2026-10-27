@@ -1,4 +1,4 @@
-"""Uniform element-construction API (Plan B §B5.2, task P5-6).
+"""Uniform element-construction API (Plan B §B5.2).
 
 The :class:`ElementFactory` collapses the four element constructors
 (:func:`mechdsl.ir.element_ir.create_hex8_element_ir`,
@@ -20,8 +20,9 @@ Implementation notes
   dataclass produced by the underlying constructor — no caching, no
   mutation.
 
-See ``dev/design_docs/PLAN-B.md §B5.2`` for the API shape and
-``dev/tasks/PLAN-B/json/P5-6.json`` for the supported-triple matrix.
+The supported ``(topology, integration, hourglass)`` triples are the keys of
+the dispatch table below; see ``dev/design_docs/PLAN-B.md §B5.2`` for the API
+shape.
 """
 
 from __future__ import annotations

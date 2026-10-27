@@ -10,7 +10,7 @@ implementations live here once; named-coordinate constructors
 (:func:`cylindrical_basis`, :func:`spherical_basis`) and basis-vector
 conveniences (:func:`metric_from_bases`, :func:`reciprocal_bases`,
 :func:`verify_biorthogonality`, :func:`christoffel_from_bases`) compose those
-primitives rather than duplicating the math (absorbed from constkit, P1-2).
+primitives rather than duplicating the math (absorbed from constkit).
 """
 
 from __future__ import annotations

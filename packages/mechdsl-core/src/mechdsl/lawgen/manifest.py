@@ -1,12 +1,12 @@
-"""Manifest emitter — writes ``_manifest.json`` matching Cycle 0's schema (Task P3-3).
+"""Manifest emitter — writes ``_manifest.json`` matching Cycle 0's schema.
 
 Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
 Taichi carrier).
 
 :func:`emit_manifest` produces one *laws entry* — and, via :func:`write_manifest`,
 merges it into the ``{"_schema": {...}, "laws": [...]}`` file that
-NumerixWeave's auto-register loop reads and that Task P4-2 relies on for
-provenance (P4-2's own gate is run-to-run ``source_hash`` determinism, not a
+NumerixWeave's auto-register loop reads and that provenance checks rely on
+(the provenance gate is run-to-run ``source_hash`` determinism, not a
 whole-file byte-diff against Cycle 0). The authoritative schema is the real
 Cycle 0 ``libs/ticonstit/src/ticonstit/generated/_manifest.json`` in the
 NumerixWeave repo. Its ``laws[0]`` entry has **nine** fields, emitted in
@@ -23,25 +23,25 @@ Nothing here imports NumerixWeave or ``ticonstit``. The MechDSL↔NumerixWeave
 seam is committed artifacts only: the manifest we *emit* is compared against the
 real file by reading that file's **bytes** (in the tests), never by importing it.
 
-``source_hash`` convention — hash the INPUT formula string (P4-2 reconciliation)
---------------------------------------------------------------------------------
-# NOTE (P4-2): Cycle 0's ``_manifest.json`` defines ``source_hash`` as the
-# SHA-256 of the **generator INPUT** — the canonical R formula string
+``source_hash`` convention — hash the INPUT formula string
+-----------------------------------------------------------
+# NOTE: Cycle 0's ``_manifest.json`` defines ``source_hash`` as the SHA-256 of
+# the **generator INPUT** — the canonical R formula string
 # (``"R = sigma0 + Q*(1-exp(-b*p)) + K*((p+p0)**n - p0**n)"`` → ``7b5af3a8…``),
-# NOT the emitted-output-lines hash that P2-4's
+# NOT the emitted-output-lines hash that
 # :func:`~mechdsl.lawgen.sympy_to_taichi.compute_source_hash` /
 # :attr:`~mechdsl.lawgen.sympy_to_taichi.LoweredExpr.source_hash` produces.
 # This module therefore hashes the input formula string via
 # :func:`compute_input_formula_hash` and deliberately does **not** consume the
-# P2-4 emitted-lines hash for the manifest. P2-4's hash remains valid provenance
-# of the *output*; the manifest fingerprints the *input* so NumerixWeave can
-# verify the law was generated from the formula it claims. P4-1 supplies the
-# exact canonical formula string (from the law yaml's ``R`` formula) — the
-# canonical-string convention this module locks is: the formula string is hashed
-# **verbatim, UTF-8, no normalisation** (no whitespace collapsing, no operator
-# reordering). Cycle 0's value is reproduced exactly under this convention (see
-# ``test_manifest.py`` / ``test_P3-3.py``), so P4-1 must pass the formula string
-# with the same spelling the yaml carries.
+# lowerer's emitted-lines hash for the manifest. That hash remains valid
+# provenance of the *output*; the manifest fingerprints the *input* so
+# NumerixWeave can verify the law was generated from the formula it claims. The
+# carrier emitter supplies the exact canonical formula string (from the law
+# yaml's ``R`` formula) — the canonical-string convention this module locks is:
+# the formula string is hashed **verbatim, UTF-8, no normalisation** (no
+# whitespace collapsing, no operator reordering). Cycle 0's value is reproduced
+# exactly under this convention (see ``test_manifest.py``), so callers must
+# pass the formula string with the same spelling the yaml carries.
 """
 
 from __future__ import annotations
@@ -104,8 +104,8 @@ def compute_input_formula_hash(formula: str) -> str:
     Parameters
     ----------
     formula:
-        The canonical input formula string (P4-1 supplies it from the law yaml's
-        ``R`` formula). Must be a non-empty string.
+        The canonical input formula string (the carrier emitter supplies it from
+        the law yaml's ``R`` formula). Must be a non-empty string.
 
     Returns
     -------
@@ -128,7 +128,7 @@ def formula_matches_spec(input_formula: str, spec: PlasticityCarrierSpec) -> boo
     / ``parameters`` come from the ``spec``. Those two inputs are independent, so
     nothing structurally guarantees the hashed formula is the same law the spec
     describes — a stale or mistyped ``input_formula`` would fingerprint the *wrong*
-    law without complaint. This helper closes that gap for P4-1: parse the formula
+    law without complaint. This helper closes that gap: parse the formula
     (stripping an optional ``R =`` / ``R:=`` left-hand side), sympify the RHS, and
     check it is symbolically equal to ``spec.R``.
 
@@ -137,8 +137,8 @@ def formula_matches_spec(input_formula: str, spec: PlasticityCarrierSpec) -> boo
     ``Q_inf`` — so for the *transitional* SwiftVoce law the formula variable names
     deliberately differ from ``spec.parameters`` and this check will return
     ``False``. That is exactly why :func:`emit_manifest`'s ``check_matches_spec``
-    is **opt-in** (default off): turn it on once P4-1 authors a law whose formula
-    spelling matches the spec's own symbols, so a drifted formula fails loud.
+    is **opt-in** (default off): turn it on for a law whose formula spelling
+    matches the spec's own symbols, so a drifted formula fails loud.
 
     Returns
     -------
@@ -191,8 +191,8 @@ def _split_parameters(
     flat list):
 
     * **Explicit** — when ``required`` and/or ``optional`` are given, they are
-      used verbatim (order preserved). This is the path P4-1 takes: the law yaml
-      states which parameters are required vs optional. Every name in
+      used verbatim (order preserved). This is the path the carrier emitter
+      takes: the law yaml states which parameters are required vs optional. Every name in
       ``required``/``optional`` must appear in the spec's ``parameters`` (no
       inventing parameters the law does not declare), the two lists must be
       disjoint, and together they must be a **complete partition** — every
@@ -205,7 +205,7 @@ def _split_parameters(
       carrier lists exactly the parameters its expressions reference, so absent
       an explicit yaml split every listed parameter is load-bearing (required).
       This keeps a spec-only call (tests, quick emission) valid while letting
-      P4-1 override with the real required/optional partition.
+      the carrier emitter override with the real required/optional partition.
     """
     all_params = list(parameters)
     if required is None and optional is None:
@@ -262,7 +262,7 @@ def emit_manifest(
     input_formula:
         The canonical generator-input formula string. Its SHA-256 (verbatim, UTF-8)
         is the entry ``source_hash`` — the INPUT-formula hash Cycle 0 uses, NOT the
-        P2-4 emitted-lines hash (see the module note). ``input_formula`` and ``spec``
+        lowerer's emitted-lines hash (see the module note). ``input_formula`` and ``spec``
         are independent inputs; pass ``check_matches_spec=True`` to assert the
         hashed formula actually is ``spec.R``.
     check_matches_spec:
@@ -271,11 +271,11 @@ def emit_manifest(
         a stale/mistyped formula fingerprints the wrong law loudly instead of
         silently. Default ``False`` because, during the Cycle 0 transition, the
         published formula string deliberately spells parameters differently from the
-        spec's material card (``Q`` vs ``Q_inf``); P4-1 turns it on once a law's
+        spec's material card (``Q`` vs ``Q_inf``); turn it on for a law whose
         formula spelling matches its own symbols (see :func:`formula_matches_spec`).
     target_contract:
         The **runtime** contract the law implements (e.g. ``"VoceHardeningModel"``).
-        Supplied explicitly by P4-1 from the law yaml — this is deliberately NOT
+        Supplied explicitly by the caller from the law yaml — this is deliberately NOT
         ``TiconstitTarget.contract_id`` (the emission-contract id), which is a
         different thing.
     exports:
@@ -285,7 +285,7 @@ def emit_manifest(
         (e.g. ``"swift_voce.py"``); its stem is the imported submodule.
     tests:
         Test file paths that pin the generated law (golden / FD-derivative /
-        guard-audit) — the paths P3-2's ``emit_tests`` writes.
+        guard-audit) — the paths the test emitter's ``emit_tests`` writes.
     kind:
         Registry bucket. Defaults to ``"plasticity"`` (the only Cycle 0 bucket).
     required, optional:
@@ -360,7 +360,7 @@ def write_manifest(
     ``{required, optional}``), which is insertion-ordered, *not* alphabetical.
     ``sort_keys=True`` would gratuitously reorder the keys away from Cycle 0, so
     a structural diff against the hand-authored artifact would differ only in the
-    field *values* P4-1 supplies, never in key order.
+    field *values* the caller supplies, never in key order.
 
     Parameters
     ----------

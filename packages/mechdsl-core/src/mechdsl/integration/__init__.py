@@ -5,13 +5,13 @@ bridge) call.  It wraps existing MechDSL entry points behind a minimal,
 machine-readable API and **never** triggers Taichi initialisation on import
 or during the emit/transpile paths.
 
-Five entry points (implemented across tasks P1-1 … P1-4):
+Five entry points:
 
 - :func:`capabilities` — declare supported profiles, backends, actions.
 - :func:`model_catalog` — enumerate all constitutive models with metadata.
-- :func:`compile_from_sources` — wraps ``mechdsl.compile_latex`` (P1-2).
-- :func:`transpile_algorithm` — wraps ``algo2code.transpile`` (P1-3).
-- :func:`verify` — wraps the verify harness; Taichi-paying path (P1-4).
+- :func:`compile_from_sources` — wraps ``mechdsl.compile_latex``.
+- :func:`transpile_algorithm` — wraps ``algo2code.transpile``.
+- :func:`verify` — wraps the verify harness; Taichi-paying path.
 
 **Taichi-free guarantee (Tier-1 contract):**
 Importing this module and calling :func:`capabilities` or

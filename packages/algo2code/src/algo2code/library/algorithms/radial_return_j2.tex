@@ -1,4 +1,4 @@
-% post_recovery_plan Phase 5 (P5-1): J2 radial-return algpseudocode source.
+% J2 radial-return algpseudocode source.
 %
 % Scalar Newton inner loop for J2 plasticity with power-law isotropic
 % hardening. Solves for the plastic multiplier increment dl given the
@@ -14,11 +14,10 @@
 %
 % This is the production algo2code source consumed by
 % ``mechdsl.lib.plasticity.radial_return`` via ``algo2code.transpile``
-% (post_recovery_plan Phase 5 P5-3 — algo2code expr_parser bugs that
-% previously deferred direct emission landed in the same phase under
-% P5-1's parser fix). Bit-equality with the imported reference path is
-% asserted by
-% ``packages/mechdsl-core/tests/test_j2_radial_return_parity.py`` (P5-4).
+% (the algo2code expr_parser bugs that previously deferred direct emission
+% were fixed alongside this source). Bit-equality with the imported reference
+% path is asserted by
+% ``packages/mechdsl-core/tests/test_j2_radial_return_parity.py``.
 %
 % Inputs
 % ------

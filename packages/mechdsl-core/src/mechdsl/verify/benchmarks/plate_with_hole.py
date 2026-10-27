@@ -1,4 +1,4 @@
-"""Kirsch plate-with-hole benchmark harness (P10-5).
+"""Kirsch plate-with-hole benchmark harness.
 
 Implements a quarter-plate mesh with a circular hole centred at the origin,
 loaded by uniform tension on the far ``x = W`` boundary. The benchmark uses
@@ -9,7 +9,7 @@ symmetry on ``x = 0`` and ``y = 0`` and compares the peak hole-edge
 Scope
 -----
 This harness is benchmark-local and bypasses the still-Hex8-only lowering /
-codegen surface. It builds directly on the Phase 5 element basis/quadrature
+codegen surface. It builds directly on the multi-element basis/quadrature
 support via :class:`mechdsl.ir.element_factory.ElementFactory`, which is
 enough for the benchmark's reference-style solve in the ``verify`` layer.
 """

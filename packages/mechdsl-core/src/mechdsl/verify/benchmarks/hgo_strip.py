@@ -1,4 +1,4 @@
-"""Fiber-reinforced strip benchmark (TL x HGO x Hex8) — Task P10-9.
+"""Fiber-reinforced strip benchmark (TL x HGO x Hex8).
 
 A unit (or small) rectangular Hex8 strip is loaded uniaxially either along the
 fiber direction (longitudinal) or perpendicular to it (transverse).  The

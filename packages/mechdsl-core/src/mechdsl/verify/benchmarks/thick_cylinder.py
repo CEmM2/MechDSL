@@ -1,4 +1,4 @@
-"""Thick-walled internally-pressurised cylinder benchmark (P10-4).
+"""Thick-walled internally-pressurised cylinder benchmark.
 
 Implements:
   - Quarter-cylinder structured Hex8 mesh generator (theta in [0, pi/2])
