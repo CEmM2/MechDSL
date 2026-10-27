@@ -17,9 +17,11 @@ individual stages are exported too (`parse_algorithm`, `infer_types`, `generate_
 
 ## The algorithm library
 
-Canonical algorithms live in `algo2code.library`, each backed by a `.tex` source under
-`dev/algorithms/`. Every module exposes the verbatim LaTeX as a constant, a getter, and a
-convenience transpile wrapper.
+Canonical algorithms live in `algo2code.library`, each backed by a `.tex` source bundled
+as package data under `algo2code/library/algorithms/` (so they are available from an
+installed wheel). Every module exposes the verbatim LaTeX as a constant, a getter, and a
+convenience transpile wrapper; `algo2code.library.algorithm_source("pcg.tex")` reads any
+bundled source by name.
 
 | Algorithm | Module | LaTeX constant | Wrapper |
 |---|---|---|---|

@@ -10,7 +10,7 @@ Tolerance source
 The plan (line 267-268) requires "tolerance derived from imported-path
 baseline, not absolute zero". For Phase 5 the algo2code path's runtime
 body is a verbatim translation of the imported implementation (the
-algo2code parser bugs documented in ``dev/algorithms/radial_return_j2.tex``
+algo2code parser bugs documented in ``algo2code/library/algorithms/radial_return_j2.tex``
 defer direct emission), so the parity is bit-equal *today*. The
 tolerance constant ``BASELINE_TOL`` is set conservatively to
 ``1e-12`` — a slack against the imported Newton tolerance — so a

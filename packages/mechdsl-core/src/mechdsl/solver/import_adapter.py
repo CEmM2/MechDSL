@@ -494,7 +494,7 @@ def make_seam_solver(
 
     This is the selectable entry point for the PlanJune14 Phase-4 *Option 1*
     all-Taichi seam path: a generated matrix-free PCG (transpiled from
-    ``dev/algorithms/pcg.tex`` via ``algo2code`` in runtime mode and injected
+    ``algo2code/library/algorithms/pcg.tex`` via ``algo2code`` in runtime mode and injected
     through ``ti_runtime`` ``set_solver``) solving against an injected
     matrix-free operator (e.g. the P3-2 generated SVK tangent) with an optional
     generated preconditioner (e.g. the P4-1 Jacobi).

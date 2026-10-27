@@ -160,7 +160,7 @@ class Integrator:
 
     The body advances ``(u, v, a)`` one step in place, calling the injected
     acceleration solve plus the :mod:`ti_runtime.vector_ops` primitives — the
-    shape ``dev/algorithms/newmark.tex`` transpiles to.
+    shape ``algo2code/library/algorithms/newmark.tex`` transpiles to.
     """
 
     def __init__(self) -> None:

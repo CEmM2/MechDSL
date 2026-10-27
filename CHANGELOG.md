@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed — runtime resources ship inside the wheels
+
+- **Canonical algorithm sources are package data**: the six `algpseudocode` sources (`jacobi`, `newmark`, `pcg`, `radial_return_j2`, `radial_return_j2_kinematic`, `radial_return_j2_mixed`) moved from the repository-only `dev/algorithms/` to `algo2code/library/algorithms/` and are read via `importlib.resources`. Installed from PyPI, `mechdsl.lib.plasticity{,_kinematic,_mixed}` and `algo2code.library.radial_return_j2{,_kinematic,_mixed}` previously raised `FileNotFoundError` at import time (they walked up from `__file__` looking for the repo checkout); `mechdsl.solver.seam_solve` / `seam_integrate` had the same latent defect behind their Taichi import.
+- **`algo2code.library.algorithm_source(name)` / `algorithm_source_path(name)` / `ALGORITHM_SOURCES`**: new accessors for the bundled sources; `mechdsl.solver.pcg_tex_path()` / `newmark_tex_path()` now resolve through them.
+- **Regression test**: `packages/mechdsl-core/tests/test_wheel_import.py` builds both wheels, installs them into a fresh venv without the `[verify]` extra, and imports every module (missing `taichi` / `ti_runtime` is the only accepted skip); `packages/algo2code/tests/test_library_sources.py` checks the bundled sources in-process.
+
 ## [0.2.1] - 2026-08-31
 
 ### Changed — packaging for PyPI
