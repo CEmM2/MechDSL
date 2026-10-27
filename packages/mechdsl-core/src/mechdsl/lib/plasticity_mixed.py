@@ -10,7 +10,7 @@ against the EXPANDING radius ``sigma_y(alpha)``::
     f = ||xi||_eq - sigma_y(alpha),   sigma_y(alpha) = sigma_y0 + K*alpha^n
 
 The scalar plastic-multiplier solve is the ``algo2code``-transpiled
-function from ``dev/algorithms/radial_return_j2_mixed.tex`` (loaded via
+function from ``algo2code/library/algorithms/radial_return_j2_mixed.tex`` (loaded via
 :func:`algo2code.library.radial_return_j2_mixed.transpile_radial_return_j2_mixed`).
 Because the isotropic part is a nonlinear power law in
 ``alpha = alpha_old + dl`` the discrete consistency condition is

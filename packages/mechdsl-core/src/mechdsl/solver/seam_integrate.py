@@ -1,7 +1,7 @@
 """Generated Newmark-beta time integration over the ``ti_runtime`` seam (PlanJune14 P6-1).
 
 The temporal twin of :mod:`mechdsl.solver.seam_solve`: it transpiles the
-canonical Newmark-beta step authored in ``dev/algorithms/newmark.tex`` via
+canonical Newmark-beta step authored in ``algo2code/library/algorithms/newmark.tex`` via
 ``algo2code`` in *runtime mode*, imports the generated ``newmark_step`` body, and
 binds it through the ``ti_runtime`` ``TimeIntegrationContext.set_integrator``
 seam. The resulting integrator advances a dynamic state ``(u, v, a)`` over
@@ -42,24 +42,25 @@ from types import ModuleType
 from typing import TYPE_CHECKING
 
 from algo2code import transpile
+from algo2code.library.sources import algorithm_source, algorithm_source_path
 from mechdsl.solver._seam_runtime import import_generated_module, strip_ti_init
 
 if TYPE_CHECKING:
     from ti_runtime.seams import TimeIntegrationContext
 
-# Repo-relative path to the canonical Newmark algorithm source.  This file lives
-# at packages/mechdsl-core/src/mechdsl/solver/seam_integrate.py, so the repo root
-# is five parents up (same depth as seam_solve.py).
-_NEWMARK_TEX_PATH = Path(__file__).resolve().parents[5] / "dev" / "algorithms" / "newmark.tex"
+# The canonical Newmark algorithm source ships as package data inside
+# ``algo2code`` (``algo2code/library/algorithms/newmark.tex``), so it is
+# available from an installed wheel without a source checkout.
+_NEWMARK_TEX_NAME = "newmark.tex"
 
 
 def newmark_tex_path() -> Path:
     """Return the path to the canonical Newmark-beta LaTeX source."""
-    return _NEWMARK_TEX_PATH
+    return algorithm_source_path(_NEWMARK_TEX_NAME)
 
 
 def transpile_seam_newmark() -> str:
-    """Transpile ``dev/algorithms/newmark.tex`` to runtime-mode Taichi source.
+    """Transpile ``algo2code/library/algorithms/newmark.tex`` to runtime-mode Taichi source.
 
     The module-level ``ti.init`` line is stripped: the **caller** owns Taichi
     initialisation (device/arch), so the generated body is device-agnostic — it
@@ -71,7 +72,7 @@ def transpile_seam_newmark() -> str:
     ``ti_runtime.vector_ops`` AXPBY/copy calls plus the injected in-place
     acceleration solve ``solve_a(u_pred, v_pred, a_out)`` — no NumPy.
     """
-    source = _NEWMARK_TEX_PATH.read_text(encoding="utf-8")
+    source = algorithm_source(_NEWMARK_TEX_NAME)
     code = transpile(source, backend="taichi", runtime="ti_runtime")
     return strip_ti_init(code)
 

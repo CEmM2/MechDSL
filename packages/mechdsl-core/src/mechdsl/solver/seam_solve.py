@@ -1,7 +1,7 @@
 """Generated matrix-free PCG over the ``ti_runtime`` seams (PlanJune14 P4-2).
 
 This module is the **all-Taichi on-device seam path** (Option 1): it transpiles
-the canonical matrix-free PCG authored in ``dev/algorithms/pcg.tex`` via
+the canonical matrix-free PCG authored in ``algo2code/library/algorithms/pcg.tex`` via
 ``algo2code`` in *runtime mode*, imports the generated ``pcg`` body, and binds it
 through the ``ti_runtime`` ``LinearSolveContext.set_solver`` seam.  The resulting
 solver solves ``A x = b`` over ``ti.Vector.field`` DOF vectors with **no NumPy in
@@ -40,24 +40,25 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Any, cast
 
 from algo2code import transpile
+from algo2code.library.sources import algorithm_source, algorithm_source_path
 from mechdsl.solver._seam_runtime import import_generated_module, strip_ti_init
 
 if TYPE_CHECKING:
     from ti_runtime.seams import LinearSolveContext
 
-# Repo-relative path to the canonical PCG algorithm source.  This file lives at
-# packages/mechdsl-core/src/mechdsl/solver/seam_solve.py, so the repo root is
-# five parents up.
-_PCG_TEX_PATH = Path(__file__).resolve().parents[5] / "dev" / "algorithms" / "pcg.tex"
+# The canonical PCG algorithm source ships as package data inside ``algo2code``
+# (``algo2code/library/algorithms/pcg.tex``), so it is available from an
+# installed wheel without a source checkout.
+_PCG_TEX_NAME = "pcg.tex"
 
 
 def pcg_tex_path() -> Path:
     """Return the path to the canonical matrix-free PCG LaTeX source."""
-    return _PCG_TEX_PATH
+    return algorithm_source_path(_PCG_TEX_NAME)
 
 
 def transpile_seam_pcg() -> str:
-    """Transpile ``dev/algorithms/pcg.tex`` to runtime-mode Taichi source.
+    """Transpile ``algo2code/library/algorithms/pcg.tex`` to runtime-mode Taichi source.
 
     The module-level ``ti.init`` line is stripped: the **caller** owns Taichi
     initialisation, and therefore the device/arch. (Re-init here would free
@@ -68,7 +69,7 @@ def transpile_seam_pcg() -> str:
     ``A(out, x)`` and preconditioner ``M_inv(r, z)`` plus ``ti_runtime``
     ``vector_ops`` primitives — no dense ``_matvec``, no NumPy.
     """
-    source = _PCG_TEX_PATH.read_text(encoding="utf-8")
+    source = algorithm_source(_PCG_TEX_NAME)
     code = transpile(source, backend="taichi", runtime="ti_runtime")
     return strip_ti_init(code)
 

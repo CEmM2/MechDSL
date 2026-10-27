@@ -2,7 +2,7 @@
 
 post_recovery_plan Phase 5 (P5-3). The dispatcher's algo2code path now
 genuinely consumes ``algo2code.transpile`` end-to-end: the canonical
-algpseudocode at ``dev/algorithms/radial_return_j2.tex`` is transpiled
+algpseudocode at ``algo2code/library/algorithms/radial_return_j2.tex`` is transpiled
 to Python at module import time, exec'd into a namespace, and the
 resulting scalar Newton inner loop is invoked from inside the wrapper.
 The imported reference path remains as a feature-flagged fallback.

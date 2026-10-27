@@ -1,10 +1,10 @@
 """Generated Jacobi (point-diagonal) preconditioner adapter (PlanJune14 P4-1).
 
 This module provides :class:`GeneratedJacobiPreconditioner`, which realises
-the Jacobi ``M^{-1} r`` algorithm authored in ``dev/algorithms/jacobi.tex``
+the Jacobi ``M^{-1} r`` algorithm authored in ``algo2code/library/algorithms/jacobi.tex``
 and injects it through the ``ti_runtime`` ``set_preconditioner`` seam.
 
-Algorithm (from ``dev/algorithms/jacobi.tex``)
+Algorithm (from ``algo2code/library/algorithms/jacobi.tex``)
 ----------------------------------------------
 Given:
   r   — residual vector (numerator, ti.Vector.field)
@@ -54,7 +54,7 @@ from ti_runtime.seams import PreconditionerBase
 class GeneratedJacobiPreconditioner(PreconditionerBase):
     """Point-Jacobi preconditioner: ``z_I = r_I / max(d_I, eps)``.
 
-    Realises the algorithm in ``dev/algorithms/jacobi.tex`` through the
+    Realises the algorithm in ``algo2code/library/algorithms/jacobi.tex`` through the
     ``ti_runtime`` ``PreconditionerBase`` seam.  The hot-path apply calls
     ``ti_runtime.vector_ops.ediv`` — a ``@ti.kernel`` with no NumPy.
 

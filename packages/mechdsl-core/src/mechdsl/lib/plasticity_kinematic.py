@@ -7,7 +7,7 @@ than *expands*. Yield is measured on the RELATIVE (shifted) stress
 isotropic hardening — all hardening lives in ``beta``).
 
 The scalar plastic-multiplier solve is the ``algo2code``-transpiled
-function from ``dev/algorithms/radial_return_j2_kinematic.tex`` (loaded
+function from ``algo2code/library/algorithms/radial_return_j2_kinematic.tex`` (loaded
 via :func:`algo2code.library.radial_return_j2_kinematic.transpile_radial_return_j2_kinematic`).
 The surrounding tensor algebra (deviatoric split, relative stress, von
 Mises of ``xi``, stress reconstruction, plastic-strain and back-stress

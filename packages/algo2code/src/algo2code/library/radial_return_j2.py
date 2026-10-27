@@ -25,28 +25,11 @@ runtime-free contract holds.
 
 from __future__ import annotations
 
-from pathlib import Path
+from algo2code.library.sources import algorithm_source
 
-
-def _load_canonical_source() -> str:
-    """Read the canonical algpseudocode source from
-    ``dev/algorithms/radial_return_j2.tex``.
-
-    Walks up from this module to the repo root, then reads the
-    file. Single source of truth — the LaTeX file is authoritative.
-    """
-    here = Path(__file__).resolve()
-    for parent in here.parents:
-        candidate = parent / "dev" / "algorithms" / "radial_return_j2.tex"
-        if candidate.is_file():
-            return candidate.read_text(encoding="utf-8")
-    raise FileNotFoundError(
-        "post_recovery_plan Phase 5 (P5-1): canonical algorithm source "
-        "not found. Expected at <repo>/dev/algorithms/radial_return_j2.tex."
-    )
-
-
-RADIAL_RETURN_J2_LATEX: str = _load_canonical_source()
+# Single source of truth: the bundled ``algorithms/radial_return_j2.tex``
+# (package data shipped in the wheel) is authoritative.
+RADIAL_RETURN_J2_LATEX: str = algorithm_source("radial_return_j2.tex")
 
 
 def get_radial_return_j2_latex() -> str:
