@@ -251,9 +251,7 @@ class Algo2CodePCGSolver:
 
     The algorithm text lives in the sibling ``algo2code`` package
     (:func:`algo2code.library.pcg.get_pcg_algorithm_latex`) and is the
-    verbatim source mirrored from
-    ``dev/tasks/recovery_plan_latex_contract/json/P6-1.json``
-    (``pcg_algorithm_latex.latex``).  The Python body of :meth:`solve`
+    verbatim canonical source.  The Python body of :meth:`solve`
     below is a line-by-line translation of that LaTeX.
 
     Why a hand-translated body and not ``algo2code.transpile`` output?
@@ -264,18 +262,17 @@ class Algo2CodePCGSolver:
     ``\\State $pq = p^\\top q$``) tokenises as two single-letter tokens,
     so the expression parser interprets it as ``p * q`` and rejects it as
     an assignment target.  Adding multi-letter identifier support is
-    tracked as follow-up work for ``algo2code``.  Per the P6-1 directive
-    "do NOT modify the algorithm text", we (a) keep the canonical LaTeX
+    tracked as follow-up work for ``algo2code``.  Because the algorithm
+    text must not be modified, we (a) keep the canonical LaTeX
     untouched in :mod:`algo2code.library.pcg` and (b) ship a verbatim
-    Python translation here.  The two are kept in sync by Phase-6 tests.
+    Python translation here.  The two are kept in sync by tests.
 
     Parameters
     ----------
     precond_fn : Callable[[np.ndarray], np.ndarray] | None
         Optional ``M^{-1} v`` callable.  When ``None``, the adapter binds
-        ``apply_M_inv = lambda v: v.copy()`` at construction time, exactly
-        as the P6-1 specification demands ("do not encode None-handling
-        in the LaTeX").
+        ``apply_M_inv = lambda v: v.copy()`` at construction time, so that
+        no None-handling is encoded in the LaTeX.
     """
 
     def __init__(
@@ -410,30 +407,27 @@ _SolverMode = _Literal["fallback", "generated"]
 def get_default_solver() -> LinearSolverInterface:
     """Return the default fallback solver — the imported ``ScipyCGSolver``.
 
-    Per recovery plan Phase 6 (R5.2)
-    ``dev/plans/recovery_plan_latex_contract.md`` line 318: the imported
-    solver remains the default fallback until the ``algo2code``-generated
-    PCG path (P6-1) is proven stable through P6-3's integration test and
-    broader regression. Do not flip this default until that work lands.
+    The imported solver remains the default fallback until the
+    ``algo2code``-generated PCG path is proven stable through its integration
+    test and broader regression. Do not flip this default until that work lands.
 
-    PlanJune14 P4-3 status
-    ----------------------
+    Seam path status
+    ----------------
     The all-Taichi on-device **seam** solve path (generated matrix-free PCG
-    via ``ti_runtime`` ``set_solver`` + the P3-2 generated tangent operator
-    via ``set_operator``, optionally the P4-1 generated Jacobi via
-    ``set_preconditioner``) is now *validated to <1e-10 against this fallback*
-    on the reference SVK patch (see ``tests/plan_tests/test_p4_3.py``) and is
-    **selectable** through :func:`make_seam_solver` (and the
+    via ``ti_runtime`` ``set_solver`` + the generated tangent operator
+    via ``set_operator``, optionally the generated Jacobi via
+    ``set_preconditioner``) is *validated to <1e-10 against this fallback*
+    on the reference SVK patch and is **selectable** through :func:`make_seam_solver` (and the
     ``mechdsl.solver.seam_solve`` entry points). It is intentionally a
     *different interface* — it drives a ``ti_runtime.LinearSolveContext`` over
     on-device ``ti.Vector.field`` DOF vectors, not the host-NumPy
     ``LinearSolverInterface`` matvec callback consumed by ``newton.py`` — so it
     is exposed as a distinct opt-in path rather than a ``build_solver`` mode.
 
-    Per the Option-1 architecture decision, this function's global default is
+    By design, this function's global default is
     **intentionally NOT flipped**: ``ScipyCGSolver`` stays the fallback default
     and the guarded global flip to the generated seam path is deferred until
-    broader regression coverage (Phase 5 J2 + Phase 7 governance) lands.
+    broader regression coverage lands.
     """
     return ScipyCGSolver()
 
@@ -449,8 +443,8 @@ def build_solver(
     ----------
     mode
         ``"fallback"`` (default) — imported ``ScipyCGSolver`` (the stable
-        path).  ``"generated"`` — ``Algo2CodePCGSolver``, opt-in until P6-3
-        validates it.
+        path).  ``"generated"`` — ``Algo2CodePCGSolver``, opt-in until its
+        integration test validates it.
     precond_fn
         Optional preconditioner callable forwarded to ``Algo2CodePCGSolver``
         when ``mode == "generated"``. Ignored for the fallback mode
@@ -492,12 +486,12 @@ def make_seam_solver(
 ) -> LinearSolveContext:
     """Construct the all-Taichi on-device **seam** linear solver (opt-in).
 
-    This is the selectable entry point for the PlanJune14 Phase-4 *Option 1*
+    This is the selectable entry point for the
     all-Taichi seam path: a generated matrix-free PCG (transpiled from
     ``algo2code/library/algorithms/pcg.tex`` via ``algo2code`` in runtime mode and injected
     through ``ti_runtime`` ``set_solver``) solving against an injected
-    matrix-free operator (e.g. the P3-2 generated SVK tangent) with an optional
-    generated preconditioner (e.g. the P4-1 Jacobi).
+    matrix-free operator (e.g. the generated SVK tangent) with an optional
+    generated preconditioner (e.g. the generated Jacobi).
 
     Unlike :func:`build_solver`, this path does **not** return a host-NumPy
     :class:`LinearSolverInterface`.  It returns a bound
@@ -511,11 +505,11 @@ def make_seam_solver(
     ----------
     operator
         The matrix-free operator ``apply(out, x)`` (out FIRST) injected via
-        ``LinearSolveContext.set_operator`` — e.g. the P3-2 generated SVK
+        ``LinearSolveContext.set_operator`` — e.g. the generated SVK
         tangent ``apply_A``.
     preconditioner
         Optional ``ti_runtime.seams.PreconditionerBase`` injected via
-        ``set_preconditioner`` (e.g. the P4-1 ``GeneratedJacobiPreconditioner``
+        ``set_preconditioner`` (e.g. the ``GeneratedJacobiPreconditioner``
         or an ``IdentityPreconditioner``).  When ``None`` the context keeps its
         default ``IdentityPreconditioner`` (unpreconditioned).
 

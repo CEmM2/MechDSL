@@ -225,8 +225,7 @@ class ExprParser:
 
         Division at the term level shares precedence with multiplication
         (left-associative) so ``a + b / c`` parses as ``a + (b / c)``
-        rather than dropping the divisor. post_recovery_plan Phase 5
-        parser fix.
+        rather than dropping the divisor.
         """
         left = self.parse_signed_factor()
         while True:

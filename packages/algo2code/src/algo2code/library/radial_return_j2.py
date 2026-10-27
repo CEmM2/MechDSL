@@ -1,13 +1,12 @@
 r"""Canonical J2 radial-return algorithm (algo2code interface hook).
 
-post_recovery_plan Phase 5 (P5-1, P5-3). Mirrors the
-``algo2code.library.pcg`` pattern but goes one step further:
+Mirrors the ``algo2code.library.pcg`` pattern but goes one step further:
 
 - :data:`RADIAL_RETURN_J2_LATEX` exposes the verbatim algpseudocode.
 - :func:`get_radial_return_j2_latex` returns it (accessor symmetry
   with PCG).
 - :func:`transpile_radial_return_j2` runs ``algo2code.transpile`` on
-  the source and returns the emitted Python module text. Phase 5's
+  the source and returns the emitted Python module text. The
   parser fixes (multi-letter scratch identifiers; binary ``/`` in
   assignment LHS) and codegen fix (``n = b.shape[0]`` regression for
   scalar-only algorithms) make this work end-to-end.
@@ -41,8 +40,8 @@ def transpile_radial_return_j2(backend: str = "taichi") -> str:
     """Transpile the canonical algpseudocode to ``backend`` and return
     the emitted Python module source.
 
-    post_recovery_plan Phase 5 lifted the deferral that previously
-    blocked this round-trip: the algo2code expr_parser now handles
+    The deferral that previously blocked this round-trip has been
+    lifted: the algo2code expr_parser handles
     multi-letter scratch identifiers (``sy``, ``Hp``, ``ap``) and
     binary ``/`` in assignment LHS contexts, and the Taichi codegen
     no longer emits ``n = b.shape[0]`` for scalar-only algorithms.

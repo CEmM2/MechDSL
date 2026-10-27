@@ -193,7 +193,7 @@ def _mech_cell(accum: dict[str, Any], args: ParsedArgs, line_no: int) -> None:
     """Handle ``% mechanics cell <type> [--integration <rule>] [--hourglass <scheme>]``.
 
     The ``--integration`` and ``--hourglass`` flags are Plan B phase B5
-    additions (task P5-6).  Both flow through to the accumulator under the
+    additions.  Both flow through to the accumulator under the
     keys ``integration`` and ``hourglass`` respectively, where
     :func:`mechdsl.frontend.build_context` then dispatches them through
     :class:`mechdsl.ir.element_factory.ElementFactory` for combination
@@ -451,7 +451,7 @@ def _mech_fiber(accum: dict[str, Any], args: ParsedArgs, line_no: int) -> None:
     two). The direction is a numeric 3-vector, comma- or space-separated.
     Accumulates ``{"direction": (x, y, z), "source_line": n}`` entries under
     ``fiber_families``, which the IR maps to a ``FiberFieldSpec`` carried through
-    ProblemIR -> Element IR (constitutive_latex P5-1).
+    ProblemIR -> Element IR.
     """
     positional, options = args
     if positional:
@@ -463,8 +463,7 @@ def _mech_fiber(accum: dict[str, Any], args: ParsedArgs, line_no: int) -> None:
     if "family" not in options:
         raise ParseError(
             f"line {line_no}: '% mechanics fiber' requires --family with a numeric "
-            '3-vector direction (e.g. --family "1, 0, 0"); anisotropic fiber '
-            "plumbing is constitutive_latex Phase 5 (P5-1)."
+            '3-vector direction (e.g. --family "1, 0, 0").'
         )
     raw = options["family"]
     tokens = [t for t in raw.replace(",", " ").split() if t]
@@ -473,17 +472,17 @@ def _mech_fiber(accum: dict[str, Any], args: ParsedArgs, line_no: int) -> None:
     except ValueError as exc:
         raise ParseError(
             f"line {line_no}: '% mechanics fiber' --family must be a numeric "
-            f"3-vector (e.g. '1, 0, 0'); got {raw!r} (constitutive_latex P5-1)."
+            f"3-vector (e.g. '1, 0, 0'); got {raw!r}."
         ) from exc
     if len(direction) != 3:
         raise ParseError(
             f"line {line_no}: '% mechanics fiber' --family requires exactly 3 "
-            f"components, got {len(direction)} ({raw!r}) (constitutive_latex P5-1)."
+            f"components, got {len(direction)} ({raw!r})."
         )
     if sum(c * c for c in direction) <= 0.0:
         raise ParseError(
             f"line {line_no}: '% mechanics fiber' --family must be a nonzero "
-            f"direction, got {raw!r} (constitutive_latex P5-1)."
+            f"direction, got {raw!r}."
         )
     _append_entry(
         accum,

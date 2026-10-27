@@ -1,9 +1,9 @@
-"""de Souza Neto et al. (2008) Cook's membrane benchmark harness (P10-3).
+"""de Souza Neto et al. (2008) Cook's membrane benchmark harness.
 
 This module wraps the existing Hex8 Cook's membrane regression in a reusable
 benchmark function and widens the original-scope matrix to
 `{TL, UL} x {Hex8, Tet10}`. Hex8 cells can use the injected handwritten
-reference solve; Tet10 cells use the benchmark-local Phase 10 J2 assembly layer
+reference solve; Tet10 cells use the benchmark-local J2 assembly layer
 with a prescribed load-face displacement smoke path.
 
 Reference
@@ -176,7 +176,7 @@ def _run_hex8_reference(
 
 
 def _run_prescribed_matrix_cell(params: CookMembraneParameters) -> BenchmarkResult:
-    """Exercise a Cook matrix cell through Phase 10 mesh/J2 helper contracts."""
+    """Exercise a Cook matrix cell through the benchmark-local mesh/J2 helper contracts."""
 
     mesh = cook_membrane_mesh(
         params.element_type,

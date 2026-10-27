@@ -1,12 +1,12 @@
-"""Spec-driven Taichi carrier-class emitter (Task P4-1).
+"""Spec-driven Taichi carrier-class emitter.
 
 Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
 Taichi carrier).
 
-This is the *class emitter* the Phase-2 handoff (note 4) deferred to Phase 3/4:
+This is the *class emitter* that sits downstream of the scalar lowerer:
 the piece that assembles a complete, self-contained Taichi module — a
 ``class <Name>`` with its ``@ti.func`` methods — from a
-:class:`~mechdsl.lawgen.contracts.PlasticityCarrierSpec`. The Phase-2 lowerer
+:class:`~mechdsl.lawgen.contracts.PlasticityCarrierSpec`. The lowerer
 (:func:`~mechdsl.lawgen.sympy_to_taichi.lower_expression`) turns a scalar
 ``sympy.Expr`` into Taichi expression *lines* that reference **bare** symbol
 names (``sigma0``, ``p``, ``n``); this module is what maps those bare names onto
@@ -33,21 +33,21 @@ Contract emitted (matches Cycle 0 ``ticonstit.generated.plasticity.swift_voce``)
 
 Design rules
 ------------
-* **Per-method lowering** (Phase-2 handoff note 2). Each ``get_*`` method is
+* **Per-method lowering.** Each ``get_*`` method is
   lowered *independently* — the R/dR/H/dH/Q/dQ expressions are never lowered as
   one batch — so no cross-method CSE reorganises one method's structure into
   another's. This keeps each method's shape close to Cycle 0's hand-authored
-  method (the P4-2 equivalence gate is *numerical*, rtol=1e-10, so the derivative
+  method (the equivalence gate is *numerical*, rtol=1e-10, so the derivative
   reorganisation batching would introduce is unnecessary and undesirable).
 * **Auto-differentiated derivatives.** ``get_dR`` / ``get_dH`` / ``get_dQ`` are
   ``sympy.diff`` of the corresponding factor w.r.t. that factor's *primary*
   variable (R,dR → ``peeq``; H,dH → ``edot``; Q,dQ → ``T``), then lowered with
   the same guards. The generator never hand-writes a derivative — it differentiates
   the authored factor, so a factor and its derivative can never drift.
-* **Frozen Phase-2 APIs, reused verbatim.** ``lower_expression(exprs, *,
+* **Frozen lowerer APIs, reused verbatim.** ``lower_expression(exprs, *,
   guards=True, target=...)``, :class:`~mechdsl.lawgen.sympy_to_taichi.LoweredExpr`,
   and :meth:`~mechdsl.lawgen.budgets.BudgetChecker.check_all` are called by name,
-  never re-implemented. The budget gate runs (fail-loud via the P3-1
+  never re-implemented. The budget gate runs (fail-loud via the collect-all
   :class:`~mechdsl.lawgen.diagnostics.LawgenError`) BEFORE any source is returned.
 * **Generated file imports Taichi + stdlib only.** The emitted module never
   imports ``mechdsl``, ``sympy``, ``ticonstit``, or NumerixWeave — it is a pure
@@ -201,7 +201,7 @@ def _lower_rebound(
     The substitution is applied to the SymPy expression, so the lowerer sees
     ``self.sigma0`` / ``peeq`` as ordinary symbol names and prints them verbatim.
     Lowering is per-method (a single ``expr``), guards on (the production path the
-    P4-2 gate measures), and uses the emission ``target`` so its
+    numerical equivalence gate measures), and uses the emission ``target`` so its
     ``max_piecewise_branches`` knob gates any ``Piecewise``.
     """
     rebound = expr.subs(rebind)
@@ -428,8 +428,8 @@ def _assert_taichi_only(source: str, name: str) -> None:
     Scans every ``import`` / ``from ... import`` line for a forbidden top-level
     module (:data:`_FORBIDDEN_IMPORT_TOKENS`). The generated carrier is a pure
     Taichi runtime artifact (INV-DG-1): a stray ``import sympy`` / ``import
-    mechdsl`` would break the MechDSL↔NumerixWeave dependency DAG that P4-3's guard
-    enforces. Runs on the emitter's own output as a self-check before the source
+    mechdsl`` would break the MechDSL↔NumerixWeave dependency DAG that the cross-repo
+    import guard enforces. Runs on the emitter's own output as a self-check before the source
     is ever written, so a regression fails here rather than in the cross-repo DAG
     gate.
     """

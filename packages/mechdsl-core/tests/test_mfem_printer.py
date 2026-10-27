@@ -317,9 +317,9 @@ class TestTangentAndDeferrals:
 
     @pytest.mark.unit
     def test_emitted_source_carries_deferral_markers(self, svk_source: str) -> None:
-        """Simplified sections must cite the plan phase that extends them."""
-        assert "P8-3" in svk_source
-        assert "Plan B" in svk_source
+        """Simplified sections must say they are deferred to a later pass."""
+        assert "Deferred" in svk_source
+        assert "compile" in svk_source
         # Must not accidentally emit the banned draft markers (spelled out so
         # the check itself does not trip).
         for marker in ("TO" + "DO", "FIX" + "ME", "XX" + "X"):

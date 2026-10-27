@@ -1,7 +1,6 @@
 """MFEM C++ printer: ArtifactBundle → standalone ``.cpp`` file.
 
-Support tier: **experimental** (see ``README.md`` Support tiers and
-``dev/plans/recovery_plan_latex_contract.md`` Phase 5 (R4)).
+Support tier: **experimental** (see ``README.md`` Support tiers).
 The MVP-stable canonical compile path is Taichi only; this backend is
 preserved in tree but is not part of the contract surface.
 
@@ -9,7 +8,7 @@ Emits a deterministic, syntactically valid C++ source file that uses
 ``mfem::ParNonlinearForm`` and a custom ``mfem::NonlinearFormIntegrator``
 subclass to solve the same problem that the Taichi printer emits.
 
-The MVP scope (Plan B §8, task P8-1):
+The MVP scope:
 
 * Hex8 only - other element types raise ``NotImplementedError``.
 * :class:`~mechdsl.ir.mechanics_ir.DynamicsMode.STATIC` only - explicit
@@ -23,7 +22,7 @@ The MVP scope (Plan B §8, task P8-1):
 Parse-only verification: no local MFEM install is required.  Tests use
 ``clang-format`` (or a structural fallback) - see
 ``packages/mechdsl-core/tests/test_mfem_printer.py`` - and the emitted app
-is compiled against MFEM in CI (Plan B task P8-3).
+is compiled against MFEM in CI.
 """
 
 from __future__ import annotations
@@ -144,7 +143,7 @@ def _emit_family_material_tangent_contraction_mfem(ctx: EmissionContext) -> None
 
 def _emit_family_fallback_mfem(ctx: EmissionContext) -> None:
     """MFEM fallback marker.  Unused on the MVP Hex8 + SVK happy path."""
-    ctx.emit("// (P9-2 fallback: no MFEM template override)")
+    ctx.emit("// (family fallback: no MFEM template override)")
 
 
 family_emitters: dict[Family, Callable[..., None]] = {
@@ -439,7 +438,7 @@ def emit_force_integrator(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
 
     Residual comes from ``AssembleElementVector`` and the consistent tangent
     from ``AssembleElementGrad``.  The implementation is a deliberately simple
-    Hex8/SVK wiring — end-to-end compile + solve verification lands in P8-3.
+    Hex8/SVK wiring — end-to-end compile + solve verification is deferred.
     """
     del bundle
     ctx.emit("// ---------------------------------------------------------------------")
@@ -543,7 +542,7 @@ def emit_tangent_integrator(ctx: EmissionContext) -> None:
     accumulates ``elmat += w * det(J) * B^T C_eng B``.
 
     The small-strain ``B`` operator is used here; the geometric (initial-
-    stress) contribution is left to the base-class / P8-3 compile pass.
+    stress) contribution is left to the base-class / a later compile pass.
     All nested loops close before ``elmat`` is written, so every index
     used in the write is in scope.
     """
@@ -627,7 +626,7 @@ def emit_tangent_integrator(ctx: EmissionContext) -> None:
                 ctx.emit("}")
             ctx.emit("")
             ctx.emit("// NOTE: geometric (initial-stress) tangent contribution is")
-            ctx.emit("// Deferred to Plan B §B8 P8-3 (full compile + verification pass).")
+            ctx.emit("// Deferred to the full compile + verification pass.")
         ctx.emit("}")
     ctx.emit("}")
     ctx.emit("")
@@ -639,7 +638,7 @@ def emit_main(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
     ctx.emit("// ---------------------------------------------------------------------")
     ctx.emit("// MPI-parallel driver.  Uses mfem::ParNonlinearForm so the problem")
     ctx.emit("// distributes across ranks out of the box.  Mesh + BC wiring is left")
-    ctx.emit("// deliberately skeletal — P8-3 extends it with a real mesh reader.")
+    ctx.emit("// deliberately skeletal — Deferred: a real mesh reader extends it.")
     ctx.emit("// ---------------------------------------------------------------------")
     ctx.emit("int main(int argc, char *argv[])")
     ctx.emit("{")
@@ -671,9 +670,9 @@ def emit_main(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
         ctx.emit("")
         ctx.emit("// NOTE: skeletal essential-BC setup — full boundary-condition")
         ctx.emit("// wiring (per-attribute Dirichlet tags, traction / Neumann loads,")
-        ctx.emit("// inhomogeneous prescribed displacements) is Deferred to Plan B")
-        ctx.emit("// §B8 P8-3.  The present all-attributes-fixed path is sufficient")
-        ctx.emit("// for the parse-check + compile smoke-test in P8-3.")
+        ctx.emit("// inhomogeneous prescribed displacements) is Deferred to the full")
+        ctx.emit("// compile pass.  The present all-attributes-fixed path is sufficient")
+        ctx.emit("// for the parse-check + compile smoke-test.")
         ctx.emit("Array<int> ess_tdof_list;")
         ctx.emit("if (pmesh.bdr_attributes.Size()) {")
         with ctx.indent_block():
@@ -704,7 +703,7 @@ def emit_main(ctx: EmissionContext, bundle: ArtifactBundle) -> None:
         ctx.emit("newton.SetPrintLevel(1);")
         ctx.emit("")
         ctx.emit("// NOTE: zero RHS placeholder — external-load plumbing is Deferred")
-        ctx.emit("// to Plan B §B8 P8-3.  Size the RHS to match the true-DOF vector so")
+        ctx.emit("// to the full compile pass.  Size the RHS to match the true-DOF vector so")
         ctx.emit("// NewtonSolver::Mult sees a well-formed operand.")
         ctx.emit("Vector zero(U.Size());")
         ctx.emit("zero = 0.0;")

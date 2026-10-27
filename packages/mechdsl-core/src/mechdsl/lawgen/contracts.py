@@ -1,10 +1,10 @@
-"""Lawgen emission contracts — the seam between the CLI and the Phase 2 lowerer.
+"""Lawgen emission contracts — the seam between the CLI and the lowerer.
 
 Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
 Taichi carrier).
 
 This module defines the two frozen dataclasses that every downstream lowerer
-task and the end-to-end test consume:
+stage and the end-to-end test consume:
 
 * :class:`TiconstitTarget` — the ``ticonstit`` emission *target profile*: the
   frozen contract id, the generated-code package, the default Taichi scalar
@@ -62,8 +62,8 @@ class TiconstitTarget:
     """The ``ticonstit`` emission target profile.
 
     Carries the frozen contract identity, the generated-code package, the
-    default Taichi scalar type, and the six JIT budget knobs the Phase 2
-    lowerer enforces.
+    default Taichi scalar type, and the six JIT budget knobs the lowerer
+    enforces.
 
     ``ti_type_default`` defaults to ``"ti.f64"``: MechDSL's tension-positive
     conventions (``07-CONVENTIONS.md``) and its verification tolerances
@@ -142,7 +142,7 @@ def _freeze_mapping(raw: Mapping[str, sp.Expr] | None) -> Mapping[str, sp.Expr]:
 
 @dataclass(frozen=True)
 class PlasticityCarrierSpec:
-    """A single plasticity carrier law, ready for Phase 2 lowering.
+    """A single plasticity carrier law, ready for lowering.
 
     Fields
     ------
@@ -161,16 +161,16 @@ class PlasticityCarrierSpec:
         strain rate ``edot``, temperature ``T``). These are the runtime inputs
         the generated carrier is a function of.
     monotone_check:
-        When ``True``, the P3-2 test emitter appends a monotonicity assertion to
+        When ``True``, the test emitter appends a monotonicity assertion to
         the generated test file — checking that the hardening ``R`` is
         non-decreasing in the accumulated plastic strain across the sample
         points. Defaults to ``False`` (no monotonicity block emitted), so every
-        existing construction site (the CLI, Phase-1 tests) that omits it keeps
+        existing construction site (the CLI, the contract tests) that omits it keeps
         working unchanged. It is a plain flag, not a SymPy object, so it is
         validated as a genuine ``bool`` in ``__post_init__``.
 
     The R/H/Q expressions and variable bindings are stored as SymPy objects (not
-    strings) because Phase 2 routes them through ``taichi_printer``, which
+    strings) because the lowerer routes them through ``taichi_printer``, which
     consumes SymPy expressions directly.
     """
 

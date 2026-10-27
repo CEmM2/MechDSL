@@ -65,8 +65,7 @@ class Configuration(Enum):
 class ElementType(Enum):
     """Element types known to the compiler.
 
-    Support tier (per ``README.md`` Support tiers and
-    ``dev/plans/recovery_plan_latex_contract.md`` Phase 1 (R0)):
+    Support tier (per ``README.md`` Support tiers):
 
     - **MVP-stable**: ``HEX8``. Only this element is part of the canonical
       compile path on the Taichi backend.
@@ -83,7 +82,7 @@ class ElementType(Enum):
 class DynamicsMode(Enum):
     """Selector between implicit static and explicit dynamic time integration.
 
-    Plan B §B7 (task P7-1) introduces this enum so the generator can emit
+    Plan B §B7 introduces this enum so the generator can emit
     either a Newton–Raphson solve (:attr:`STATIC`, default) or a central-
     difference ``advance_one_step(dt)`` kernel (:attr:`EXPLICIT`).  The choice
     is a compile-time property of :class:`ProblemIR` — runtime switching is
@@ -169,14 +168,12 @@ class BoundaryCondition:
             except (TypeError, ValueError) as exc:
                 raise ValueError(
                     f"BoundaryCondition(name={self.name!r}) traction sequence must "
-                    f"contain numeric components; got {self.traction!r}. "
-                    "Validation added in post_recovery_plan Phase 1 (P1-1)."
+                    f"contain numeric components; got {self.traction!r}."
                 ) from exc
             if len(tv) != 3:
                 raise ValueError(
                     f"BoundaryCondition(name={self.name!r}) traction vector must "
-                    f"have length 3, got length {len(tv)}. "
-                    "Validation added in post_recovery_plan Phase 1 (P1-1)."
+                    f"have length 3, got length {len(tv)}."
                 )
             object.__setattr__(self, "traction", tv)
         # A Neumann BC with no traction has no physical content; reject it
@@ -184,8 +181,7 @@ class BoundaryCondition:
         if self.bc_type == BCType.NEUMANN and self.traction is None:
             raise ValueError(
                 f"BoundaryCondition(name={self.name!r}, bc_type=neumann) requires "
-                "a traction specification (symbolic string or 3-vector). "
-                "Validation added in post_recovery_plan Phase 1 (P1-1)."
+                "a traction specification (symbolic string or 3-vector)."
             )
 
     @property
@@ -193,8 +189,8 @@ class BoundaryCondition:
         """Return ``surface_tag`` if set, otherwise the BC ``name``.
 
         Lowering passes use this property so callers do not need to repeat
-        the fallback rule. Introduced in post_recovery_plan Phase 1 (P1-1)
-        to give Phase 1 lowering a single, explicit surface identifier.
+        the fallback rule; it gives lowering a single, explicit surface
+        identifier.
         """
         return self.surface_tag if self.surface_tag is not None else self.name
 
@@ -340,7 +336,7 @@ class FieldSpec:
             raise ValueError(
                 f"FieldSpec(name={self.name!r}) kind={self.kind!r} is not supported; "
                 f"allowed kinds are {sorted(ALLOWED_FIELD_KINDS)}. "
-                "Wider field-kind support is planned for recovery-plan task P3-5."
+                "Wider field-kind support is planned."
             )
 
     def to_dict(self) -> dict[str, Any]:
@@ -359,9 +355,9 @@ class FieldSpec:
 class FiberFieldSpec:
     """Per-element fiber-orientation field data for anisotropic models (HGO).
 
-    constitutive_latex Phase 5 (P5-1). This is **field data**, deliberately
-    distinct from :class:`MaterialSpec` scalar params: it carries one direction
-    vector per fiber family (HGO uses two). Authored via the
+    This is **field data**, deliberately distinct from :class:`MaterialSpec`
+    scalar params: it carries one direction vector per fiber family (HGO uses
+    two). Authored via the
     ``% mechanics fiber --family "x,y,z"`` directive as constant (uniform)
     directions, or supplied programmatically through
     :func:`mechdsl.frontend.build_context` ``fiber_data``. Genuinely
@@ -409,9 +405,9 @@ class DomainSpec:
 
     Kept intentionally permissive in the MVP: ``metadata`` is a free-form
     bag so callers can attach problem-specific keys (e.g. bounding box,
-    geometry source path) without rotating the schema. Phase 4 (R3) is the
-    place to introduce stricter typed domain descriptors if the bag turns
-    out to be too loose in practice.
+    geometry source path) without rotating the schema. Stricter typed domain
+    descriptors can be introduced later if the bag turns out to be too loose
+    in practice.
 
     The bag is exposed as a read-only ``MappingProxyType`` to honour the
     frozen-dataclass invariant — write attempts raise ``TypeError``. Callers
@@ -514,7 +510,7 @@ _NON_COMMITTED_ROLES: frozenset[str] = frozenset({"unknown", "auxiliary_definiti
 
 @dataclass(frozen=True)
 class LatexSemantics:
-    """Record of the LaTeX-derived semantics the compiler understood (fgram P5-1).
+    """Record of the LaTeX-derived semantics the compiler understood.
 
     This is the serializable explanation of *what the compiler read* from a
     LaTeX source: which fields were declared, which constitutive roles were
@@ -528,7 +524,7 @@ class LatexSemantics:
     stays round-trip-safe.
 
     ``role`` values are taken verbatim from directive-tagged metadata (which
-    is authoritative per the Phase 4 handoff). A role of ``unknown`` /
+    is authoritative). A role of ``unknown`` /
     ``None`` from the equation classifier is downgraded to ``"auxiliary"``
     rather than inferred into a constitutive role.
     """
@@ -1086,7 +1082,7 @@ class ProblemIR:
         boundary entries that may use ``region`` / ``face`` / ``dofs``
         instead of ``name`` / ``components``.
 
-        Before P3-2, three private adapters reimplemented this mapping in
+        Previously, three private adapters reimplemented this mapping in
         :mod:`mechdsl` (used by :func:`compile_latex`),
         ``test_full_pipeline.py``, and ``test_formulation_switching.py``.
         This classmethod replaces all three so the adapter lives on the
@@ -1149,7 +1145,7 @@ class ProblemIR:
     def from_latex_semantics(cls, ctx: dict[str, Any]) -> ProblemIR:
         """Build a validated :class:`ProblemIR` from LaTeX-derived semantics.
 
-        This is the LaTeX-semantic constructor (fgram Phase 5). Unlike
+        This is the LaTeX-semantic constructor. Unlike
         :meth:`from_context`, which reads only the thin directive core
         (``dim`` / ``cell_type`` / ``formulation`` / ``material_type`` /
         ``boundaries``), this adapter additionally consumes the richer
@@ -1163,7 +1159,7 @@ class ProblemIR:
           :attr:`latex_semantics` so the bundle explains what the compiler
           understood.
 
-        Convergence (Phase 4 handoff): the MVP-stable *core* of the returned
+        Convergence guarantee: the MVP-stable *core* of the returned
         IR is identical to :meth:`from_context` for the same ``ctx`` — this
         adapter only *adds* enrichment, it never diverges on the core
         configuration. Symbolic / constitutive meaning is not re-derived here:
@@ -1280,8 +1276,8 @@ class ProblemIR:
         directive-tagged constitutive roles (authoritative), the weak-form
         label, and any equation roles from a ``$...$`` math block. Equation
         roles reported as ``unknown`` / ``None`` are downgraded to
-        ``"auxiliary"`` rather than inferred into a constitutive role (Phase 4
-        handoff). Returns ``None`` when the context carries no LaTeX-derived
+        ``"auxiliary"`` rather than inferred into a constitutive role.
+        Returns ``None`` when the context carries no LaTeX-derived
         semantics at all, so legacy / programmatic IRs stay unannotated.
         """
         constitutive = tuple(

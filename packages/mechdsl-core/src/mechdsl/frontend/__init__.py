@@ -1,7 +1,6 @@
 """LaTeX parsing, % mechanics directives, two-point tensor index resolution.
 
-Public entry points (in tier order — see ``README.md`` Support tiers and
-``dev/plans/recovery_plan_latex_contract.md`` Phase 2 / R1):
+Public entry points (in tier order — see ``README.md`` Support tiers):
 
 **Canonical (MVP-stable)**
 
@@ -49,7 +48,8 @@ _MATH_BLOCK_RE = re.compile(r"(?<!\\)\$([^$\n]+?)(?<!\\)\$")
 def has_math_block(source: str) -> bool:
     """``True`` iff ``source`` contains at least one ``$...$`` math
     block. The math parser is invoked only when this is true
-    (parse-when-needed guard, plan §Phase 4 lines 226–227).
+    (parse-when-needed guard), so directive-only sources never pay
+    for ``nrpylatex``.
     """
     return bool(_MATH_BLOCK_RE.search(source))
 
@@ -138,7 +138,7 @@ def parse_with_math(source: str) -> dict[str, Any]:
 
     The ``equations`` entry carries the per-equation semantics that
     :func:`mechdsl.frontend.math_parser.parse_math` extracts from each
-    ``$...$`` block (fgram Phase 4 ``EquationSemantics``). Entries are
+    ``$...$`` block (one ``EquationSemantics`` per equation). Entries are
     JSON-primitive dicts so the bundle round-trips through
     :meth:`mechdsl.ir.mechanics_ir.ProblemIR.from_latex_semantics` into the
     serialized IR's ``latex_semantics`` record without re-parsing the source.
@@ -258,7 +258,7 @@ def build_context(
     a LaTeX source string and forwards through this function's machinery
     after parsing. ``build_context`` remains supported for tests and embedding
     scenarios that have no LaTeX source available — see ``README.md``
-    Support tiers and ``dev/plans/recovery_plan_latex_contract.md`` Phase 2 (R1).
+    Support tiers.
 
     It returns the same context dict that the LaTeX parser would produce.
     Validates that inputs fall within the MVP-supported subset.  ProblemIR
@@ -269,7 +269,7 @@ def build_context(
     dim:
         Spatial dimension (3 for all MVP problems).
     cell_type:
-        Element type string.  After Plan B phase B5 (task P5-6) this
+        Element type string.  After Plan B phase B5 this
         accepts ``"hex8"``, ``"hex20"``, ``"tet4"``, and ``"tet10"`` —
         the full ElementFactory topology vocabulary.  Unknown topologies
         and invalid ``(cell_type, integration, hourglass)`` triples raise
@@ -291,16 +291,16 @@ def build_context(
         anisotropic models such as HGO.
     fiber_families:
         Optional fiber-direction families declared via the
-        ``% mechanics fiber`` directive (constitutive_latex P5-1) — a list of
+        ``% mechanics fiber`` directive — a list of
         ``{"direction": (x, y, z), ...}`` entries. Satisfies the
         anisotropic-requires-fiber requirement when ``fiber_data`` is absent.
     hourglass_coef:
         Dimensionless Flanagan-Belytschko hourglass control coefficient
-        used by reduced-integration elements (Plan B phase B5, task P5-5).
+        used by reduced-integration elements (Plan B phase B5).
         Defaults to ``0.05``; typical range is ``0.01 - 0.10``.
     integration:
         Integration rule selector, ``"full"`` (default) or ``"reduced"``.
-        Plan B phase B5 task P5-6 added the option; routed through
+        Added in Plan B phase B5; routed through
         :class:`mechdsl.ir.element_factory.ElementFactory` for combination
         validation.
     hourglass:
@@ -377,8 +377,7 @@ def build_context(
         raise UnsupportedError(
             "material_type='hgo' requires fiber direction(s): either the "
             "fiber_data kwarg (per-element (a1, a2) unit-vector pairs, shape "
-            "(n_elem, 2, 3)) or the '% mechanics fiber --family' directive "
-            "(constitutive_latex P5-1)."
+            "(n_elem, 2, 3)) or the '% mechanics fiber --family' directive."
         )
 
     ctx: dict = {

@@ -162,7 +162,7 @@ def current_gradient_at_physical(
 
     The ``X_elem`` argument is retained for API symmetry with
     :func:`reference_gradient_at_physical` and for future callers that need
-    to compute both J0 and j in a single pass (e.g. the P1-4 tangent
+    to compute both J0 and j in a single pass (e.g. the UL tangent
     emission where the Jaumann material term needs J0 and the geometric
     stiffness term needs j). At ``F = I`` (``x_elem == X_elem``) the two
     helpers return byte-identical output.

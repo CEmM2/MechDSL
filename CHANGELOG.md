@@ -10,6 +10,10 @@ All notable changes to this project will be documented in this file.
 - **`algo2code.library.algorithm_source(name)` / `algorithm_source_path(name)` / `ALGORITHM_SOURCES`**: new accessors for the bundled sources; `mechdsl.solver.pcg_tex_path()` / `newmark_tex_path()` now resolve through them.
 - **Regression test**: `packages/mechdsl-core/tests/test_wheel_import.py` builds both wheels, installs them into a fresh venv without the `[verify]` extra, and imports every module (missing `taichi` / `ti_runtime` is the only accepted skip); `packages/algo2code/tests/test_library_sources.py` checks the bundled sources in-process.
 
+### Changed — shipped source no longer carries internal planning references
+
+- Comments, docstrings, error messages and emitted-code comments in `mechdsl-core` and `algo2code` (and the bundled `.tex` algorithm sources) no longer cite internal plan/phase/task identifiers or cross-repo planning notes; the reasoning behind each comment is kept. Error messages keep their actionable content. No identifiers, behaviour or public API changed. Golden codegen snapshots were regenerated for the affected comment lines only. The benchmark registry's `task_id` values (`"P10-1"`..`"P10-9"`) are data keys matched by the committed perf baseline and are unchanged.
+
 ## [0.2.1] - 2026-08-31
 
 ### Changed — packaging for PyPI

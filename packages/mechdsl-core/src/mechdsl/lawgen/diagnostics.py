@@ -1,12 +1,12 @@
-"""Structured, collect-all diagnostics for the lawgen lowerer (Task P3-1).
+"""Structured, collect-all diagnostics for the lawgen lowerer.
 
 Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
 Taichi carrier).
 
-This module is the *reporting* layer that stands beside the Phase-2 gates
-(:mod:`mechdsl.lawgen.budgets`, P2-2; :mod:`mechdsl.lawgen.sympy_to_taichi`,
-P2-4). Where Phase 2 fails on the **first** problem, P3-1 turns those checks into
-**collect-all** ones: every unsupported SymPy node and every budget breach
+This module is the *reporting* layer that stands beside the lowerer's gates
+(:mod:`mechdsl.lawgen.budgets`; :mod:`mechdsl.lawgen.sympy_to_taichi`).
+Where a fail-first gate stops at the **first** problem, this module turns those
+checks into **collect-all** ones: every unsupported SymPy node and every budget breach
 produces a structured :class:`LawgenDiagnostic`, they are accumulated in a
 :class:`DiagnosticCollector`, and the whole batch is raised at once as a single
 :class:`LawgenError` so the user sees *every* problem in one run.
@@ -26,9 +26,9 @@ Design rules (plan R2, "no silent fallback")
   its message, so a caller (or a test) can read every problem off the exception
   without re-running the compile.
 
-Relationship to the Phase-2 error types
-----------------------------------------
-:class:`LawgenError` subclasses :class:`NotImplementedError`. Phase 2's
+Relationship to the lowerer's error types
+-----------------------------------------
+:class:`LawgenError` subclasses :class:`NotImplementedError`. The lowerer's
 fail-loud raises for unsupported nodes were ``NotImplementedError`` (the
 unmapped-function / non-exhaustive-``Piecewise`` path); making the collect-all
 aggregate a ``NotImplementedError`` keeps every ``except NotImplementedError`` /
@@ -127,7 +127,7 @@ class LawgenDiagnostic:
 class LawgenError(NotImplementedError):
     """Aggregate error carrying *every* diagnostic collected in one lowering run.
 
-    Subclasses :class:`NotImplementedError` so Phase 2's fail-loud contract for
+    Subclasses :class:`NotImplementedError` so the lowerer's fail-loud contract for
     unsupported nodes (which raised ``NotImplementedError``) is preserved: any
     existing ``except NotImplementedError`` / ``pytest.raises(NotImplementedError)``
     still catches the aggregate, only now the payload is a structured,
@@ -138,7 +138,7 @@ class LawgenError(NotImplementedError):
 
     * :attr:`diagnostics` — the tuple of :class:`LawgenDiagnostic` records.
     * ``args`` — the rendered message *plus* each diagnostic, so
-      ``LawgenError.args`` contains every problem (the P3-1 acceptance check).
+      ``LawgenError.args`` contains every problem.
     * ``str(err)`` — a header line naming the count, then every diagnostic's
       :meth:`LawgenDiagnostic.render` block.
     """
@@ -178,7 +178,7 @@ class LawgenError(NotImplementedError):
 class DiagnosticCollector:
     """Accumulates :class:`LawgenDiagnostic` records, then raises them all at once.
 
-    The collect-all counterpart to Phase 2's fail-first gates: a caller
+    The collect-all counterpart to the lowerer's fail-first gates: a caller
     :meth:`add`\\ s a diagnostic for *every* problem it finds and calls
     :meth:`raise_if_any` at the end, so a single run reports every problem rather
     than aborting on the first.

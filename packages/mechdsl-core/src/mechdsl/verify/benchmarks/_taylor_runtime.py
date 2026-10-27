@@ -1,4 +1,4 @@
-"""Benchmark-local explicit Taylor runtime (Phase 10 prerequisite — Phase E7).
+"""Benchmark-local explicit Taylor runtime.
 
 This module is intentionally internal to ``mechdsl.verify.benchmarks``. It
 composes the explicit-dynamics building blocks (reduced-Hex8 internal force,
@@ -7,14 +7,14 @@ central-difference loop suitable for **Taylor impact runtime sanity** work.
 
 Scope
 -----
-This is the runtime *enablement* phase (Plan E7). It deliberately does not
-expose the public Taylor benchmark runner — that surface is owned by the
-next phase (E8, ``run_taylor_impact_benchmark``).
+This is the runtime *enablement* layer. It deliberately does not expose the
+public Taylor benchmark runner — that surface is owned by
+:mod:`mechdsl.verify.benchmarks.taylor_impact` (``run_taylor_impact_benchmark``).
 
 What is implemented here:
 
 - :class:`ExplicitTaylorState` — central-difference state container with
-  room for material-state arrays added by P7-2 (Johnson-Cook).
+  room for Johnson-Cook material-state arrays.
 - :class:`RigidWallSpec` — half-space rigid wall (point + outward normal).
 - :func:`init_taylor_runtime` — initial state allocator with optional
   initial velocity field.
@@ -27,14 +27,15 @@ What is implemented here:
   by the explicit loop to track cumulative hourglass energy.
 
 All operations are pure NumPy. Taichi codegen for the explicit loop is out
-of scope for this prerequisite phase.
+of scope for this module.
 
 Material model
 ~~~~~~~~~~~~~~
-P7-1 ships a simple Saint Venant-Kirchhoff (SVK) constitutive update at the
-Hex8 centroid (one-point reduced quadrature). The Johnson-Cook integration
-and per-quadrature-point state arrays are P7-2's responsibility — the state
-container leaves a generic ``material_state`` slot for that work to attach
+:func:`explicit_step` uses a simple Saint Venant-Kirchhoff (SVK) constitutive
+update at the Hex8 centroid (one-point reduced quadrature). The Johnson-Cook
+integration and per-quadrature-point state arrays live in the ``*_jc``
+variants (:func:`init_taylor_runtime_jc`, :func:`explicit_step_jc`) — the
+state container leaves a generic ``material_state`` slot so they can attach
 arrays without restructuring the runtime.
 """
 
@@ -83,8 +84,8 @@ class ExplicitTaylorState:
 
     Mutability is intentional: the explicit loop updates arrays in place
     where possible to avoid per-step allocations. The container is a
-    *plain dataclass* (not frozen) so that P7-2 can attach Johnson-Cook
-    state arrays to ``material_state`` without restructuring the runtime.
+    *plain dataclass* (not frozen) so that the Johnson-Cook variant can attach
+    its state arrays to ``material_state`` without restructuring the runtime.
 
     Attributes
     ----------
@@ -114,11 +115,11 @@ class ExplicitTaylorState:
     hourglass_energy
         Running estimate of the work done by the hourglass force,
         ``sum f_HG · du`` accumulated across explicit steps. Used by the
-        AC-1 boundedness test.
+        hourglass-energy boundedness test.
     material_state
-        Free-form dict reserved for material-history arrays attached by
-        P7-2 (e.g. ``{"eqplas": ndarray, "back_stress": ndarray, ...}``).
-        Empty by default in P7-1.
+        Free-form dict reserved for material-history arrays attached by the
+        Johnson-Cook variant (e.g. ``{"eqplas": ndarray, "back_stress":
+        ndarray, ...}``). Empty by default for the SVK runtime.
     """
 
     mesh: BenchmarkMesh
@@ -152,7 +153,7 @@ class RigidWallSpec:
         Coefficient of restitution applied to the inward normal velocity
         component on impact. ``0.0`` (default) gives a perfectly inelastic
         wall — the simplest valid penetration-prevention contact law and
-        the only one P7-1 needs to demonstrate AC-2.
+        the only one the SVK runtime needs.
     """
 
     point: NDArray[np.float64]
@@ -264,7 +265,8 @@ def _assemble_internal_force(
         Nodal hourglass force from FB stabilisation.
 
     The two components are returned separately so the caller can attribute
-    work increments to internal vs hourglass energy, which AC-1 needs.
+    work increments to internal vs hourglass energy, which the hourglass-energy
+    boundedness check needs.
     """
     f_int = np.zeros_like(u, dtype=np.float64)
     f_hg = np.zeros_like(u, dtype=np.float64)
@@ -387,8 +389,9 @@ def explicit_step(
         E_hg        <- E_hg + |f_HG  . du|
 
     The energy bookkeeping uses the magnitude of ``f · du`` so the running
-    quantities are non-negative and directly usable by the AC-1 boundedness
-    test (a ratio test on dissipation budgets, not a signed work integral).
+    quantities are non-negative and directly usable by the hourglass-energy
+    boundedness test (a ratio test on dissipation budgets, not a signed work
+    integral).
 
     Parameters
     ----------
@@ -507,7 +510,7 @@ def hourglass_energy_increment(du: NDArray[np.float64], f_hg: NDArray[np.float64
     """Incremental hourglass work ``|f_HG . du|`` for one explicit step.
 
     The absolute value keeps the diagnostic strictly non-negative across
-    sign-flipping oscillations (the AC-1 test uses it as a dissipation
+    sign-flipping oscillations (the boundedness test uses it as a dissipation
     *budget*, not as a signed work integral).
 
     Parameters

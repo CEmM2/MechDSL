@@ -4,7 +4,7 @@ The named-invariant path
 (:func:`mechdsl.symbolic.energy.derive_from_energy`) derives an *isotropic*
 energy by differentiating a single ``Psi(C)`` w.r.t. the strain components. The
 Holzapfel-Gasser-Ogden (HGO) family adds **fiber** terms that (a) depend on a
-per-element fiber direction ``a`` (P5-1 field data, not authored in LaTeX) and
+per-element fiber direction ``a`` (per-element field data, not authored in LaTeX) and
 (b) are gated to tension only by the Macaulay bracket ``<Ibar4 - 1>`` — a
 per-fiber, non-smooth branch that does not map onto one differentiable ``Psi``.
 This module provides the fiber-aware derivation that handles both.

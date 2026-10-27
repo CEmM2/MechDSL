@@ -1,4 +1,4 @@
-"""Generated Jacobi (point-diagonal) preconditioner adapter (PlanJune14 P4-1).
+"""Generated Jacobi (point-diagonal) preconditioner adapter.
 
 This module provides :class:`GeneratedJacobiPreconditioner`, which realises
 the Jacobi ``M^{-1} r`` algorithm authored in ``algo2code/library/algorithms/jacobi.tex``

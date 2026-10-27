@@ -575,7 +575,7 @@ class JohnsonCookModel(ConstitutiveModel):
         return radial_return(self._mat, E_strain, alpha, T, dt).stress
 
     def material_tangent(self, E_strain: NDArray, **state: float) -> NDArray:
-        """Return algorithmic tangent (3,3,3,3) — elastic stub for P3-2."""
+        """Return the algorithmic tangent (3,3,3,3) of the return map."""
         alpha = state.get("alpha", 0.0)
         T = state.get("T", self._mat.T_ref)
         dt = state.get("dt", 1.0)

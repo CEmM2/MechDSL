@@ -1,6 +1,6 @@
-"""Notched bar benchmark (P10-8): TL x Lemaitre damage x Hex8.
+"""Notched bar benchmark: TL x Lemaitre damage x Hex8.
 
-Extends the Phase 6 P6-3 notched-bar unit test into a full benchmark:
+Extends the Lemaitre notched-bar acceptance unit test into a full benchmark:
   - Public mesh generator for a rectangular Hex8 bar with a semi-circular
     notch on the +y face.
   - Orchestrator that compiles a Lemaitre ProblemIR, applies displacement-
@@ -17,26 +17,25 @@ ship a fully-digitised load-displacement curve that is easy to match
 quantitatively WITHOUT the original mesh -- the reference surfaces are
 always redrawn by hand.
 
-Per the P10-8 task notes, when a literature reference is not directly
-usable, we fall back to a **self-consistent** reference: we pick a fixed
-mesh and parameter set (documented in ``_REFERENCE_*`` constants below),
-execute the solve at a "reference" load-step resolution, record the
-load-displacement samples, and then require subsequent runs at the same
-mesh/parameter set to reproduce them within 10% (the tolerance called out
-by the task JSON and by the Lemaitre & Desmorat textbook for damage
-problems).  The 10% tolerance detects regressions against our own
+When a literature reference is not directly usable, we fall back to a
+**self-consistent** reference: we pick a fixed mesh and parameter set
+(documented in ``_REFERENCE_*`` constants below), execute the solve at a
+"reference" load-step resolution, record the load-displacement samples, and
+then require subsequent runs at the same mesh/parameter set to reproduce
+them within 10% (the tolerance used by the Lemaitre & Desmorat textbook for
+damage problems).  The 10% tolerance detects regressions against our own
 baseline; it does NOT claim agreement with a specific published curve.
 
-This choice is aligned with the task risk note: "Damage problems are
-notoriously mesh-dependent.  Mitigation: pick a reference that documents
-its mesh and use the same density."  Our self-consistent reference IS
-that documented mesh.
+This choice addresses a known risk: damage problems are notoriously
+mesh-dependent, and the mitigation is to pick a reference that documents
+its mesh and use the same density.  Our self-consistent reference IS that
+documented mesh.
 
-Acceptance criteria (dev/tasks/PLAN-B/json/P10-8.json)
-------------------------------------------------------
+Acceptance criteria
+-------------------
 1. Load-displacement curve within 10% of reference.
 2. Damage localisation at the notch root (same invariant as the
-   Phase 6 unit test).
+   Lemaitre acceptance unit test).
 """
 
 from __future__ import annotations
@@ -173,7 +172,7 @@ def build_notched_bar_mesh(
     flat and the top face is pushed down by ``notch_depth``.
 
     This mirrors the ``_build_notched_bar_mesh`` helper in
-    ``tests/test_lemaitre_acceptance.py`` (the P6-3 unit test).  The test-
+    ``tests/test_lemaitre_acceptance.py`` (the Lemaitre unit test).  The test-
     tree helper is kept in place so existing tests do not need to be
     modified; both helpers produce identical coordinate arrays for the same
     inputs.
@@ -286,7 +285,7 @@ def _newton_step_lemaitre(
     The generated kernel mutates ``alpha`` and ``damage_D`` in place; we
     snapshot them at entry and restore before every residual evaluation so
     intermediate Newton iterates do not corrupt the next step's starting
-    point.  This mirrors the driver in the P6-3 unit test exactly (see
+    point.  This mirrors the driver in the Lemaitre unit test exactly (see
     ``tests/test_lemaitre_acceptance.py`` for the same pattern).
     """
     n_nodes = u.shape[0]
@@ -391,8 +390,8 @@ def run_notched_bar_benchmark(
     - Right face (x=L): prescribed x-displacement ramped linearly from 0 to
       ``total_displacement`` over ``n_steps`` equal increments.  All y- and
       z-components on the right face are left free (homogeneous Neumann) so
-      Poisson contraction is unconstrained -- matches the P6-3 unit-test
-      setup.
+      Poisson contraction is unconstrained -- matches the Lemaitre
+      unit-test setup.
 
     Load history extraction
     -----------------------
@@ -419,9 +418,9 @@ def run_notched_bar_benchmark(
         Scratch directory for the emitted Taichi module source.
     newton_tol, newton_max_iter : float, int
         Per-step Newton tolerance and iteration cap.  Must accommodate the
-        P6-2 Gate B forward-warning that tangent_matvec uses the undamaged
-        J2 tangent (sub-linear convergence under active damage); defaults
-        match the P6-3 unit-test settings.
+        known limitation that tangent_matvec uses the undamaged J2 tangent
+        (sub-linear convergence under active damage); defaults match the
+        Lemaitre unit-test settings.
     module_name : str, optional
         Override for the generated module's importable name.  Defaults to a
         uuid-based name so repeated runs in the same tmp_path do not

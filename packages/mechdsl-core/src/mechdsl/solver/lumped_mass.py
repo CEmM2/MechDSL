@@ -1,9 +1,9 @@
-"""Row-sum lumped mass for explicit dynamics (Plan B §B7, task P7-1).
+"""Row-sum lumped mass for explicit dynamics (Plan B §B7).
 
 Support tier: **experimental**. Explicit dynamics is outside the canonical
 MVP-stable compile path (which is static / quasi-static only). See
-``README.md`` Support tiers and ``dev/plans/recovery_plan_latex_contract.md``
-Phase 1 (R0). Code preserved in tree; not part of the contract surface.
+``README.md`` Support tiers. Code preserved in tree; not part of the contract
+surface.
 
 
 The consistent element mass matrix for a displacement-based FEM is

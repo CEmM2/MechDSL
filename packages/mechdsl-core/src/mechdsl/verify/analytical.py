@@ -1,7 +1,7 @@
 """Analytical solution library for verification benchmarks.
 
-Provides four ground-truth reference functions used by Phase 3 and Phase 4
-verification harnesses:
+Provides four ground-truth reference functions used by the patch-test and
+codegen-equivalence verification harnesses:
 
 - patch_test_reference      — constant Green-Lagrange strain → nodal displacements
 - rigid_body_reference      — rigid body motion → nodal displacements

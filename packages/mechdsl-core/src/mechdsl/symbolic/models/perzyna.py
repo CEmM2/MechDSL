@@ -165,8 +165,9 @@ def radial_return(
 
     Algorithmic tangent
     -------------------
-    For P3-1 the tangent is **stubbed as the elastic tangent** when plastic.
-    P3-3 will replace this stub with the proper consistent tangent.
+    On the elastic branch the elastic tangent is returned; on the plastic
+    branch the consistent viscoplastic tangent is assembled from the
+    linearised return-map residual (see the inline derivation below).
 
     Parameters
     ----------
@@ -186,7 +187,7 @@ def radial_return(
     Returns
     -------
     ReturnMappingResult
-        Updated stress, internal variables, and tangent (elastic stub for P3-1).
+        Updated stress, internal variables, and algorithmic tangent.
     """
     if dt <= 0.0:
         raise ValueError(f"dt must be > 0, got {dt}")
@@ -422,7 +423,7 @@ class PerzynaModel(ConstitutiveModel):
         return radial_return(self._mat, E_strain, alpha, dt).stress
 
     def material_tangent(self, E_strain: NDArray, **state: float) -> NDArray:
-        """Return algorithmic tangent (3,3,3,3) — elastic stub for P3-1."""
+        """Return the algorithmic tangent (3,3,3,3) of the return map."""
         alpha = state.get("alpha", 0.0)
         dt = state.get("dt", 1.0)
         return radial_return(self._mat, E_strain, alpha, dt).tangent

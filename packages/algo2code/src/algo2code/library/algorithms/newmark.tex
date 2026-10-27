@@ -1,4 +1,4 @@
-% Newmark-beta implicit time integration — single step (PlanJune14 P6-1).
+% Newmark-beta implicit time integration — single step.
 %
 % The canonical Newmark-beta step authored for the **all-Taichi on-device
 % time-integration seam path** (the temporal analogue of the matrix-free PCG in
@@ -32,7 +32,7 @@
 % average-acceleration / trapezoidal rule — unconditionally stable, no numerical
 % damping. HHT-alpha is a one-parameter generalisation (alpha-weighted residual);
 % it reuses the same predictor/corrector skeleton and is intentionally NOT
-% authored here — Newmark-beta is the P6-1 deliverable, HHT is optional/next.
+% authored here — Newmark-beta is the deliverable, HHT is optional/next.
 %
 % Seam contract (mirrors ti_runtime.seams.TimeIntegrationContext)
 % ---------------------------------------------------------------
@@ -42,8 +42,8 @@
 % The callable owns the mass / damping / stiffness / external-force data; the box
 % is mass-/material-agnostic, exactly like ``pcg.tex`` is operator-agnostic.
 %
-% Grammar note (2026-06-15, P6-1)
-% -------------------------------
+% Grammar note
+% ------------
 % This box transpiles **directly** through algo2code in ``runtime='ti_runtime'``
 % mode with no grammar gap: the predictor/corrector updates are all
 % ``scalar*vector`` and ``vector +/- vector`` (fused ``_v.vec_add`` AXPBY calls),

@@ -1,9 +1,10 @@
 """J2 mixed hardening (isotropic power-law + linear kinematic) — algo2code path.
 
-constitutive_latex Phase 6 (P6-3). The dissipative MIXED-hardening
+The dissipative MIXED-hardening
 return map: the yield surface BOTH *translates* (back-stress ``beta``,
-Prager — from P6-2) AND *expands* (power-law radius
-``sigma_y(alpha) = sigma_y0 + K*alpha^n`` — from P6-1), simultaneously.
+Prager — as in the kinematic variant) AND *expands* (power-law radius
+``sigma_y(alpha) = sigma_y0 + K*alpha^n`` — as in the isotropic variant),
+simultaneously.
 Yield is measured on the RELATIVE (shifted) stress ``xi = dev(S) - beta``
 against the EXPANDING radius ``sigma_y(alpha)``::
 
@@ -15,7 +16,7 @@ function from ``algo2code/library/algorithms/radial_return_j2_mixed.tex`` (loade
 Because the isotropic part is a nonlinear power law in
 ``alpha = alpha_old + dl`` the discrete consistency condition is
 NONLINEAR in ``dl``, so the scalar source runs the Newton loop of the
-isotropic variant (P6-1) — with the kinematic ``(3*mu + H_kin)*dl``
+isotropic variant — with the kinematic ``(3*mu + H_kin)*dl``
 linear term in the residual and the Prager modulus folded into the
 Newton denominator alongside the isotropic slope. The surrounding tensor
 algebra is orchestrated here in NumPy — the same division of labour as
@@ -31,8 +32,8 @@ Both internal variables advance together (this is what makes it *mixed*):
 - deviatoric back-stress tensor ``beta`` (Prager translation);
 - plastic strain ``Ep`` (the elastic predictor uses ``E - Ep``).
 
-Flow direction and tensor updates (identical convention to P6-2)
-----------------------------------------------------------------
+Flow direction and tensor updates (identical convention to the kinematic variant)
+---------------------------------------------------------------------------------
 
 The flow normal is the von-Mises yield-function gradient
 ``nf = d||xi||_eq/dS = (3/2) * xi / ||xi||_eq``. With ``dEp = dl*nf`` the
@@ -51,10 +52,9 @@ Reductions
 ----------
 
 - ``H_kin = 0`` -> ``beta`` stays 0, ``xi == dev(S)``: the law reduces to
-  the isotropic power-law variant (P6-1).
+  the isotropic power-law variant.
 - ``K = 0`` -> ``sigma_y(alpha) == sigma_y0`` (constant radius), the
-  residual is linear: the law reduces to the linear kinematic variant
-  (P6-2).
+  residual is linear: the law reduces to the linear kinematic variant.
 """
 
 from __future__ import annotations
@@ -109,12 +109,12 @@ class J2MixedMaterial:
         Initial yield stress (> 0).
     K : float
         Isotropic power-law hardening modulus (>= 0). ``K = 0`` collapses
-        to pure kinematic hardening (P6-2).
+        to pure kinematic hardening.
     n : float
         Isotropic power-law hardening exponent (> 0).
     H_kin : float
         Linear kinematic (Prager) hardening modulus (>= 0). ``H_kin = 0``
-        collapses to pure isotropic hardening (P6-1).
+        collapses to pure isotropic hardening.
     """
 
     E: float

@@ -1,9 +1,9 @@
 """Benchmark registry, smoke profiles, and one-shot smoke run harness.
 
-The registry catalogues the nine public Phase 10 benchmark runners and their
-local smoke profiles. Every spec exposes:
+The registry catalogues the nine public benchmark runners and their local
+smoke profiles. Every spec exposes:
 
-* ``task_id``       — canonical Phase 10 task id (``P10-1`` .. ``P10-9``).
+* ``task_id``       — canonical benchmark task id (``P10-1`` .. ``P10-9``).
 * ``runner``        — the public runner callable from
   :mod:`mechdsl.verify.benchmarks` or :mod:`mechdsl.verify.mms_matrix`.
 * ``smoke_factory`` — zero-arg callable returning the kwargs dict consumed by
@@ -16,16 +16,17 @@ local smoke profiles. Every spec exposes:
   ``dict[str, float]`` containing every key in ``metrics_keys`` (the
   ``wallclock_s`` slot is filled in by :func:`run_smoke_registry`).
 * ``tolerance_pct`` — default per-benchmark tolerance for baseline diffs.
-* ``notes``         — free-form context (e.g. carry-forward constraints).
+* ``notes``         — free-form context (e.g. known runner constraints).
 
-Carry-forward constraints honoured here
----------------------------------------
-* P10-7 (Taylor): the spec uses :meth:`TaylorImpactParameters.smoke` only.
+Runner constraints honoured here
+--------------------------------
+* Taylor impact: the spec uses :meth:`TaylorImpactParameters.smoke` only.
   ``nightly()`` overruns the JC ``radial_return`` 50-iteration budget on the
   shipped 6x6x20 mesh, and PEEQ on long horizons (~16.6 at n_steps=200) is
-  unphysical (P8-2 carry-forward). The smoke profile (2x2x8 Hex8, 10 steps,
-  dt=2e-8 s, horizon=0.2 us) keeps PEEQ in the < ~3 range.
-* P10-1 (MMS): the registry restricts the matrix to the cheap Hex8 SVK case
+  unphysical (a known limitation of the explicit JC runtime). The smoke
+  profile (2x2x8 Hex8, 10 steps, dt=2e-8 s, horizon=0.2 us) keeps PEEQ in
+  the < ~3 range.
+* MMS: the registry restricts the matrix to the cheap Hex8 SVK case
   with three coarse mesh levels (4, 6, 8) so the local smoke run finishes
   in O(seconds) on a developer laptop. Convergence rates from the resulting
   ``MMSMatrixResult`` are recorded in the baseline alongside wallclock.
@@ -75,12 +76,12 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class BenchmarkSpec:
-    """A single registry entry over one Phase 10 public benchmark runner.
+    """A single registry entry over one public benchmark runner.
 
     Attributes
     ----------
     task_id
-        Canonical Phase 10 task id (``"P10-1"`` .. ``"P10-9"``).
+        Canonical benchmark task id (``"P10-1"`` .. ``"P10-9"``).
     runner
         The public runner callable from :mod:`mechdsl.verify.benchmarks` or
         :mod:`mechdsl.verify.mms_matrix`. Returns either a
@@ -104,7 +105,7 @@ class BenchmarkSpec:
         Default per-benchmark tolerance for baseline diffs. Overridable via
         ``compare_to_baseline(per_benchmark_overrides=...)``.
     notes
-        Free-form context (e.g. ``"smoke profile only - P8-2 carry-forward"``).
+        Free-form context (e.g. ``"smoke profile only - nightly() overruns budget"``).
     """
 
     task_id: str
@@ -145,7 +146,7 @@ class BenchmarkSpec:
 
 
 class BenchmarkRegistry:
-    """Frozen registry of the nine Phase 10 public benchmark runners."""
+    """Frozen registry of the nine public benchmark runners."""
 
     def __init__(self, specs: tuple[BenchmarkSpec, ...]) -> None:
         seen: set[str] = set()
@@ -158,7 +159,7 @@ class BenchmarkRegistry:
 
     @classmethod
     def default(cls) -> BenchmarkRegistry:
-        """Return the canonical registry covering P10-1 .. P10-9."""
+        """Return the canonical registry covering all nine benchmark specs."""
 
         return cls(_default_specs())
 
@@ -214,7 +215,7 @@ def run_smoke_registry(
         Defaults to :meth:`BenchmarkRegistry.default`.
     tmp_path
         Optional per-call ``tmp_path`` injected into runners that need it
-        (currently only P10-8 Notched bar). Ignored by other specs.
+        (currently only the notched-bar spec). Ignored by other specs.
 
     Returns
     -------
@@ -304,7 +305,7 @@ def _mms_matrix_adapter(result: MMSMatrixResult) -> dict[str, float]:
 # ---------------------------------------------------------------------------
 
 
-# P10-1: cheap Hex8 SVK MMS matrix at three coarse levels.
+# MMS smoke: cheap Hex8 SVK matrix at three coarse levels.
 _P10_1_SMOKE_CASES = (MMSMatrixCase("hex8", "svk", expected_l2_rate=2.0, expected_h1_rate=1.0),)
 _P10_1_SMOKE_LEVELS = (3, 4, 5)
 _P10_1_METRICS = (
@@ -411,7 +412,7 @@ def _p10_8_factory() -> dict[str, Any]:
 
 def _p10_9_factory() -> dict[str, Any]:
     # HGO uniaxial smoke: 1-element mesh, single mild stretch, fiber along x.
-    # Lazy import of the NumPy reference solver mirrors the P10-4 strategy.
+    # Lazy import of the NumPy reference solver mirrors the thick-cylinder factory.
     from tests.ref.ref_hex8_hgo import assemble_internal_force, solve_hgo
 
     return {
@@ -518,8 +519,8 @@ def _default_specs() -> tuple[BenchmarkSpec, ...]:
             ),
             tolerance_pct=10.0,
             notes=(
-                "Taylor impact — smoke profile only (P8-2 carry-forward: nightly() "
-                "overruns JC return-map iter budget; long-horizon PEEQ is unphysical)."
+                "Taylor impact — smoke profile only (nightly() overruns the JC "
+                "return-map iteration budget; long-horizon PEEQ is unphysical)."
             ),
         ),
         BenchmarkSpec(

@@ -1,9 +1,8 @@
 """Lower Neumann ``BoundaryCondition`` to per-node force contributions.
 
 Bridges the IR layer (``mechdsl.ir.mechanics_ir.BoundaryCondition``) to the
-codegen-layer primitives in ``mechdsl.codegen.boundary_codegen``. Introduced
-in post_recovery_plan Phase 1 (P1-3) so that directive-driven Neumann BCs
-flow through the pipeline ``LaTeX → IR → lowering → codegen`` without a
+codegen-layer primitives in ``mechdsl.codegen.boundary_codegen``, so that
+directive-driven Neumann BCs flow through the pipeline ``LaTeX → IR → lowering → codegen`` without a
 manual numeric injection.
 
 Typical usage::
@@ -60,7 +59,7 @@ def resolve_traction_vector(
 ) -> NDArray:
     """Resolve a BC's traction spec to a length-3 numeric numpy array.
 
-    The IR allows ``traction`` to be either a numeric tuple (post P1-1
+    The IR allows ``traction`` to be either a numeric tuple (the
     directive-driven form) or a symbolic string (legacy form like
     ``"t_bar"``). Numeric forms pass through; symbolic forms are looked up
     in ``traction_registry`` if supplied, otherwise an explicit error
@@ -72,8 +71,7 @@ def resolve_traction_vector(
         # consistent error message.
         raise ValueError(
             f"BoundaryCondition(name={bc.name!r}) has no traction; "
-            "post_recovery_plan Phase 1 (P1-3) requires Neumann BCs to "
-            "carry a traction vector or registered symbol."
+            "Neumann BCs must carry a traction vector or a registered symbol."
         )
     if isinstance(bc.traction, tuple):
         return np.asarray(bc.traction, dtype=np.float64)
@@ -126,9 +124,8 @@ def per_node_contributions(
     Iterates the dense ``NeumannBC.force`` array and emits one entry per
     node whose force vector exceeds ``zero_tol`` in absolute value. With
     the default ``zero_tol=0.0`` only exactly-zero rows are dropped, so
-    nodes outside the tagged surface contribute nothing — matching the
-    P1-3 acceptance "non-tagged surface elements receive zero
-    contribution".
+    nodes outside the tagged surface contribute nothing ("non-tagged
+    surface elements receive zero contribution").
     """
     nbc = lower_neumann(bc, mesh, traction_registry)
     contribs: list[NodalForceContribution] = []

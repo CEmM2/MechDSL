@@ -1,21 +1,18 @@
 r"""Canonical Preconditioned Conjugate Gradient (PCG) algorithm in algpseudocode.
 
 This module is the **algo2code interface hook** consumed by
-``mechdsl-core``'s ``Algo2CodePCGSolver`` adapter (Plan recovery task P6-1).
+``mechdsl-core``'s ``Algo2CodePCGSolver`` adapter.
 It exposes:
 
 * :data:`PCG_ALGORITHM_LATEX` — the verbatim LaTeX source of the canonical
-  PCG algorithm, mirrored from
-  ``dev/tasks/recovery_plan_latex_contract/json/P6-1.json`` field
-  ``pcg_algorithm_latex.latex``.
+  PCG algorithm.
 * :func:`get_pcg_algorithm_latex` — accessor returning that text.
 
 Runtime invariant
 -----------------
 
 This module imports **only stdlib**.  ``algo2code`` is the runtime-free
-sibling package of ``mechdsl-core`` (see ``.claude/CLAUDE.md`` /
-``dev/design_docs/11-ALGO2CODE.md``); nothing here imports — directly or
+sibling package of ``mechdsl-core``; nothing here imports — directly or
 transitively — ``mechdsl``.  Consumers that want a runnable implementation
 own the translation step.
 

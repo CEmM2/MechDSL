@@ -1,11 +1,11 @@
-"""Pre-emission JIT budget gate for the lawgen lowerer (Task P2-2).
+"""Pre-emission JIT budget gate for the lawgen lowerer.
 
 Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
 Taichi carrier).
 
 This module is the *gate* that stands between the deterministic lowerer
-(:mod:`mechdsl.lawgen.sympy_to_taichi`, P2-1) and any Taichi emission
-(Phase 3/4). It counts six quantities over a law's SymPy expressions and its
+(:mod:`mechdsl.lawgen.sympy_to_taichi`) and any Taichi emission (the carrier and
+test emitters). It counts six quantities over a law's SymPy expressions and its
 lowered source lines, and **fails loud** (R2) the moment any of them exceeds the
 matching :class:`~mechdsl.lawgen.contracts.TiconstitTarget` budget knob. No
 Taichi source is produced here — this is purely a pre-emission check, so an
@@ -34,13 +34,13 @@ Budget knob (``TiconstitTarget`` field)       What it counts
                                               expression.
 ============================================  ================================
 
-Error contract (P3-1 — collect-all)
------------------------------------
+Error contract (collect-all)
+----------------------------
 :meth:`BudgetChecker.check_all` runs **all six** budget checks over **all**
 expressions/functions and accumulates *every* violation into a
 :class:`~mechdsl.lawgen.diagnostics.DiagnosticCollector`, then raises a single
-:class:`~mechdsl.lawgen.diagnostics.LawgenError` carrying the whole batch (P3-1
-collect-all: the user sees every over-budget knob in one run, not just the first).
+:class:`~mechdsl.lawgen.diagnostics.LawgenError` carrying the whole batch
+(collect-all: the user sees every over-budget knob in one run, not just the first).
 Each budget violation still carries the structured
 ``"<knob> budget exceeded: <measured> > <limit>"`` text — built by
 :meth:`BudgetError.for_budget` — as the diagnostic's ``reason`` (so the measured
@@ -50,14 +50,14 @@ per-violation formatter and the public budget-error type. This mirrors how
 :class:`mechdsl.lowering.fe_localise.LocalisationError` subclasses the broader
 ``UnsupportedError``.
 
-Reusability for downstream phases (P2-3 / P2-4 / P3)
-----------------------------------------------------
+Reusability for downstream stages
+---------------------------------
 The three counters are module-level pure functions
 (:func:`count_expr_ops`, :func:`count_piecewise_branches`,
 :func:`count_pow_symbolic_exponent`) so they are independently testable and can
 be reused outside :class:`BudgetChecker`. :class:`BudgetChecker` binds one
 :class:`TiconstitTarget` and exposes :meth:`BudgetChecker.check_all`, which
-Phase 3/4 call *before* emission.
+the emitters call *before* emission.
 """
 
 from __future__ import annotations
@@ -140,7 +140,7 @@ def count_expr_ops(expr: sp.Expr) -> int:
     tree. ``visual=False`` returns an integer (the default), which we coerce to
     a Python ``int`` so the value is JSON/log friendly and version-stable.
 
-    Risk note (P2-2): ``count_ops`` semantics can vary slightly across SymPy
+    Risk note: ``count_ops`` semantics can vary slightly across SymPy
     versions, so budget fixtures should use a low overridden limit on a fixed
     small expression rather than pinning an exact absolute count.
     """
@@ -172,7 +172,7 @@ def count_pow_symbolic_exponent(expr: sp.Expr) -> int:
     * Integer-literal exponents (``x**2``, ``x**-3``) are exempt — they lower to
       plain repeated multiplication and cost the JIT nothing extra.
     * Exact ``±1/2`` exponents (``sqrt(x)`` = ``Pow(x, S.Half)`` and
-      ``1/sqrt(x)`` = ``Pow(x, -S.Half)``) are exempt too. P2-1's printer
+      ``1/sqrt(x)`` = ``Pow(x, -S.Half)``) are exempt too. The printer
       (:meth:`mechdsl.lawgen.sympy_to_taichi.TaichiExprPrinter._print_Pow`)
       special-cases these to ``ti.sqrt`` / ``1/ti.sqrt`` — **not** ``ti.pow`` —
       so they do not incur the runtime-``ti.pow`` cost this budget guards.
@@ -217,7 +217,7 @@ def _budget_diagnostic(
 
     The ``reason`` reuses :meth:`BudgetError.for_budget`'s exact message text
     (``"<knob> budget exceeded: <measured> > <limit>"``), so it always contains
-    **both the measured value and the limit** (P3-1 AC3). ``node`` is the budget
+    **both the measured value and the limit**. ``node`` is the budget
     knob name; ``fix`` is an actionable hint pointing at the two ways to clear a
     budget breach — simplify the law or raise the knob on the
     :class:`~mechdsl.lawgen.contracts.TiconstitTarget`.
@@ -240,10 +240,10 @@ class BudgetChecker:
     The bound target supplies the six budget knobs, so a caller that constructs
     a :class:`TiconstitTarget` with a lowered/raised knob transparently overrides
     the module defaults (the defaults *are* the ``TiconstitTarget`` defaults —
-    there is a single source of truth, P1-1).
+    there is a single source of truth).
 
-    Usage (Phase 3/4)
-    -----------------
+    Usage
+    -----
     Construct with the emission target, then call :meth:`check_all` with the
     law's SymPy expressions and their lowered results *before* handing anything
     to the printer::
@@ -253,8 +253,8 @@ class BudgetChecker:
 
     :meth:`check_all` accumulates **every** budget violation (across all six
     knobs and all expressions/functions) and raises a single
-    :class:`~mechdsl.lawgen.diagnostics.LawgenError` carrying them all (P3-1
-    collect-all); if nothing is over budget it returns ``None`` and emission may
+    :class:`~mechdsl.lawgen.diagnostics.LawgenError` carrying them all
+    (collect-all); if nothing is over budget it returns ``None`` and emission may
     proceed.
     """
 
@@ -262,7 +262,7 @@ class BudgetChecker:
         """Bind the checker to a :class:`TiconstitTarget` (knobs = its fields).
 
         ``target=None`` uses a default :class:`TiconstitTarget`, i.e. the six
-        plan-frozen defaults; pass a customised target to override any knob.
+        built-in defaults; pass a customised target to override any knob.
         """
         self.target: TiconstitTarget = target if target is not None else TiconstitTarget()
 
@@ -273,7 +273,7 @@ class BudgetChecker:
     ) -> None:
         """Run all six budget checks; collect **all** violations, then raise once.
 
-        Collect-all (P3-1): every over-budget knob — across every expression and
+        Collect-all: every over-budget knob — across every expression and
         every function — is recorded as a
         :class:`~mechdsl.lawgen.diagnostics.LawgenDiagnostic`, and the whole batch
         is raised at the end as one

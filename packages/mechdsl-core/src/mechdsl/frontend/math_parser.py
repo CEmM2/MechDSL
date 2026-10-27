@@ -1,8 +1,8 @@
 """LaTeX-math frontend wrapping the ``nrpylatex`` parser.
 
-post_recovery_plan Phase 4 (P4-1) wires ``nrpylatex`` (already declared in
-pyproject.toml) into the frontend layer so ``$...$`` math blocks in
-LaTeX source can flow into the symbolic stage.
+This module wires ``nrpylatex`` (declared in pyproject.toml) into the
+frontend layer so ``$...$`` math blocks in LaTeX source can flow into the
+symbolic stage.
 
 Supported subset (nrpylatex 1.4.0)
 ----------------------------------
@@ -26,7 +26,7 @@ inputs that ``nrpylatex.parse_latex`` accepts, which today means:
   upper / lower placement) on the RHS, and every contracted index must
   appear exactly twice. ``nrpylatex`` raises ``GeneratorError`` on
   imbalanced expressions; ``parse_math`` re-raises as
-  :class:`MathParseError` with a Phase-4 pointer.
+  :class:`MathParseError` with a pointer to the accepted grammar.
 
 - Bound (contracted) indices must connect tensors of complementary
   position (one upper, one lower). Forms such as ``F^{kk}`` (two upper
@@ -43,8 +43,8 @@ inputs that ``nrpylatex.parse_latex`` accepts, which today means:
 
 - Functions ``\\det``, ``\\sin``, etc. that require sympy intrinsics not
   registered with nrpylatex 1.4.0's parser raise ``SympifyError``;
-  these are caught and re-raised as :class:`MathParseError` Phase-4 to
-  signal the deferred extension surface.
+  these are caught and re-raised as :class:`MathParseError` to signal
+  that the construct is outside the supported subset.
 
 Index convention enforcement (07-CONVENTIONS)
 ---------------------------------------------
@@ -58,10 +58,9 @@ spatial and material indices on the same axis.
 
 Errors
 ------
-Every failure path in this module raises :class:`MathParseError` with
-a message that includes the literal phrase
-``"post_recovery_plan Phase 4"`` so the bridge surface is
-traceable from the failure mode alone.
+Every failure path in this module raises :class:`MathParseError`, so
+callers can distinguish a math-grammar failure from a directive parse
+error by exception type alone.
 """
 
 from __future__ import annotations
@@ -90,9 +89,7 @@ _MATERIAL_TENSORS = {"C", "E", "S"}
 class MathParseError(RuntimeError):
     """Raised when nrpylatex cannot parse a math block, when the
     declared subset is exceeded, or when the post-parse index
-    convention check fails. Always carries the phrase
-    ``post_recovery_plan Phase 4`` so the failure surface is
-    traceable.
+    convention check fails.
     """
 
 
@@ -160,9 +157,9 @@ class MathParseResult:
 def _wrap_nrpylatex_error(exc: BaseException) -> MathParseError:
     return MathParseError(
         f"nrpylatex {type(exc).__name__}: {exc}. "
-        "Unsupported nrpylatex node — see post_recovery_plan Phase 4 "
-        "(packages/mechdsl-core/src/mechdsl/frontend/math_parser.py "
-        "supported-subset docstring) for the accepted grammar."
+        "Unsupported nrpylatex node — see the supported-subset docstring in "
+        "packages/mechdsl-core/src/mechdsl/frontend/math_parser.py "
+        "for the accepted grammar."
     )
 
 
@@ -241,14 +238,12 @@ def _validate_occurrence_manifold(occurrence: IndexedOccurrence) -> None:
     if symbol in _SPATIAL_TENSORS and "material" in roles:
         raise MathParseError(
             f"tensor {occurrence.source!r} mixes a material index into spatial tensor "
-            f"{symbol!r}; use a material stress/strain or an explicit two-point tensor. "
-            "post_recovery_plan Phase 4."
+            f"{symbol!r}; use a material stress/strain or an explicit two-point tensor."
         )
     if symbol in _MATERIAL_TENSORS and "spatial" in roles:
         raise MathParseError(
             f"tensor {occurrence.source!r} mixes a spatial index into material tensor "
-            f"{symbol!r}; use F/P for two-point mappings per 07-CONVENTIONS. "
-            "post_recovery_plan Phase 4."
+            f"{symbol!r}; use F/P for two-point mappings per 07-CONVENTIONS."
         )
 
 
@@ -258,7 +253,8 @@ def _validate_supported_equation_source(source: str) -> None:
     if unsupported:
         raise MathParseError(
             f"unsupported LaTeX function(s) {unsupported} in preserved equation "
-            f"{source!r}. These are full-grammar phase work; post_recovery_plan Phase 4."
+            f"{source!r}. These are full-grammar phase work and are not yet accepted; "
+            "only polynomial / indexed tensor expressions are supported in math blocks."
         )
 
 
@@ -294,16 +290,15 @@ def _free_and_contracted_indices(
             else:
                 raise MathParseError(
                     f"index {index!r} appears {count} times in term {term!r}; "
-                    "Einstein contractions must be pairwise before symbolic lowering. "
-                    "post_recovery_plan Phase 4."
+                    "Einstein contractions must be pairwise before symbolic lowering."
                 )
 
         term_free = {index for index, count in term_counts.items() if count == 1}
         if term_occurrences and term_free != expected_free:
             raise MathParseError(
                 f"free-index mismatch in equation {source!r}: LHS has "
-                f"{sorted(expected_free)}, RHS term {term!r} has {sorted(term_free)}. "
-                "post_recovery_plan Phase 4."
+                f"{sorted(expected_free)}, RHS term {term!r} has {sorted(term_free)}; "
+                "every free index on the LHS must appear once in every RHS term."
             )
 
     return tuple(sorted(rhs_free_union)), tuple(sorted(contracted))
@@ -424,11 +419,13 @@ def parse_math(latex_block: str) -> MathParseResult:
     Raises
     ------
     MathParseError
-        For any nrpylatex parser/scanner/generator error, with the
-        Phase-4 pointer in the message.
+        For any nrpylatex parser/scanner/generator error, with a pointer
+        to the accepted grammar in the message.
     """
     if not isinstance(latex_block, str):
-        raise MathParseError("parse_math requires a str — post_recovery_plan Phase 4.")
+        raise MathParseError(
+            f"parse_math requires a str LaTeX block, got {type(latex_block).__name__}."
+        )
 
     equations = extract_equations(latex_block)
     try:
@@ -505,7 +502,7 @@ def enforce_index_convention(
                 raise MathParseError(
                     f"tensor {name!r} appears with both spatial and material "
                     f"indices on axis {axis} — mechdsl 07-CONVENTIONS forbids "
-                    "this. post_recovery_plan Phase 4."
+                    "this; declare a separate tensor for each index regime."
                 )
             if "spatial" in kinds:
                 spatial_axes.append(axis)

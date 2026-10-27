@@ -208,8 +208,7 @@ def _hourglass_stiffness_scalar(V_e: float, mu: float, lambda_h: float) -> float
 
     The classical FB form has an hourglass coefficient times a shear modulus
     times a characteristic-area factor ``V_e^(2/3)`` (equivalent to
-    ``h^(d-2) vol`` with ``h ~ V_e^(1/3)`` in 3D, per the scope statement of
-    task P5-5):
+    ``h^(d-2) vol`` with ``h ~ V_e^(1/3)`` in 3D):
 
         epsilon = lambda_h * mu * V_e**(2/3)
 
@@ -254,10 +253,9 @@ def flanagan_belytschko_force(
 
     where ``gamma_alpha`` are the geometry-projected hourglass vectors
     (FB 1981 eq. 2.33) and ``epsilon = lambda_h * mu * V_e^(2/3)`` is the
-    scalar hourglass stiffness (section 4 of the paper; see also the
-    scope statement of task P5-5 which specifies
-    ``k_h * lambda_h * h^(d-2) / vol_e`` — in 3D this is equivalent up
-    to the ``k_h * mu`` grouping).
+    scalar hourglass stiffness (section 4 of the paper; the equivalent
+    ``k_h * lambda_h * h^(d-2) / vol_e`` form differs only by the
+    ``k_h * mu`` grouping in 3D).
 
     The output has the sign convention of an internal resisting force:
     it acts to oppose motion along hourglass modes, so it should be

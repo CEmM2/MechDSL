@@ -18,7 +18,7 @@ where ``R_v`` is the de Souza Neto triaxiality factor
 Damage is only active once the accumulated plastic strain exceeds the
 threshold ``eps_D`` (the damage-nucleation strain).  ``D`` is clamped below
 ``1 - 1e-6`` to keep the ``1 - D`` divisor away from singularity — final
-element deletion at ``D >= D_crit`` is handled in Task P6-2.
+element deletion at ``D >= D_crit`` is handled at the solver level.
 
 References
 ----------
@@ -240,7 +240,7 @@ class LemaitreReturnResult:
 
     ``stress`` is the **nominal** PK2 stress, i.e. ``(1 - D_new) * sigma_eff``.
     ``tangent`` is the undamaged J2 algorithmic tangent — a damage-aware
-    tangent is a P6-2 concern and is deliberately left unscaled here so that
+    tangent is out of scope here and is deliberately left unscaled so that
     at ``D = 0`` this model reproduces J2 power-law byte-for-byte.
     """
 
@@ -268,8 +268,8 @@ def lemaitre_return(
 ) -> LemaitreReturnResult:
     """Lemaitre effective-stress return mapping coupled to J2 power-law.
 
-    Algorithm (strain-equivalence, per task P6-1)
-    ---------------------------------------------
+    Algorithm (strain-equivalence)
+    ------------------------------
     1. Run the J2 power-law radial return on the (total) elastic predictor.
        Because the elastic predictor ``lambda tr(E) I + 2 mu E`` is built from
        the undamaged stiffness, the J2 result IS the effective stress field
@@ -280,9 +280,9 @@ def lemaitre_return(
     4. If the new plastic strain exceeds the damage threshold ``eps_D``,
        increment damage:  ``D_new = D_n + (Y / S_d)^{s_d} * delta_lambda``.
        Otherwise leave ``D_new = D_n`` (guards ``D`` from accidentally
-       crossing the threshold mid-step is overkill for P6-1; in practice the
+       crossing the threshold mid-step is overkill here; in practice the
        step sizes in the solver stay below the yield-threshold gap).
-    5. Clamp ``D_new <= 1 - 1e-6`` (element deletion is P6-2's job).
+    5. Clamp ``D_new <= 1 - 1e-6`` (element deletion is the solver's job).
     6. Nominal stress:  ``sigma_nominal = (1 - D_new) * sigma_eff``.
 
     Parameters

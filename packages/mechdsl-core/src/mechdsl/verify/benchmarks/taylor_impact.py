@@ -1,8 +1,8 @@
-"""Public Taylor impact benchmark API (Phase 10 prerequisite — Phase E8 / P8-1).
+"""Public Taylor impact benchmark API.
 
-This module wraps the *internal* Phase E7 Taylor explicit runtime
+This module wraps the *internal* Taylor explicit runtime
 (:mod:`mechdsl.verify.benchmarks._taylor_runtime`) into a public, deterministic
-benchmark runner that mirrors the shape of every other Phase 10 runner
+benchmark runner that mirrors the shape of every other benchmark runner
 (see :mod:`mechdsl.verify.benchmarks.cantilever`):
 
 - A frozen ``TaylorImpactParameters`` dataclass with ``smoke()`` and
@@ -10,13 +10,13 @@ benchmark runner that mirrors the shape of every other Phase 10 runner
 - ``run_taylor_impact_benchmark(params=...) -> BenchmarkResult`` that returns
   the shared :class:`BenchmarkResult` schema unchanged. Taylor-specific
   metrics (final length, mushroom radius, mushroom diameter, peak PEEQ) are
-  packed into ``BenchmarkResult.extras`` so AC-3 — *no shared benchmark
-  result schema changes are required* — is satisfied.
+  packed into ``BenchmarkResult.extras`` so *no shared benchmark result schema
+  changes are required*.
 
 The runtime building blocks (``init_taylor_runtime_jc``, ``explicit_step_jc``,
 ``apply_rigid_wall_contact``, ``final_length``, ``mushroom_radius``,
-``extract_equivalent_plastic_strain``) are consumed verbatim — Phase E7's
-public signatures must remain bit-for-bit unchanged.
+``extract_equivalent_plastic_strain``) are consumed verbatim — the internal
+runtime's public signatures must remain bit-for-bit unchanged.
 
 Bar geometry / impact convention
 --------------------------------
@@ -26,8 +26,8 @@ rigid wall sits at ``z = wall_z`` with outward normal ``+z`` so the valid
 half-space is ``z >= wall_z`` (the bar). The impact velocity must be
 **strictly negative** (the bar moves toward the wall in the -z direction).
 
-dt sizing (carry-forward Phase 6 wave-physics gate)
----------------------------------------------------
+dt sizing (explicit wave-physics stability gate)
+-----------------------------------------------
 The explicit central-difference integrator requires ``dt <= dt_crit ≈
 h_min / c`` where ``c = sqrt(E/rho)`` is the longitudinal wave speed and
 ``h_min`` is the smallest element edge. For the steel-like smoke
@@ -208,7 +208,7 @@ def run_taylor_impact_benchmark(
     return mapping + reduced-Hex8 internal force + Flanagan-Belytschko
     hourglass control + frictionless rigid-wall contact) into a deterministic
     public runner. Taylor-specific metrics are packed into ``extras``; the
-    shared :class:`BenchmarkResult` schema is reused unchanged (AC-3).
+    shared :class:`BenchmarkResult` schema is reused unchanged.
 
     Parameters
     ----------

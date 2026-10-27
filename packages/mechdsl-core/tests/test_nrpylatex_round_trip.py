@@ -137,7 +137,7 @@ def test_unsupported_full_grammar_node_fails_with_phase_pointer() -> None:
     with pytest.raises(MathParseError) as excinfo:
         parse_math(unsupported)
     assert "full-grammar phase" in str(excinfo.value)
-    assert "post_recovery_plan Phase 4" in str(excinfo.value)
+    assert "not yet accepted" in str(excinfo.value)
 
 
 @pytest.mark.docs

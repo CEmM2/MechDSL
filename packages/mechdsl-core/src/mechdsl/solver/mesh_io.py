@@ -411,7 +411,7 @@ def get_face_nodes(mesh: HexMesh, face_name: str) -> NDArray:
 def validate_mesh_against_contract(mesh: HexMesh, contract: MeshContract) -> None:
     """Reject a mesh that does not carry every region the IR contract requires.
 
-    Pre-P3-3 the "BC name == mesh boundary tag" assumption was scattered:
+    Previously the "BC name == mesh boundary tag" assumption was scattered:
     each consumer (assemblers, codegen runtime, BC compilers in
     :mod:`mechdsl.codegen.boundary_codegen`) re-derived it from
     ``mesh.boundary_tags[bc.name]`` lookups that surfaced as ``KeyError``

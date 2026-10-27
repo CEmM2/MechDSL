@@ -2,8 +2,7 @@
 
 This module is the **directive scanner** half of the frontend — see the
 parser-of-record vs adapter/normalizer/validator split documented in
-``packages/mechdsl-core/src/mechdsl/frontend/ARCHITECTURE.md`` (introduced by
-recovery-plan Phase 2 / R1.3 / task ``P2-3``).
+``packages/mechdsl-core/src/mechdsl/frontend/ARCHITECTURE.md``.
 
 Responsibilities of this module:
 

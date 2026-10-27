@@ -84,7 +84,7 @@ class KinematicsResult:
         """Principal stretches lambda_i = sqrt(eig_i(C)), sourced from invariants.py.
 
         Always three entries (one per spatial dimension, repeats included) in a
-        deterministic order — the contract the spectral models (Ogden, P4-2) need.
+        deterministic order — the contract the spectral models (Ogden) need.
         """
         return _principal_stretches(self.F)
 

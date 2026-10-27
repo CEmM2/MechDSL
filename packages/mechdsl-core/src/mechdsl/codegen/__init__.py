@@ -4,8 +4,7 @@ Backend support tiers
 ---------------------
 The MVP-stable canonical backend is :mod:`mechdsl.codegen.taichi_printer`.
 :mod:`mechdsl.codegen.mfem_printer` and :mod:`mechdsl.codegen.moose_printer`
-are preserved in-tree as **experimental** surfaces (see
-``dev/plans/recovery_plan_latex_contract.md`` Phase 5 (R4)).
+are preserved in-tree as **experimental** surfaces.
 
 The ``__experimental__`` convention
 -----------------------------------

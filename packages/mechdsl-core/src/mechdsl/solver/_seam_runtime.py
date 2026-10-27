@@ -1,19 +1,18 @@
-"""Shared runtime plumbing for the generated-over-seam modules (PlanJune14).
+"""Shared runtime plumbing for the generated-over-seam modules.
 
-Both :mod:`mechdsl.solver.seam_solve` (generated PCG, P4-2) and
-:mod:`mechdsl.solver.seam_integrate` (generated Newmark-β, P6-1) transpile a LaTeX
+Both :mod:`mechdsl.solver.seam_solve` (generated PCG) and
+:mod:`mechdsl.solver.seam_integrate` (generated Newmark-β) transpile a LaTeX
 algorithm box to runtime-mode Taichi source and import the generated driver. They
 share two concerns, factored here so neither feature module reaches across the
 other's (private) boundary:
 
 * :func:`strip_ti_init` — drop the module-level ``ti.init(...)`` line so the
   **caller** owns Taichi initialisation / the device. Re-init at import would free
-  the caller's already-allocated DOF fields (the P2-2 finding); stripping it makes
+  the caller's already-allocated DOF fields; stripping it makes
   the generated body device-agnostic.
 * :func:`import_generated_module` — write generated source to a real ``.py`` file
   and import it. Taichi needs ``inspect.getsource`` on the driver, so the code
-  cannot be ``exec``'d. Mirrors ``tests/_e2e_helpers._import_generated_module`` /
-  the P2-2 pattern.
+  cannot be ``exec``'d. Mirrors ``tests/_e2e_helpers._import_generated_module``.
 """
 
 # NOTE: no ``from __future__ import annotations`` — kept consistent with the seam
@@ -39,7 +38,7 @@ def strip_ti_init(code: str) -> str:
     """Drop the module-level ``ti.init(...)`` line(s) from generated *code*.
 
     The caller owns Taichi initialisation (device/arch); re-init here would free
-    already-allocated DOF fields (the P2-2 finding), so the result is
+    already-allocated DOF fields, so the result is
     device-agnostic — it runs on whatever arch the caller's ``ti.init`` selected.
     """
     return "\n".join(line for line in code.splitlines() if not TI_INIT_LINE.match(line))
@@ -50,7 +49,7 @@ def import_generated_module(source: str, name: str) -> ModuleType:
 
     Taichi requires ``inspect.getsource`` on the driver, so the generated code
     must live in a real module file (not ``exec``'d). Mirrors
-    ``tests/_e2e_helpers._import_generated_module`` / the P2-2 pattern.
+    ``tests/_e2e_helpers._import_generated_module``.
     """
     tmp = Path(tempfile.mkdtemp())
     path = tmp / f"{name}.py"

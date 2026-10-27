@@ -1,10 +1,10 @@
-% constitutive_latex Phase 6 (P6-3): J2 MIXED-hardening radial-return
-% algpseudocode source.
+% J2 MIXED-hardening radial-return algpseudocode source.
 %
 % Scalar return-map inner solve for J2 plasticity with MIXED hardening:
 % the yield surface BOTH translates (linear kinematic back-stress beta,
-% Prager — from P6-2) AND expands (power-law isotropic radius growth
-% sigma_y(alpha) = sigy0 + K*alpha^n — from P6-1), simultaneously. Yield
+% Prager — as in the kinematic variant) AND expands (power-law isotropic
+% radius growth sigma_y(alpha) = sigy0 + K*alpha^n — as in the isotropic
+% variant), simultaneously. Yield
 % is measured on the RELATIVE (shifted) stress xi = dev(S) - beta against
 % the EXPANDING radius sigma_y(alpha):
 %
@@ -14,10 +14,11 @@
 % Because the isotropic part is a NONLINEAR power law in
 % alpha = alpha_old + dl, the discrete consistency condition is NONLINEAR
 % in the plastic-multiplier increment dl, so — unlike the pure-linear
-% kinematic variant (P6-2, closed form) — this needs the scalar NEWTON
-% loop of the isotropic variant (P6-1). The kinematic part contributes a
-% LINEAR term (3*mu + H_kin)*dl exactly as in P6-2; the isotropic part
-% contributes the nonlinear sigma_y(alpha_old + dl) exactly as in P6-1.
+% kinematic variant (closed form) — this needs the scalar NEWTON
+% loop of the isotropic variant. The kinematic part contributes a
+% LINEAR term (3*mu + H_kin)*dl exactly as in the kinematic variant; the
+% isotropic part contributes the nonlinear sigma_y(alpha_old + dl) exactly
+% as in the isotropic variant.
 %
 % Consistency residual (root in dl):
 %
@@ -29,7 +30,8 @@
 %
 % so the Newton update is  dl <- dl + r / (3*mu + H_kin + Hp)  with
 % Hp = K*n*ap^(n-1) the isotropic slope d(sigma_y)/d(alpha). This reduces
-% to P6-1 when H_kin = 0 (xi_eq == sigma_eq, beta == 0) and to P6-2 when
+% to the isotropic variant when H_kin = 0 (xi_eq == sigma_eq, beta == 0)
+% and to the kinematic variant when
 % K = 0 (sigma_y(alpha) == sigy0, constant radius, linear residual).
 %
 % The alpha->0 guard mirrors j2_power_law.py / radial_return_j2.tex: for
@@ -44,7 +46,7 @@
 % Python by ``mechdsl.lib.plasticity_mixed`` — the same division of labour
 % as the isotropic (``mechdsl.lib.plasticity``) and kinematic
 % (``mechdsl.lib.plasticity_kinematic``) variants. The flow normal and
-% back-stress factors are identical to P6-2:
+% back-stress factors are identical to the kinematic variant:
 %
 %     nf = (3/2) * xi / ||xi||_eq         (von Mises gradient)
 %     dEp     = dl * nf                    (plastic strain increment)

@@ -1,45 +1,42 @@
-"""Deterministic SymPy → Taichi scalar-expression lowerer (Task P2-1).
+"""Deterministic SymPy → Taichi scalar-expression lowerer.
 
 Part of the MechDSL lawgen pipeline (YAML law spec → restricted SymPy →
 Taichi carrier).
 
-This module is the foundation the rest of Phase 2 builds on: a *dedicated*,
+This module is the foundation the rest of the lowerer builds on: a *dedicated*,
 idiomatic SymPy printer that turns a scalar ``sympy.Expr`` into a Taichi source
 string, plus a public :func:`lower_expression` entry point that applies
 deterministic common-subexpression elimination (CSE) before printing.
 
-Why a bespoke printer (the R4 correction)
------------------------------------------
-The P1-3 reuse audit (``lawgen/REUSE.md``, Gate-B-verified) established that
+Why a bespoke printer
+---------------------
+The reuse audit (``lawgen/REUSE.md``) established that
 ``codegen/taichi_printer.py`` has **no** reusable scalar SymPy→Taichi printer —
 its surface is FEM ``ArtifactBundle`` emission with hard-coded literal Taichi.
 The only existing SymPy→Taichi code lives in ``codegen/energy_emitter.py`` and
 converts the expression to Python source (SymPy's ``py``-``code`` printer) then
 rewrites ``math.*`` to ``ti.*`` with a regex substitution over that string. That
-is the **R4 anti-pattern** the plan forbids: brittle string surgery, no CSE, no
+is the anti-pattern this module avoids: brittle string surgery, no CSE, no
 whitelist enforcement at the printer boundary.
 
-So P2-1 adds a proper printer instead. It subclasses SymPy's
+So this module adds a proper printer instead. It subclasses SymPy's
 :class:`~sympy.printing.str.StrPrinter` and overrides the relevant ``_print_*``
 methods, so function/operator lowering happens *inside* SymPy's own dispatch —
-no Python-source printing, no regex. Unmapped nodes fail loud (R2): a clear
-``NotImplementedError`` naming the node and the phase that adds it, never silent
-wrong code.
+no Python-source printing, no regex. Unmapped nodes fail loud: a clear
+``NotImplementedError`` naming the node, never silent wrong code.
 
-Scope of this task
-------------------
-Printer + deterministic CSE **only**. Deliberately out of scope (separate
-tasks — clean seams are noted inline where each attaches):
+Scope
+-----
+Printer + deterministic CSE, plus the pieces that attach at clean seams:
 
-* **P2-2** — scalar-expression budget counting over the six ``TiconstitTarget``
-  knobs.
-* **P2-3** — numerical-guard injection (``ti.max(x, 1e-12)`` for log/sqrt,
-  ``ti.select`` for pow with symbolic exponent, guarded division). This printer
-  emits ``ti.pow``/``ti.log``/``ti.sqrt`` *unguarded*; P2-3 attaches a rewrite
-  pass upstream of :func:`lower_expression` (or wraps the mapped names).
-* **P2-4** — ``Piecewise`` → nested ``ti.select`` lowering, small-integer ``Pow``
-  inlining, and a ``source_hash`` provenance field on :class:`LoweredExpr`
-  (see the extension note on the dataclass).
+* scalar-expression budget counting over the six ``TiconstitTarget`` knobs
+  (:mod:`mechdsl.lawgen.budgets`);
+* numerical-guard injection (``ti.max(x, 1e-12)`` for log/sqrt, guarded
+  division). The printer itself emits ``ti.pow``/``ti.log``/``ti.sqrt``
+  *unguarded*; :mod:`mechdsl.lawgen.guard_transforms` is a rewrite pass
+  upstream of printing whose marker nodes :class:`TaichiGuardedPrinter` renders;
+* ``Piecewise`` → nested ``ti.select`` lowering, small-integer ``Pow`` inlining,
+  and a ``source_hash`` provenance field on :class:`LoweredExpr`.
 """
 
 from __future__ import annotations
@@ -173,14 +170,13 @@ class TaichiExprPrinter(StrPrinter):
     ---------
     * Symbols print as their name; ``Integer``/``Float``/``Rational`` print as
       numeric literals; ``Add``/``Mul`` and integer/general ``Pow`` print via
-      the base :class:`StrPrinter` (``x**n`` stays ``x**n`` for P2-1).
+      the base :class:`StrPrinter` (``x**n`` stays ``x**n`` unless inlined).
     * Whitelisted functions (:data:`MATH_TO_TAICHI`) print as their ``ti.*``
       call, e.g. ``exp(-b*p)`` → ``ti.exp(-b*p)``.
     * ``sqrt(x)`` — SymPy's ``Pow(x, 1/2)`` — prints as ``ti.sqrt(x)`` rather
       than the base printer's literal ``sqrt(x)``.
-    * **Fail loud (R2):** any function/node this printer does not map raises
-      :class:`NotImplementedError` naming the node and the phase that adds it.
-      Nothing is emitted silently.
+    * **Fail loud:** any function/node this printer does not map raises
+      :class:`NotImplementedError` naming the node. Nothing is emitted silently.
     """
 
     printmethod = "_taichi"
@@ -254,8 +250,8 @@ class TaichiExprPrinter(StrPrinter):
         call). We intercept the ``S.Half`` exponent and emit ``ti.sqrt(base)``
         so the allowed-function table stays the single source of truth.
 
-        Small-integer inlining (P2-4)
-        -----------------------------
+        Small-integer inlining
+        ----------------------
         A ``Pow(base, n)`` with ``n`` a **non-negative** integer and ``n <=
         SMALL_INT_POW_LIMIT`` is inlined to repeated multiplication instead of a
         ``ti.pow`` call: ``x**2`` → ``x*x``, ``x**3`` → ``x*x*x``. Trivial powers
@@ -275,7 +271,7 @@ class TaichiExprPrinter(StrPrinter):
         which reports an inlined power at ``Mul`` precedence so ``_print_Mul``
         wraps the denominator → ``a/(x*x)``. This holds on the guarded path too
         (``a/x**2`` → ``a/(<signed-floor>*<signed-floor>)``). This runs on the
-        already-guarded tree, so ``base`` carries any P2-3 guard injected.
+        already-guarded tree, so ``base`` carries any guard injected upstream.
         """
         # Mirror SymPy's own idiom (``-expr.exp is S.Half``): negate then
         # identity-check, so an exact ``Rational(-1, 2)`` matches while a
@@ -326,12 +322,12 @@ class TaichiExprPrinter(StrPrinter):
         return "*".join([printed] * n)
 
     def _print_Piecewise(self, expr: sp.Piecewise) -> str:
-        """Lower a ``Piecewise`` to a right-nested ``ti.select`` chain (P2-4).
+        """Lower a ``Piecewise`` to a right-nested ``ti.select`` chain.
 
         ``Piecewise((e1, c1), (e2, c2), ..., (en, True))`` →
         ``ti.select(c1, e1, ti.select(c2, e2, ... en))``. Each branch value and
         each condition is lowered recursively through this printer, so guards
-        injected inside a branch expression (P2-3) render normally and a nested
+        injected inside a branch expression render normally and a nested
         ``Piecewise`` becomes a nested ``ti.select``. Relational conditions
         (``x > 0``) print via the base :class:`StrPrinter` as Taichi-valid scalar
         comparisons.
@@ -364,7 +360,7 @@ class TaichiExprPrinter(StrPrinter):
 
 
 class TaichiGuardedPrinter(TaichiExprPrinter):
-    """A :class:`TaichiExprPrinter` that renders the P2-3 guard marker nodes.
+    """A :class:`TaichiExprPrinter` that renders the numerical-guard marker nodes.
 
     Pairs with :func:`mechdsl.lawgen.guard_transforms.inject_guards`: that pass
     wraps guardable sub-trees in :class:`~mechdsl.lawgen.guard_transforms.\
@@ -450,7 +446,7 @@ def _unsupported_function_names(expr: sp.Basic) -> list[str]:
     Collecting all unmapped names up front (rather than raising on the first one
     deep in the recursive printer) is what lets the caller report *every*
     unsupported node in a single
-    :class:`~mechdsl.lawgen.diagnostics.LawgenError` (P3-1 collect-all).
+    :class:`~mechdsl.lawgen.diagnostics.LawgenError` (collect-all).
     """
     names = {
         type(fn).__name__
@@ -526,7 +522,7 @@ def _collect_piecewise_budget(
 ) -> None:
     """Add a budget diagnostic if ``expr``'s largest ``Piecewise`` exceeds the branch budget.
 
-    Reuses P2-2's :func:`~mechdsl.lawgen.budgets.count_piecewise_branches` and the
+    Reuses :func:`~mechdsl.lawgen.budgets.count_piecewise_branches` and the
     shared budget-diagnostic builder, so the ``reason`` carries the measured
     branch count AND the ``max_piecewise_branches`` limit. Runs in the same
     pre-pass, so an over-budget switch never reaches the printer and its
@@ -564,7 +560,7 @@ class LoweredExpr:
         A deterministic SHA-256 provenance digest over the emitted lines
         (:func:`compute_source_hash`), computed automatically in
         ``__post_init__``. 64 lowercase hex chars. Every ``LoweredExpr`` carries
-        one — including instances constructed directly (P2-2's budget tests build
+        one — including instances constructed directly (the budget tests build
         ``LoweredExpr(temporaries=…, returns=…)`` without passing a hash). It is
         excluded from ``__init__`` (callers never supply it) and from equality
         (it is derived from ``temporaries``/``returns``, so two lowered results
@@ -591,15 +587,15 @@ def compute_source_hash(temporaries: Sequence[str], returns: Sequence[str]) -> s
     line sequence — and therefore the hash — is fully deterministic for a given
     input and SymPy version. Returns 64 lowercase hex chars.
 
-    # NOTE (P4-2): this hashes the *emitted output lines*. Cycle 0's
-    # ``swift_voce.py`` header + ``_manifest.json`` instead define ``source_hash``
-    # as the SHA-256 of the canonical *input formula string* (the generator
-    # INPUT, e.g. ``"R = sigma0 + Q*(1-exp(-b*p)) + K*((p+p0)**n - p0**n)"`` →
-    # ``7b5af3a8…``), NOT the emitted output. This P2-4 hash satisfies the task's
-    # determinism + 64-hex acceptance criteria but will NOT equal Cycle 0's hash.
-    # This function is kept small and separately named so P4-1/P4-2 can add or
-    # switch to an input-formula hash for manifest-matching without touching the
-    # lowerer. Do NOT reconcile the two definitions here — that is P4's call.
+    # NOTE: this hashes the *emitted output lines*. Cycle 0's ``swift_voce.py``
+    # header + ``_manifest.json`` instead define ``source_hash`` as the SHA-256
+    # of the canonical *input formula string* (the generator INPUT, e.g.
+    # ``"R = sigma0 + Q*(1-exp(-b*p)) + K*((p+p0)**n - p0**n)"`` →
+    # ``7b5af3a8…``), NOT the emitted output. This hash is deterministic and
+    # 64-hex but will NOT equal Cycle 0's hash. The manifest emitter
+    # (:mod:`mechdsl.lawgen.manifest`) owns the input-formula hash; this function
+    # is kept small and separately named so the two conventions stay independent
+    # without touching the lowerer. Do NOT reconcile the two definitions here.
     """
     payload = "\n".join([*temporaries, *returns])
     return hashlib.sha256(payload.encode()).hexdigest()
@@ -623,7 +619,7 @@ def lower_expression(
        budget — accumulating a diagnostic per problem and raising them together
        as one :class:`~mechdsl.lawgen.diagnostics.LawgenError` *before* any code
        is produced (never fail-first, never a silent drop).
-    3. **P2-3 guard injection** (when ``guards`` is true): rewrite each
+    3. **Numerical-guard injection** (when ``guards`` is true): rewrite each
        expression with :func:`~mechdsl.lawgen.guard_transforms.inject_guards`,
        floring ``log``/``sqrt``/symbolic-``pow`` bases with ``ti.max(·, 1e-12)``
        and guarding division denominators — reproducing Cycle 0's hand-authored
@@ -649,19 +645,18 @@ def lower_expression(
         when ``guards`` is true, else a :class:`TaichiExprPrinter`. An explicit
         printer is used verbatim (the caller owns marker rendering then).
     guards:
-        When ``True`` (default), inject the P2-3 numerical guards and render them
+        When ``True`` (default), inject the numerical guards and render them
         with a guarded printer. Set ``False`` for the raw, unguarded lowering
-        (the P2-1 path — used by tests and by callers that guard elsewhere).
-        P2-4 / P4 depend on this flag: the guarded path is the one the P4-2
-        equivalence gate measures.
+        (used by tests and by callers that guard elsewhere). The guarded path is
+        the production path — the one the numerical equivalence gate measures.
     target:
         The :class:`~mechdsl.lawgen.contracts.TiconstitTarget` whose
         ``max_piecewise_branches`` knob gates ``Piecewise`` lowering. Defaults to
-        a plain :class:`TiconstitTarget` (the plan-frozen default of 8 branches).
+        a plain :class:`TiconstitTarget` (the default of 8 branches).
         A ``Piecewise`` with more branches yields a budget diagnostic in the
         collect-all :class:`~mechdsl.lawgen.diagnostics.LawgenError` before any
-        ``ti.select`` is emitted (pre-emission fail-loud, reusing P2-2's counter
-        and error).
+        ``ti.select`` is emitted (pre-emission fail-loud, reusing the budget
+        module's counter and error).
 
     Returns
     -------
@@ -672,11 +667,11 @@ def lower_expression(
     Raises
     ------
     LawgenError
-        Collect-all (P3-1): if any expression contains unsupported nodes, a
+        Collect-all: if any expression contains unsupported nodes, a
         non-exhaustive ``Piecewise``, or an over-budget ``Piecewise``, *every*
         such problem across *all* expressions is collected and raised together as
         one :class:`~mechdsl.lawgen.diagnostics.LawgenError` (a
-        ``NotImplementedError`` subclass, preserving the Phase-2 fail-loud
+        ``NotImplementedError`` subclass, preserving the fail-loud
         contract). Each diagnostic carries the offending node, a reason, and an
         actionable fix. No node is ever silently dropped (R2).
     TypeError

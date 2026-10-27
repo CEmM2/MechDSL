@@ -1,6 +1,6 @@
 """J2 linear kinematic (Prager) hardening — algo2code-orchestrated path.
 
-constitutive_latex Phase 6 (P6-2). The dissipative kinematic-hardening
+The dissipative kinematic-hardening
 return map: the yield surface *translates* (back-stress ``beta``) rather
 than *expands*. Yield is measured on the RELATIVE (shifted) stress
 ``xi = dev(S) - beta`` with a CONSTANT yield radius ``sigma_y0`` (no

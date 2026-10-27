@@ -18,9 +18,9 @@ Import modes (``runtime`` parameter of :func:`generate_taichi`):
     each generated file — backward-compatible, no runtime dependency.
   - ``"ti_runtime"``: emit ``from ti_runtime import vector_ops as _v`` and call
     the shared primitives for ``dot``/``norm``/``copy``/``vec_add``; only
-    ``_matvec`` remains inlined (the matrix-free operator seam is P2-2's
-    concern).  algo2code itself never imports ``ti_runtime`` — it only *emits*
-    the import line.
+    ``_matvec`` remains inlined (the matrix-free operator is injected through
+    the seam by the consumer).  algo2code itself never imports ``ti_runtime`` —
+    it only *emits* the import line.
 
 Compatibility note (``"ti_runtime"`` mode):
   ``ti_runtime.vector_ops.dot`` uses ``x[I].dot(y[I])`` which requires
@@ -29,7 +29,7 @@ Compatibility note (``"ti_runtime"`` mode):
   the consumer passes scalar fields.  Callers that use vector fields (e.g.
   mechdsl FEM drivers) are unaffected.  This is a known field-model mismatch;
   resolving it (either by changing the emitted field model to ``ti.Vector.field``
-  or by adding scalar variants to ti_runtime) is out of scope for P2-1.
+  or by adding scalar variants to ti_runtime) is out of scope for this backend.
 """
 
 from __future__ import annotations
@@ -177,7 +177,7 @@ class KernelCollector:
         In ``"ti_runtime"`` mode the shared primitives (dot/norm/copy/vec_add)
         are called via the ``_v`` alias imported from ``ti_runtime.vector_ops``.
         Only ``_matvec`` has no ti_runtime equivalent and remains inlined
-        (the matrix-free operator seam is P2-2's concern).
+        (the matrix-free operator is injected through the seam by the consumer).
         """
         lines = []
         if runtime == RUNTIME_TI_RUNTIME:
@@ -394,8 +394,8 @@ class TaichiEmitter:
         locals matching the *vector argument's* component layout (``<arg>.n``):
         the ``ti_runtime`` ``dot``/``norm2`` primitives use ``x[I].dot(y[I])``,
         which requires vector fields. This is what lets the matrix-free seam
-        (P2-2) run end-to-end against ``ti_runtime`` (resolving the field-model
-        mismatch P2-1 documented). With no vector argument the component count
+        run end-to-end against ``ti_runtime`` (resolving the field-model
+        mismatch documented above). With no vector argument the component count
         is unknown, so fall back to the scalar layout.
         """
         if self.runtime == RUNTIME_TI_RUNTIME and vec_arg is not None:
@@ -847,7 +847,8 @@ def generate_taichi(algo: Algorithm, runtime: str = RUNTIME_INLINE) -> str:
         ``"ti_runtime"``
             Emit ``from ti_runtime import vector_ops as _v`` and call the
             shared primitives for dot/norm/copy/vec_add.  Only ``_matvec``
-            remains inlined (the matrix-free operator seam is P2-2's concern).
+            remains inlined (the matrix-free operator is injected through the
+            seam by the consumer).
             algo2code itself never imports ti_runtime — it only emits the
             import line.
 
