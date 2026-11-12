@@ -14,12 +14,12 @@ the path for contributors and for anyone who wants the runnable `examples/` tree
 | Install | What it gives you |
 |---|---|
 | `pip install mechdsl-core` | The FEM compiler: LaTeX → emitted Taichi solver source. **Taichi-free.** ([PyPI](https://pypi.org/project/mechdsl-core/)) |
-| `pip install "mechdsl-core[verify]"` | The full engine — adds `taichi`, `ti-runtime`, and `algo2code` so you can *run* and *verify* solves |
+| `pip install "mechdsl-core[verify]"` | The full engine — adds `taichi` and `ti-runtime` so you can *run* and *verify* solves |
 | `pip install algo2code` | The algorithm transpiler on its own. **Zero runtime dependencies**, stdlib only. ([PyPI](https://pypi.org/project/algo2code/)) |
 | `pip install ti-runtime` | The neutral Taichi runtime: vector primitives, Tier-1 `@ti.func` helpers, injection seams. ([PyPI](https://pypi.org/project/ti-runtime/)) |
 | `pip install "mechdsl-workbench[mechdsl]"` | The browser workbench plus the engine, in one command. ([PyPI](https://pypi.org/project/mechdsl-workbench/)) |
 
-All five are released together and currently sit at **0.2.1**.
+All five are released together and currently sit at **0.2.2**.
 
 ## Requirements
 
@@ -39,8 +39,23 @@ pip install mechdsl-core
 
 This is everything you need to **emit** code: parse `% mechanics` directives, derive
 stress and tangent symbolically, plan contractions, and print Taichi source. It pulls
-only `sympy`, `numpy`, `scipy`, `opt-einsum`, `pyyaml`, and `nrpylatex` — no Taichi, so
-the install stays small and imports cleanly in Taichi-free environments.
+only `sympy`, `numpy`, `scipy`, `opt-einsum`, `pyyaml`, `nrpylatex`, and the stdlib-only
+`algo2code` — no Taichi, so the install stays small and imports cleanly in Taichi-free
+environments.
+
+J2 plasticity also works here. The isotropic, kinematic and mixed return maps in
+`mechdsl.lib.plasticity*` are transpiled from their LaTeX algorithm sources with
+`algo2code`'s NumPy backend when the module loads, so they run on plain NumPy:
+
+```python
+import numpy as np
+from mechdsl.lib.plasticity import radial_return
+from mechdsl.symbolic.models.j2_power_law import J2PowerLawMaterial
+
+mat = J2PowerLawMaterial(E=200e3, nu=0.3, sigma_y0=250.0, K=500.0, n=0.5)
+step = radial_return(mat, np.diag([0.01, -0.003, -0.003]), alpha_old=0.0)
+print(step.is_plastic, step.alpha_new)
+```
 
 ```python
 from mechdsl import compile_latex
@@ -57,15 +72,15 @@ print(bundle.content_hash())
 pip install "mechdsl-core[verify]"
 ```
 
-The `verify` extra adds `taichi`, `ti-runtime`, and `algo2code` — the complete
+The `verify` extra adds `taichi` and `ti-runtime` — the complete
 installation. Expect a noticeably larger download; Taichi alone is around 170 MB.
 Take this one if you want to execute generated kernels, run the verification
 harness, or use the generated matrix-free PCG solver.
 
 !!! info "Why the split?"
     Only `mechdsl.integration.verify()` ever touches Taichi, and it imports it lazily
-    at call time. The emit, transpile, `capabilities()`, and `model_catalog()`
-    surfaces are proven Taichi-free by the test suite, so downstream consumers can
+    at call time. The emit, transpile, `capabilities()`, `model_catalog()` and J2
+    return-map surfaces are proven Taichi-free by the test suite, so downstream consumers can
     depend on `mechdsl-core` for code generation without pulling Taichi into their
     dependency closure.
 

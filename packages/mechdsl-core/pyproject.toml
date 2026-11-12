@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mechdsl-core"
-version = "0.2.1"
+version = "0.2.2"
 description = "MechDSL core — LaTeX tensor expressions to FEM solver code"
 readme = "README.md"
 license = "MIT"
@@ -28,6 +28,10 @@ dependencies = [
     "pyyaml>=6.0.3",
     "scipy>=1.17.0",
     "nrpylatex>=1.4.0,<2",
+    # Stdlib-only transpiler. A base dependency because mechdsl.lib.plasticity*
+    # transpile their J2 return maps from the bundled LaTeX sources at import
+    # time (NumPy backend), so J2 works on a lean install without Taichi.
+    "algo2code>=0.2.2,<0.3",
 ]
 
 [project.optional-dependencies]
@@ -47,12 +51,12 @@ dependencies = [
 # extra alongside taichi; the base install (emit / transpile / capabilities)
 # stays Taichi-free. The generated matrix-free PCG solver is transpiled via
 # `algo2code` in runtime mode and injected through the ti_runtime `set_solver`
-# seam; algo2code is a stdlib-only compile-time tool and rides in the same
-# extra. `verify` is the full install (~1 GB closure via Taichi) — everything
+# seam; algo2code is a stdlib-only compile-time tool and is a base dependency
+# (J2 plasticity transpiles through it on the lean install too). `verify` is the full install (~1 GB closure via Taichi) — everything
 # needed to run and verify solves, not just emit code.
 # NOTE: the AD oracle uses central finite differences (mechdsl.verify.ad_oracle)
 # — torch was never imported anywhere and is deliberately NOT a dependency.
-verify = ["taichi>=1.7", "ti-runtime>=0.2.1,<0.3", "algo2code>=0.2.1,<0.3"]
+verify = ["taichi>=1.7", "ti-runtime>=0.2.2,<0.3"]
 
 [project.scripts]
 mechdsl-lawgen = "mechdsl.lawgen.cli:main"

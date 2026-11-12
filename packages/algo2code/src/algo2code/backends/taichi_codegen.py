@@ -266,6 +266,9 @@ class TaichiEmitter:
         docstring for the full description of each mode.
     """
 
+    #: Backend line written into the generated driver's docstring.
+    BACKEND_DOC = "Backend: Taichi (GPU)"
+
     def __init__(self, algo: Algorithm, runtime: str = RUNTIME_INLINE):
         self.algo = algo
         self.runtime = runtime
@@ -341,7 +344,7 @@ class TaichiEmitter:
 
         self._write('"""')
         self._write("Auto-generated from LaTeX algorithmic environment.")
-        self._write("Backend: Taichi (GPU)")
+        self._write(self.BACKEND_DOC)
         self._write('"""')
 
         vec_arg = self._first_vector_arg()

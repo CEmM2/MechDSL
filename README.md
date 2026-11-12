@@ -62,11 +62,12 @@ pip install algo2code                 # just the algorithm transpiler (stdlib-on
 pip install ti-runtime                # just the Taichi runtime
 ```
 
-The `[verify]` extra is the complete installation — it pulls in `taichi`,
-`ti-runtime`, and `algo2code` so compiled problems can actually be solved and
-verified. Expect a noticeably larger download (Taichi alone is ~170 MB); the
-base `mechdsl-core` install stays lean and is all you need for code emission,
-transpilation, and the `mechdsl.integration` capability surface.
+The `[verify]` extra is the complete installation — it pulls in `taichi` and
+`ti-runtime` so compiled problems can actually be solved and verified. Expect a
+noticeably larger download (Taichi alone is ~170 MB); the base `mechdsl-core`
+install stays lean and is all you need for code emission, transpilation, the
+`mechdsl.integration` capability surface, and the J2 plasticity return maps
+(`mechdsl.lib.plasticity*`, transpiled from LaTeX with `algo2code`'s NumPy backend).
 
 ### From source
 
