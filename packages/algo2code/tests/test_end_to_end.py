@@ -19,4 +19,4 @@ class TestFullPipeline:
 
     def test_unknown_backend_raises(self, pcg_latex):
         with pytest.raises(ValueError, match="Unknown backend"):
-            transpile(pcg_latex, backend="numpy")
+            transpile(pcg_latex, backend="petsc")

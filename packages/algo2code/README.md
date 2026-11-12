@@ -1,6 +1,13 @@
 # algo2code
 
-Transpile LaTeX algorithm boxes (`algpseudocode`) to executable code targeting Taichi, NumPy, or C/PETSc.
+Transpile LaTeX algorithm boxes (`algpseudocode`) to executable code targeting Taichi or NumPy (C/PETSc planned).
+
+```python
+from algo2code import transpile
+
+transpile(source, backend="taichi")  # Taichi kernels + Python driver
+transpile(source, backend="numpy")   # plain function that imports only NumPy
+```
 
 Parses `\begin{algorithmic}...\end{algorithmic}` environments with type-directed code generation.
 Zero runtime dependencies — standard library only.

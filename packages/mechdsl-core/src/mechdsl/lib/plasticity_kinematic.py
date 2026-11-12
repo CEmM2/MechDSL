@@ -71,10 +71,11 @@ if TYPE_CHECKING:
 #
 # `algo2code.transpile` returns a Python module string with a top-level
 # `radial_return_j2_kinematic(xi_eq, mu, H_kin, sigy0, tol, max_iter)`
-# function. We exec it into a clean namespace and capture the callable —
+# function. The NumPy backend emits no Taichi import, so this module loads
+# on a lean install. We exec it into a clean namespace and capture the callable —
 # the same pattern as `mechdsl.lib.plasticity`.
 _TRANSPILED_NAMESPACE: dict[str, object] = {}
-_TRANSPILED_SOURCE = transpile_radial_return_j2_kinematic(backend="taichi")
+_TRANSPILED_SOURCE = transpile_radial_return_j2_kinematic(backend="numpy")
 exec(
     compile(_TRANSPILED_SOURCE, "<algo2code:radial_return_j2_kinematic>", "exec"),
     _TRANSPILED_NAMESPACE,

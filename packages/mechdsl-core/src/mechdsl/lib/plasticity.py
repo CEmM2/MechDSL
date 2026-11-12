@@ -7,10 +7,8 @@ to Python at module import time, exec'd into a namespace, and the
 resulting scalar Newton inner loop is invoked from inside the wrapper.
 The imported reference path remains as a feature-flagged fallback.
 
-This path relies on the algo2code parser fixes (multi-letter scratch
-identifiers and binary ``/`` in assignment LHS contexts) plus the
-Taichi codegen scalar-algorithm fix that previously blocked direct
-emission for radial-return.
+The source is transpiled with algo2code's NumPy backend, so importing
+this module never imports or initialises Taichi.
 
 Public surface
 --------------
@@ -57,13 +55,13 @@ _TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
 # `algo2code.transpile` returns a Python module string with a top-level
 # `radial_return_j2(sigma_eq, alpha, mu, K, n, sigy0, tol, max_iter)`
 # function. We exec it into a clean namespace and capture the callable.
-# `ti.init` runs at import time of the emitted module — identical to how
-# the rest of the codebase initialises Taichi — but the function itself
-# is plain Python (no `@ti.func` / `@ti.kernel` decorator on scalar
-# algorithms), so it runs on plain float inputs and is bit-equal to the
-# imported reference's inner Newton step.
+# The NumPy backend is used so the emitted module imports only NumPy and
+# never Taichi: J2 works on a lean install (no `[verify]` extra). The
+# scalar function body is identical to the Taichi backend's (plain Python
+# on floats), so it is bit-equal to the imported reference's inner Newton
+# step either way.
 _TRANSPILED_NAMESPACE: dict[str, object] = {}
-_TRANSPILED_SOURCE = transpile_radial_return_j2(backend="taichi")
+_TRANSPILED_SOURCE = transpile_radial_return_j2(backend="numpy")
 exec(
     compile(_TRANSPILED_SOURCE, "<algo2code:radial_return_j2>", "exec"),
     _TRANSPILED_NAMESPACE,
