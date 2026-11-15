@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
     from mechdsl.codegen.artifact import ArtifactBundle
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 # Allowed values for the `profile` argument of :func:`compile_latex`. Module-
 # level so callers can introspect the supported set instead of guessing from

@@ -11,7 +11,9 @@ and ``algo2code.library.radial_return_j2*`` raised ``FileNotFoundError`` at
 import time for anyone installing from PyPI.
 
 Modules whose only failure is a missing ``taichi`` / ``ti_runtime`` (the
-``[verify]`` extra) are expected skips; any other exception is a failure.
+``[verify]`` extra) are expected skips; any other exception is a failure. The
+J2 plasticity modules are not allowed to skip: they must import and run a
+return map without Taichi.
 """
 
 from __future__ import annotations
@@ -89,6 +91,23 @@ _IMPORT_WALK = textwrap.dedent(
     }.items():
         if not text.strip():
             failures.append(f"{name} is empty")
+
+    # J2 plasticity is transpiled from LaTeX with the NumPy backend, so it must
+    # import and run on this lean install rather than skip for missing taichi.
+    for mod in ("mechdsl.lib.plasticity", "mechdsl.lib.plasticity_kinematic",
+                "mechdsl.lib.plasticity_mixed"):
+        if mod not in imported:
+            failures.append(f"{mod} did not import on the lean install")
+    if not failures:
+        import numpy as np
+        from mechdsl.lib.plasticity import radial_return
+        from mechdsl.symbolic.models.j2_power_law import J2PowerLawMaterial
+
+        mat = J2PowerLawMaterial(E=200e3, nu=0.3, sigma_y0=250.0, K=500.0, n=0.5)
+        if not radial_return(mat, np.diag([0.01, -0.003, -0.003]), 0.0).is_plastic:
+            failures.append("J2 radial return did not yield on the lean install")
+    if "taichi" in sys.modules:
+        failures.append("taichi was imported on the lean install")
 
     print(f"imported={len(imported)} skipped={len(skipped)} failed={len(failures)}")
     for line in skipped:

@@ -2,9 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.2.2] - 2026-11-12
 
-### Fixed — runtime resources ship inside the wheels
+### Added — `algo2code` NumPy backend
+
+- **`transpile(source, backend="numpy")`**: a second code generator that emits a plain Python function importing only NumPy. It lowers the same typed AST as the Taichi backend, statement for statement: scalar code and control flow are identical (so scalar algorithms give bit-identical results under both backends), vectors are `ndarray` buffers written in place (`out[...] = ...`), and callables keep the Taichi backend's in-place seam contract (`M_inv(r, z)`, `A(out, p)`). Also exported as `algo2code.generate_numpy`. Tests in `packages/algo2code/tests/test_numpy_codegen.py` pin body equality with the Taichi backend for the three J2 sources and run PCG and compound vector updates against NumPy references.
+
+### Fixed — J2 plasticity works on a lean install (no Taichi)
+
+- **`mechdsl.lib.plasticity`, `plasticity_kinematic`, `plasticity_mixed`** now transpile their return maps from the bundled LaTeX sources with the NumPy backend. Before, they used the Taichi backend, whose emitted module runs `import taichi` / `ti.init` at load, so the `j2_isotropic` / `j2_kinematic` / `j2_mixed` models that `capabilities()` advertises failed to import without the `[verify]` extra. The return maps are still generated from LaTeX, not hand-written.
+- **`algo2code` is a base dependency of `mechdsl-core`** (it is stdlib-only); it was previously only in the `[verify]` extra, which also blocked J2 on a lean install. `[verify]` is now `taichi` + `ti-runtime`.
+- **Regression tests**: `test_wheel_import.py` now requires the three J2 modules to import and a radial return to yield in a clean venv with only the two wheels installed, with `taichi` never loaded; `test_integration_surface.py::TestJ2TaichiFree` checks the same in-process.
+
+### Changed
+
+- `mechdsl-core`, `algo2code` and `ti-runtime` released together at 0.2.2 (`ti-runtime` has no code changes; it is bumped so the tag-triggered publish workflow, which uploads all three, does not fail on an existing 0.2.1 file).
+
+### Fixed — runtime resources ship inside the wheels (from #6)
 
 - **Canonical algorithm sources are package data**: the six `algpseudocode` sources (`jacobi`, `newmark`, `pcg`, `radial_return_j2`, `radial_return_j2_kinematic`, `radial_return_j2_mixed`) moved from the repository-only `dev/algorithms/` to `algo2code/library/algorithms/` and are read via `importlib.resources`. Installed from PyPI, `mechdsl.lib.plasticity{,_kinematic,_mixed}` and `algo2code.library.radial_return_j2{,_kinematic,_mixed}` previously raised `FileNotFoundError` at import time (they walked up from `__file__` looking for the repo checkout); `mechdsl.solver.seam_solve` / `seam_integrate` had the same latent defect behind their Taichi import.
 - **`algo2code.library.algorithm_source(name)` / `algorithm_source_path(name)` / `ALGORITHM_SOURCES`**: new accessors for the bundled sources; `mechdsl.solver.pcg_tex_path()` / `newmark_tex_path()` now resolve through them.

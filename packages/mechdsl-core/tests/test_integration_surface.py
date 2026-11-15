@@ -701,7 +701,7 @@ class TestVerifyBenchmarkKind:
 
 # ---------------------------------------------------------------------------
 # 10. _LIB_PLASTICITY_CATALOG drift guard — the static lib/plasticity* entries
-#     must stay in sync with the real (Taichi-bound) Material dataclasses.
+#     must stay in sync with the real Material dataclasses.
 # ---------------------------------------------------------------------------
 
 
@@ -710,14 +710,13 @@ class TestVerifyBenchmarkKind:
 class TestLibPlasticityCatalogDrift:
     """Catch silent drift between the hand-maintained static catalog and reality.
 
-    ``mechdsl.lib.plasticity_kinematic`` and ``…plasticity_mixed`` exec
-    transpiled Taichi source at import time (firing ``ti.init``), so
-    ``model_catalog`` lists their models *statically* in
-    ``_LIB_PLASTICITY_CATALOG`` rather than introspecting them live.  That
-    static list can silently diverge if the underlying ``Material`` dataclasses
-    gain or lose a field.  This guard imports the real dataclasses in a fresh
-    interpreter (Taichi is allowed to load there) and asserts the catalog's
-    ``params`` still match the dataclass field names exactly.
+    ``mechdsl.lib.plasticity_kinematic`` and ``…plasticity_mixed`` transpile
+    and exec their return maps at import time, so ``model_catalog`` lists
+    their models *statically* in ``_LIB_PLASTICITY_CATALOG`` rather than
+    introspecting them live.  That static list can silently diverge if the
+    underlying ``Material`` dataclasses gain or lose a field.  This guard
+    imports the real dataclasses in a fresh interpreter and asserts the
+    catalog's ``params`` still match the dataclass field names exactly.
     """
 
     def test_static_catalog_params_match_real_dataclasses(self):
@@ -752,3 +751,37 @@ class TestLibPlasticityCatalogDrift:
             f"__init__.py.\nstdout: {r.stdout!r}\nstderr: {r.stderr!r}"
         )
         assert "drift: {}" in r.stdout
+
+
+# ---------------------------------------------------------------------------
+# 11. J2 plasticity is Taichi-free — the lib/plasticity* return maps are
+#     transpiled from LaTeX with algo2code's NumPy backend, so the j2_* models
+#     advertised by capabilities() run on a lean install.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+class TestJ2TaichiFree:
+    def test_lib_plasticity_runs_without_loading_taichi(self):
+        """Import all three J2 modules and run a plastic step: taichi never loads."""
+        script = (
+            "import sys; import numpy as np; "
+            "import mechdsl.lib.plasticity as iso; "
+            "import mechdsl.lib.plasticity_kinematic as kin; "
+            "import mechdsl.lib.plasticity_mixed as mix; "
+            "from mechdsl.symbolic.models.j2_power_law import J2PowerLawMaterial; "
+            "E = np.diag([0.01, -0.003, -0.003]); "
+            "r1 = iso.radial_return(J2PowerLawMaterial(E=200e3, nu=0.3, sigma_y0=250.0, K=500.0, n=0.5), E, 0.0); "
+            "r2 = kin.radial_return_kinematic(kin.J2KinematicMaterial(E=200e3, nu=0.3, sigma_y0=250.0, H_kin=1e3), "
+            "    E, np.zeros((3, 3)), np.zeros((3, 3))); "
+            "r3 = mix.radial_return_mixed(mix.J2MixedMaterial(E=200e3, nu=0.3, sigma_y0=250.0, K=500.0, n=0.5, H_kin=1e3), "
+            "    E, 0.0, np.zeros((3, 3)), np.zeros((3, 3))); "
+            "print('plastic:', r1.is_plastic, r2.is_plastic, r3.is_plastic); "
+            "print('taichi_loaded:', 'taichi' in sys.modules)"
+        )
+        r = subprocess.run(
+            [sys.executable, "-c", script], capture_output=True, text=True, timeout=120
+        )
+        assert r.returncode == 0, r.stderr
+        assert "plastic: True True True" in r.stdout
+        assert "taichi_loaded: False" in r.stdout

@@ -94,9 +94,12 @@ def capabilities() -> dict:
 # Static metadata for lib/plasticity* models.
 #
 # mechdsl.lib.plasticity, plasticity_kinematic, and plasticity_mixed exec
-# algo2code-transpiled Taichi source at module import time, which fires
-# ti.init.  We therefore CANNOT import those modules here.  Instead, their
-# metadata is listed statically and kept in sync manually with the source.
+# algo2code-transpiled source at module import time. They use algo2code's
+# NumPy backend, so importing them no longer touches Taichi, but the
+# transpile + exec still costs a parse per module. The catalog stays static
+# so capabilities() / model_catalog() remain cheap and import-free; the
+# entries are kept in sync with the source by
+# tests/test_integration_surface.py.
 #
 # When any of these modules changes its Material dataclass or state
 # variables, update the corresponding entry in _LIB_PLASTICITY_CATALOG below.
@@ -433,7 +436,7 @@ def transpile_algorithm(algpseudocode: str, backend: str = "taichi") -> dict:
         LaTeX source containing an ``\\begin{algorithmic} … \\end{algorithmic}``
         block (the same format accepted by :func:`algo2code.transpile`).
     backend:
-        Code-generation backend.  Only ``"taichi"`` is supported in the MVP.
+        Code-generation backend: ``"taichi"`` (default) or ``"numpy"``.
 
     Returns
     -------
