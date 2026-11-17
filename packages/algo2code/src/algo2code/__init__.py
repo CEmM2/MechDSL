@@ -1,6 +1,6 @@
 """algo2code — Transpile LaTeX algorithm boxes (algpseudocode) to executable code.
 
-Targets: Taichi (MVP), NumPy, C/PETSc.
+Targets: Taichi, NumPy (C/PETSc planned).
 
 Usage:
     from algo2code import transpile
@@ -8,10 +8,11 @@ Usage:
     taichi_code = transpile(latex_source, backend='taichi')
 """
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 from .algo_parser import parse_algorithm
 from .ast_nodes import Algorithm, VarType
+from .backends.numpy_codegen import generate_numpy
 from .backends.taichi_codegen import (
     RUNTIME_INLINE,
     RUNTIME_TI_RUNTIME,
@@ -33,9 +34,11 @@ def transpile(source: str, backend: str = "taichi", runtime: str = "inline") -> 
         LaTeX source containing \\begin{algorithmic} ... \\end{algorithmic}
         with optional % directive comments.
     backend : str
-        Target backend. Currently only 'taichi' is supported.
+        Target backend: ``"taichi"`` (default) or ``"numpy"``. The NumPy
+        backend emits a plain function that imports only ``numpy``, so the
+        result runs without Taichi installed.
     runtime : str
-        Import mode for the Taichi backend.  ``"inline"`` (default) emits
+        Import mode for the Taichi backend (ignored by ``"numpy"``).  ``"inline"`` (default) emits
         private ``@ti.kernel`` definitions inline.  ``"ti_runtime"`` emits
         ``from ti_runtime import vector_ops as _v`` and calls the shared
         primitives for dot/norm/copy.  algo2code itself never imports
@@ -51,8 +54,9 @@ def transpile(source: str, backend: str = "taichi", runtime: str = "inline") -> 
 
     if backend == "taichi":
         return generate_taichi(algo, runtime=runtime)
-    else:
-        raise ValueError(f"Unknown backend: {backend!r}. Supported: 'taichi'")
+    if backend == "numpy":
+        return generate_numpy(algo)
+    raise ValueError(f"Unknown backend: {backend!r}. Supported: 'taichi', 'numpy'")
 
 
 __all__ = [
@@ -63,6 +67,7 @@ __all__ = [
     "Algorithm",
     "UnsupportedConstructError",
     "VarType",
+    "generate_numpy",
     "generate_taichi",
     "get_pcg_algorithm_latex",
     "infer_types",

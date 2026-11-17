@@ -19,7 +19,7 @@ members = [
 
 [[package]]
 name = "algo2code"
-version = "0.2.1"
+version = "0.2.2"
 source = { editable = "packages/algo2code" }
 
 [[package]]
@@ -606,9 +606,10 @@ wheels = [
 
 [[package]]
 name = "mechdsl-core"
-version = "0.2.1"
+version = "0.2.2"
 source = { editable = "packages/mechdsl-core" }
 dependencies = [
+    { name = "algo2code" },
     { name = "nrpylatex" },
     { name = "numpy" },
     { name = "opt-einsum" },
@@ -619,14 +620,13 @@ dependencies = [
 
 [package.optional-dependencies]
 verify = [
-    { name = "algo2code" },
     { name = "taichi" },
     { name = "ti-runtime" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "algo2code", marker = "extra == 'verify'", editable = "packages/algo2code" },
+    { name = "algo2code", editable = "packages/algo2code" },
     { name = "nrpylatex", specifier = ">=1.4.0,<2" },
     { name = "numpy", specifier = ">=2.4.2" },
     { name = "opt-einsum", specifier = ">=3.3" },
@@ -640,7 +640,7 @@ provides-extras = ["verify"]
 
 [[package]]
 name = "mechdsl-workspace"
-version = "0.2.1"
+version = "0.2.2"
 source = { virtual = "." }
 dependencies = [
     { name = "markdown" },
@@ -1288,7 +1288,7 @@ wheels = [
 
 [[package]]
 name = "ti-runtime"
-version = "0.2.1"
+version = "0.2.2"
 source = { editable = "packages/ti-runtime" }
 dependencies = [
     { name = "taichi" },

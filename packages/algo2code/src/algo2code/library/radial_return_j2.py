@@ -49,8 +49,8 @@ def transpile_radial_return_j2(backend: str = "taichi") -> str:
     Parameters
     ----------
     backend:
-        Target backend name. ``"taichi"`` is the only one consumed by
-        ``mechdsl-core`` today.
+        Target backend name: ``"taichi"`` or ``"numpy"``. ``mechdsl-core``
+        consumes ``"numpy"`` so J2 runs without Taichi installed.
 
     Returns
     -------

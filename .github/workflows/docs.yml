@@ -1,31 +1,49 @@
 name: Docs
 
-# Build the MkDocs site on every push to main and deploy it to GitHub Pages.
-# One-time setup: in the repo Settings → Pages, set "Source" to "GitHub Actions".
+# Every PR that touches the docs builds the MkDocs site strictly, so a broken
+# link or missing page fails the PR instead of the next deploy. Pushing a `v*`
+# tag (the same tag pypi-publish.yml releases from) builds the site from that tag
+# and deploys it to GitHub Pages, so the published docs always match the latest
+# release on PyPI rather than unreleased work on main.
+#
+# One-time setup: Settings -> Pages -> Source: "GitHub Actions", and allow `v*`
+# tags in Settings -> Environments -> github-pages -> deployment branches and tags.
 on:
-  push:
-    branches: [main]
+  pull_request:
+    branches: [main, dev]
     paths:
       - "docs/**"
       - "mkdocs.yml"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/workflows/docs.yml"
+  push:
+    tags: ["v*"]
+  # Manual publish, e.g. to re-deploy a release tag after a docs-only fix:
+  # run it from main with `tag` set, so this version of the workflow builds
+  # that tag's docs.
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and publish (e.g. v0.2.1). Empty = the selected branch."
+        required: false
+        default: ""
 
-# Allow only one concurrent deployment; cancel in-progress runs for the same ref.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -33,13 +51,26 @@ jobs:
       - name: Build site (strict)
         run: uv run --group docs mkdocs build --strict --site-dir ./site
       - name: Upload Pages artifact
+        if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./site
 
   deploy:
     needs: build
+    # Public mirror only (as in pypi-publish.yml); tags and manual runs only;
+    # never a pre-release tag.
+    if: >-
+      github.repository_owner == 'CEmM2' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.ref_type == 'tag' &&
+        !contains(github.ref_name, 'a') &&
+        !contains(github.ref_name, 'b') &&
+        !contains(github.ref_name, 'rc')))
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
